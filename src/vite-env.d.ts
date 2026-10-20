@@ -6,6 +6,7 @@ import type { AndroidProjectAnalysis } from '../electron/android-build-tool'
 import type { WindowsProjectAnalysis } from '../electron/windows-build-tool'
 import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from '../electron/validation-engine'
 import type { ToolAvailability, ToolDefinition } from '../electron/tool-catalog'
+import type { ToolInstallPlan } from '../electron/tool-install'
 
 declare global { interface Window { __smokeEvents?: AppEvent[] } }
 declare global {
@@ -55,6 +56,7 @@ declare global {
       analyzeValidationFailure(output: string): Promise<ValidationFailureAnalysis>
       getToolCatalog(): Promise<ToolDefinition[]>
       getToolAvailability(names?: string[]): Promise<ToolAvailability[]>
+      getToolInstallPlan(names: string[]): Promise<ToolInstallPlan[]>
       detectTool(name: string): Promise<ToolAvailability>
       ensureTool(name: string, projectPath?: string): Promise<ToolAvailability & { installRequired: boolean; installHint: string }>
       runDeveloperTool(request: { tool: string; args?: string[]; reason?: string }): Promise<{ requestId?: string; approvalRequired?: boolean; result?: string; ok?: boolean; blocked?: boolean; blockReason?: string; stderr?: string; stdout?: string; exitCode?: number }>

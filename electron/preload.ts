@@ -5,6 +5,7 @@ import type { SoftwareEntry } from './software-discovery'
 import type { PluginStateEntry } from './plugin-manager'
 import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from './validation-engine'
 import type { ToolAvailability, ToolDefinition } from './tool-catalog'
+import type { ToolInstallPlan } from './tool-install'
 
 type SoftwareCatalogEntry = SoftwareEntry
 type AdapterSummary = {
@@ -78,6 +79,7 @@ const api = {
   analyzeValidationFailure: (output: string) => ipcRenderer.invoke('validation:analyze-failure', output) as Promise<ValidationFailureAnalysis>,
   getToolCatalog: () => ipcRenderer.invoke('tools:catalog') as Promise<ToolDefinition[]>,
   getToolAvailability: (names?: string[]) => ipcRenderer.invoke('tools:availability', names ?? null) as Promise<ToolAvailability[]>,
+  getToolInstallPlan: (names: string[]) => ipcRenderer.invoke('tools:install-plan', names) as Promise<ToolInstallPlan[]>,
   detectTool: (name: string) => ipcRenderer.invoke('tools:detect', name) as Promise<ToolAvailability>,
   ensureTool: (name: string, projectPath?: string) => ipcRenderer.invoke('tools:ensure', name, projectPath ?? '') as Promise<ToolAvailability & { installRequired: boolean; installHint: string }>,
   runDeveloperTool: (request: { tool: string; args?: string[]; reason?: string }) => ipcRenderer.invoke('tools:run', request),
