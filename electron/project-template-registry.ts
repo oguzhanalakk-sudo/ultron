@@ -10,6 +10,7 @@ export type ProjectSpec = {
   installCommand: string
   buildCommand: string
   runCommand: string
+  testCommand?: string
   entryFiles: string[]
   envExample: string
 }
@@ -23,8 +24,9 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     packageManager: 'npm',
     installCommand: 'npm install',
     buildCommand: 'npm run build',
-    runCommand: 'npm run dev -- --host 0.0.0.0',
-    entryFiles: ['package.json', 'vite.config.ts', 'index.html', 'src/main.tsx', 'src/App.tsx', 'src/index.css'],
+    runCommand: 'npm run dev',
+    testCommand: 'npm test',
+    entryFiles: ['package.json', 'vite.config.ts', 'index.html', 'src/main.tsx', 'src/App.tsx', 'src/style.css'],
     envExample: 'VITE_APP_NAME=demo\nVITE_API_URL=http://localhost:3000',
   },
   vite: {
@@ -35,7 +37,7 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     packageManager: 'npm',
     installCommand: 'npm install',
     buildCommand: 'npm run build',
-    runCommand: 'npm run dev -- --host 0.0.0.0',
+    runCommand: 'npm run dev',
     entryFiles: ['package.json', 'index.html', 'src/main.ts', 'src/style.css'],
     envExample: 'APP_NAME=demo\nPORT=5173',
   },
@@ -48,8 +50,9 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     installCommand: 'npm install',
     buildCommand: 'node --check server.js',
     runCommand: 'node server.js',
-    entryFiles: ['package.json', 'server.js'],
-    envExample: 'PORT=3000\nNODE_ENV=development',
+    testCommand: 'npm test',
+    entryFiles: ['package.json', 'server.js', 'src/app.js'],
+    envExample: 'PORT=3000\nHOST=127.0.0.1\nNODE_ENV=development\nALLOWED_ORIGIN=http://localhost:5173\nLOG_LEVEL=info',
   },
   node: {
     stack: 'node',
@@ -60,8 +63,9 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     installCommand: 'npm install',
     buildCommand: 'npm run build',
     runCommand: 'npm start',
-    entryFiles: ['package.json', 'server.js'],
-    envExample: 'NODE_ENV=development',
+    testCommand: 'npm test',
+    entryFiles: ['package.json', 'src/index.js'],
+    envExample: 'NODE_ENV=development\nLOG_LEVEL=info',
   },
   'python-fastapi': {
     stack: 'python-fastapi',
@@ -70,10 +74,11 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     description: 'Python API scaffold powered by FastAPI.',
     packageManager: 'pip',
     installCommand: 'python -m pip install -r requirements.txt',
-    buildCommand: 'python -m py_compile app.py',
-    runCommand: 'uvicorn app:app --host 0.0.0.0 --port 8000 --reload',
-    entryFiles: ['requirements.txt', 'app.py'],
-    envExample: 'APP_NAME=demo\nPORT=8000',
+    buildCommand: 'python -m compileall -q app tests',
+    runCommand: 'uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload',
+    testCommand: 'python -m pytest',
+    entryFiles: ['requirements.txt', 'app/main.py'],
+    envExample: 'APP_NAME=demo\nENVIRONMENT=development\nDEBUG=false\nDATABASE_URL=sqlite:///./app.db\nCORS_ORIGINS=http://localhost:3000\nLOG_LEVEL=INFO\nLOG_JSON=true',
   },
   electron: {
     stack: 'electron',
@@ -95,8 +100,8 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     packageManager: 'npm',
     installCommand: 'npm install',
     buildCommand: 'npm run build',
-    runCommand: 'npm run dev -- --hostname 0.0.0.0',
-    entryFiles: ['package.json', 'app/page.tsx', 'app/layout.tsx', 'next.config.js'],
+    runCommand: 'npm run dev',
+    entryFiles: ['package.json', 'app/page.tsx', 'app/layout.tsx', 'next.config.mjs'],
     envExample: 'NEXT_PUBLIC_APP_NAME=demo',
   },
   fullstack: {
@@ -118,10 +123,11 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     description: 'Go HTTP API project.',
     packageManager: 'none',
     installCommand: 'go mod download',
-    buildCommand: 'go test ./...',
+    buildCommand: 'go build ./...',
     runCommand: 'go run ./cmd/server',
+    testCommand: 'go test ./...',
     entryFiles: ['go.mod', 'cmd/server/main.go'],
-    envExample: 'PORT=8080',
+    envExample: 'HOST=127.0.0.1\nPORT=8080\nLOG_LEVEL=info\nALLOWED_ORIGIN=http://localhost:3000',
   },
   rust: {
     stack: 'rust',
@@ -132,8 +138,9 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     installCommand: 'cargo fetch',
     buildCommand: 'cargo check',
     runCommand: 'cargo run',
+    testCommand: 'cargo test',
     entryFiles: ['Cargo.toml', 'src/main.rs'],
-    envExample: 'PORT=8000',
+    envExample: 'HOST=127.0.0.1\nPORT=8000\nRUST_LOG=info',
   },
 }
 
