@@ -9,7 +9,7 @@ import os from 'node:os'
 import { writeJsonAtomically } from './atomic-json'
 import { defaultPermissions, emptyMemory, emptyUserMemory, emptyUserProfile, type ActivityItem, type AndroidBuildArtifact, type AndroidBuildRecord, type AndroidDevice, type AndroidEnvironment, type AndroidEnvironmentCheck, type AppConfig, type AppEvent, type ApprovalDecision, type ApprovalGrantScope, type BuildRecord, type ChatMessage, type LocalAIStatus, type LocalAiStats, type LocalHardware, type LocalModelActionResult, type LocalModelEntry, type LocalModelInfo, type LocalPullProgress, type LoadedLocalModel, type MemoryEntry, type MemoryKind, type ModelStatus, type PermissionCategory, type PermissionGrant, type PermissionProfile, type ProjectMemory, type Proposal, type ResourceRoot, type TaskPlan, type TaskRecord, type TreeNode, type UserMemory, type UserProfile, type VoiceStatus, type VoiceToolCheck, type WindowsEnvironment, type WindowsToolCheck, type WindowsDesktopArtifact, type WindowsDesktopBuild, type WorkspaceState } from './shared'
 import { classifyCommand, isSafePowerShellQuery } from './permissions'
-import { canAccessExternalUrl, canPerformAutomatically, canRememberCategory, createPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, sanitizePermissionGrants, sanitizeResourceRoots } from './permission-manager'
+import { canAccessExternalUrl, canPerformAutomatically, canRememberCategory, createPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, requiresApprovalForCommand, sanitizePermissionGrants, sanitizeResourceRoots } from './permission-manager'
 import { analyzeSourceSecurity } from './source-security'
 import { normalizeInventoryPorts, parseAuthorizedPrivateCidr, scanPrivateTcpInventory } from './network-inventory'
 import { planTaskRecord, TaskStore, type JournalTask } from './task-store'
@@ -1021,7 +1021,7 @@ async function queueCommand(commandText: string, reason: string, options: { forc
   const workingDirectory = options.workingDirectory ?? currentProject()
   const timeoutMs = options.timeoutMs ?? 15 * 60 * 1000
   const category: PermissionCategory = options.operationCategory ?? (risk === 'development' ? 'development' : risk === 'package' ? 'package' : risk === 'system' ? 'system' : 'destructive')
-  const canAuto = canPerformAutomatically({ profile: workspace.permissions, grants: workspace.permissionGrants, projectPath: currentProject(), taskId, category, risk, forceApproval: options.forceApproval })
+  const canAuto = canPerformAutomatically({ profile: workspace.permissions, grants: workspace.permissionGrants, projectPath: currentProject(), taskId, category, risk, forceApproval: options.forceApproval || requiresApprovalForCommand(command) })
   if (canAuto) {
     const requestId = randomUUID()
     activity('status', 'Komut yetki profiliyle otomatik onaylandı', command, { taskId, tool: 'TerminalTool', operation: category, target: command, approvalOutcome: 'automatic' })

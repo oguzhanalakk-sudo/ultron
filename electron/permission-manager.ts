@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { ApprovalDecision, ApprovalGrantScope, PermissionCategory, PermissionGrant, PermissionProfile, ResourceRoot } from './shared.ts'
 import { canRunAutomatically, type CommandRisk } from './permissions.ts'
 import { validateExternalUrl } from './web-research.ts'
+import { toolRiskLevel, type ToolRisk } from './tool-catalog.ts'
 
 export type PermissionContext = {
   profile: PermissionProfile
@@ -131,6 +132,41 @@ export function canPerformAutomatically(context: PermissionContext): boolean {
   if (context.forceApproval) return false
   if (!context.risk) return false
   return canRunAutomatically(context.profile, context.risk)
+}
+
+export type DeveloperToolPermission = {
+  tool: string
+  projectPath: string
+  taskId?: string
+  requiresApproval: boolean
+  reason: string
+  risk: ToolRisk
+}
+
+export function canExecuteDeveloperTool(profile: PermissionProfile, tool: string, projectPath: string, taskId?: string): { allowed: boolean; reason?: string } {
+  void projectPath
+  void taskId
+  const risk = toolRiskLevel(tool)
+  if (risk === 'critical') return { allowed: false, reason: 'Bu araç kritik riskli; kullanıcı onayı gerekir.' }
+  if (profile.mode === 'controlled' && (risk === 'high' || risk === 'medium')) return { allowed: false, reason: `${risk === 'high' ? 'Yüksek' : 'Orta'} riskli araç için görev onayı gerekli.` }
+  return { allowed: true, reason: profile.allowSystemChanges ? 'Sistem değişikliği profili etkin.' : 'Araç profili kapsamında izin verildi.' }
+}
+
+export function requiresApprovalForCommand(command: string): boolean {
+  const unsafe = [
+    /(^|\s)docker\s+run\b/i, /(^|\s)git\s+(?:push|commit)\b/i,
+    /(^|\s)npm\s+install\b/i, /(^|\s)npm\s+run\s+build\b/i,
+    /(^|\s)python\s+-m\s+pip\s+install\b/i, /(^|\s)chmod\b/i,
+    /(^|\s)rm\b/i, /(^|\s)(?:curl|wget)\b.*\|\s*(?:bash|sh)\b/i,
+  ]
+  return unsafe.some((pattern) => pattern.test(String(command ?? '')))
+}
+
+export function describeRisk(command: string): string {
+  const highRisk = ['git push', 'git commit', 'npm install', 'docker run', 'pip install', 'build', 'pytest', 'eslint', 'tsc']
+  return highRisk.some((entry) => String(command ?? '').toLocaleLowerCase('en-US').includes(entry))
+    ? 'Yüksek risk veya yan etkili işlem'
+    : 'Düşük risk'
 }
 
 export function createPermissionGrant(args: {
