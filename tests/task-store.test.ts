@@ -65,6 +65,22 @@ test('yeniden başlatmada yalnızca yarım kalan görevler sürdürülür ve pro
   assert.equal(await new TaskStore(path.join(project, 'elsewhere')).get(completed.id), null)
 }))
 
+test('öneri niteliğindeki ön analiz planı görevi bloke etmez ve tamamlanmış görevi yeniden açmaz', async () => withProject(async (project) => {
+  const store = new TaskStore(project)
+  const task = await store.create('Sadece değişiklik taslağını incele')
+  await store.update(task.id, {
+    plan: ['Dosyayı oku', 'Taslağı göster', 'Kullanıcı incelemesini bekle'],
+    pendingSteps: ['Dosyayı oku', 'Taslağı göster', 'Kullanıcı incelemesini bekle'],
+    planIsAdvisory: true,
+  })
+
+  const persisted = await new TaskStore(project).get(task.id)
+  assert.equal(persisted?.planIsAdvisory, true)
+  const finished = await store.finish(task.id, 'completed', 'Taslak hazır')
+  assert.equal(finished?.status, 'completed', 'öneri planının adımları görev için zorunlu yürütme adımları değildir')
+  await assert.rejects(store.resume(task.id), /plan adımı bulunan görevler sürdürülebilir/i)
+}))
+
 test('uygulama kapanışında çalışır veya onay bekleyen görev yarım kaldı olarak kaydedilir', async () => withProject(async (project) => {
   const store = new TaskStore(project)
   const running = await store.create('Derlemeyi sürdür')

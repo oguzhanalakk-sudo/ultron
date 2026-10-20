@@ -222,19 +222,27 @@ export function canAccessExternalUrl(
   return { allowed: false, reason: 'Dış ağ erişimi için izin gerekiyor. Kullanıcıdan onay alınmalı.' }
 }
 
-export function canLaunchApplication(profile: PermissionProfile, projectPath: string, taskId?: string): { allowed: boolean; reason?: string } {
+/**
+ * Uygulama başlatma politikası. `allowed: false` sonucu "mutlak red" değildir:
+ * çağıran taraf merkezi onay akışını (askApproval) devreye alır.
+ */
+export function canLaunchApplication(profile: PermissionProfile, projectPath?: string, taskId?: string): { allowed: boolean; reason?: string } {
   void projectPath
   void taskId
-  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Açık erişim profili etkin; yalnız güvenilir uygulama hedefleri başlatılabilir.' }
+  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Geniş erişim modu açık; uygulama başlatma etkin.' }
   if (profile.mode === 'controlled') return { allowed: false, reason: 'Uygulama başlatma için kullanıcı onayı gerekir.' }
   return { allowed: true }
 }
 
-export function canReadOrWriteAnyPath(profile: PermissionProfile, projectPath: string, taskId?: string): { allowed: boolean; reason?: string } {
+/**
+ * Proje dışı herhangi bir yola doğrudan erişim politikası.
+ * `allowed: false` sonucu "mutlak red" değildir: çağıran taraf onay akışına yönlendirir.
+ */
+export function canReadOrWriteAnyPath(profile: PermissionProfile, projectPath?: string, taskId?: string): { allowed: boolean; reason?: string } {
   void projectPath
   void taskId
-  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Açık erişim profili etkin; işletim sistemi izinleri ve hassas dosya filtreleri yine geçerlidir.' }
-  return { allowed: false, reason: 'Dosya erişimi seçili proje ve tanımlı kaynak kapsamlarıyla sınırlı.' }
+  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Geniş erişim modu açık; dosya erişimi etkin.' }
+  return { allowed: false, reason: 'Dosya erişimi kısıtlı; izin gerekir.' }
 }
 
 /**
@@ -257,11 +265,12 @@ export function requestExternalUrlApproval(
 export function canUseDesktopAutomation(
   profile: PermissionProfile,
   category: PermissionCategory,
-  projectPath: string,
+  projectPath?: string,
   taskId?: string,
 ): { allowed: boolean; reason?: string } {
   void projectPath
   void taskId
+  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Geniş erişim modu açık; masaüstü otomasyonu etkin.' }
   if (profile.allowDesktopControl) return { allowed: true }
   if (category === 'system' || category === 'system-script' || category === 'screen-capture' || category === 'input-control' || category === 'app-launch') {
     return { allowed: false, reason: 'Masaüstü kontrolü ve ekran yakalama için açık onay gerekir.' }

@@ -168,38 +168,19 @@ export const APP_NAME_ALIASES: Record<string, string> = {
   'görev yöneticisi': 'taskmgr.exe', 'task manager': 'taskmgr.exe',
   'ekran görüntüsü aracı': 'snippingtool.exe', snippingtool: 'snippingtool.exe',
   kate: 'notepad.exe', 'metin editörü': 'notepad.exe',
+  // Tarayıcılar: web sayfası açma istekleri masaüstü kontrolü kapalıyken de karşılanabilsin.
+  'microsoft edge': 'msedge.exe', 'ms edge': 'msedge.exe', edge: 'msedge.exe',
+  'google chrome': 'chrome.exe', chrome: 'chrome.exe',
+  firefox: 'firefox.exe', 'mozilla firefox': 'firefox.exe',
+  brave: 'brave.exe', 'brave browser': 'brave.exe',
+  opera: 'opera.exe', 'opera gx': 'opera.exe',
+  vivaldi: 'vivaldi.exe',
 }
 
-/** Tam masaüstü otomasyonu kapalıyken de açık kullanıcı isteğiyle başlatılabilen uygulamalar.
- *  Sabit bir 7 uygulamalık liste, kullanıcının bilgisayarındaki gerçek uygulamaları
- *  açamıyordu; liste artık sistemdeki tüm uygulamalara çözülür. */
-const TRUSTED_APPLICATION_TARGETS = new Set([
-  'calc.exe', 'notepad.exe', 'explorer.exe', 'mspaint.exe',
-  'control.exe', 'taskmgr.exe', 'snippingtool.exe',
-  'cmd.exe', 'powershell.exe', 'pwsh.exe', 'msedge.exe', 'chrome.exe',
-  'firefox.exe', 'brave.exe', 'word.exe', 'excel.exe', 'powerpnt.exe',
-  'outlook.exe', 'code.exe', 'devenv.exe', 'spotify.exe', 'discord.exe',
-  'slack.exe', 'teams.exe', 'zoom.exe', 'whatsapp.exe', 'telegram.exe',
-  'vlc.exe', 'photos.exe', 'stickynotes.exe', 'winstore.exe', 'calcapp.exe',
-  'wordpad.exe', 'write.exe', 'msteams.exe', 'onedrive.exe', 'dropbox.exe',
-])
-
-/** Bir uygulama adı güvenli başlatma listesinde mi? (Sistemde kurulu her uygulama kabul edilir.) */
-export function isTrustedApplicationTarget(target: string): boolean {
-  const name = String(target ?? '').trim().toLocaleLowerCase('en-US')
-  if (!name) return false
-  if (TRUSTED_APPLICATION_TARGETS.has(name)) return true
-  // Kurulu uygulama adları: PATH'te ya da sistem klasöründe bulunan çalıştırılabilir dosyalar.
-  if (!/\.(?:exe|lnk|msi|bat|cmd)$/i.test(name)) return false
-  const systemRoots = [
-    process.env.SystemRoot ? path.join(process.env.SystemRoot, 'System32') : 'C:/Windows/System32',
-    process.env.SystemRoot ? path.join(process.env.SystemRoot, 'SysWOW64') : 'C:/Windows/SysWOW64',
-  ]
-  for (const root of systemRoots) {
-    if (name === path.join(root, name).toLocaleLowerCase('en-US')) return true
-  }
-  return name.includes('\\') || name.includes('/')
-}
+/** Tam masaüstü otomasyonu kapalıyken de açık kullanıcı isteğiyle başlatılabilen
+ *  uygulamaların listesi `electron/app-launcher.ts` içinde tanımlıdır
+ *  (ALLOWED_APPLICATIONS). Buradaki çözümleme yalnız adı çalıştırılabilir
+ *  dosyaya çevirir; izin kararı o modülün sorumluluğundadır. */
 
 /** Uygulama hedefini çalıştırılabilir dosya adına çevirir (yol yoksa PATH'e bakılır). */
 export function resolveAppTarget(input: unknown): string {
@@ -263,7 +244,13 @@ export function buildDesktopPayload(request: DesktopActionRequest): Record<strin
       if (!target) throw new Error('Uygulama yolu veya klasör yolu belirtilmedi.')
       if (target.length > 600) throw new Error('Hedef yol çok uzun.')
       if (/[&|<>^%`"'\r\n]/.test(target)) throw new Error('Hedef yolda güvenilmeyen karakter var.')
-      if (request.action === 'launch_app') return { target: resolveAppTarget(target) }
+      if (request.action === 'launch_app') {
+        // allow_raw_path: yalnız masaüstü kontrolü açıkken ham yol çalıştırılabilir.
+        // expect_titles: mağaza uygulamaları (Hesap Makinesi, Not Defteri) pencereyi
+        // ayrı süreçte açar; pencere doğrulaması bu başlık ipuçlarıyla yapılır.
+        const expectTitles = String(payload.expect_titles ?? '').split('|').map((part) => part.trim()).filter(Boolean).slice(0, 4).join('|')
+        return { target: resolveAppTarget(target), allow_raw_path: payload.allow_raw_path === true, expect_titles: expectTitles }
+      }
       return { target }
     }
     case 'process_list':
@@ -1091,15 +1078,28 @@ public class UltronDesktopNative {
       $target = $resolvedApp.path
       $before = @(Get-VisibleWindows | ForEach-Object { $_.handle })
       $process = Start-Process -FilePath $target -PassThru -ErrorAction Stop
+      $expectTitles = @(([string]$data.expect_titles).Split('|') | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
       $deadline = (Get-Date).AddSeconds(25)
       $found = $null
       while ((Get-Date) -lt $deadline) {
         Start-Sleep -Milliseconds 400
-        # Mağaza uygulamaları (örn. Not Defteri) pencereyi ayrı bir süreçte açar;
-        # bu yüzden önce süreç adı, sonra yeni pencere eşleşmesi denenir.
-        $candidates = @(Get-VisibleWindows | Where-Object { $_.pid -eq $process.Id -or $_.process -eq $process.ProcessName })
+        # Mağaza uygulamaları (örn. Not Defteri, Hesap Makinesi) pencereyi ayrı bir
+        # süreçte açar; bu yüzden önce süreç adı, sonra yeni pencere eşleşmesi denenir.
+        $windows = @(Get-VisibleWindows)
+        $candidates = @($windows | Where-Object { $_.pid -eq $process.Id -or $_.process -eq $process.ProcessName })
         if ($candidates.Count -eq 0) {
-          $candidates = @(Get-VisibleWindows | Where-Object { $before -notcontains $_.handle })
+          $candidates = @($windows | Where-Object { $before -notcontains $_.handle })
+        }
+        if ($candidates.Count -eq 0 -and $expectTitles.Count -gt 0) {
+          # Pencere başlığıyla eşleştirme: uygulama zaten açıksa yeni pencere oluşmaz.
+          $candidates = @($windows | Where-Object {
+            $title = [string]$_.title
+            $matched = $false
+            foreach ($hint in $expectTitles) {
+              if ($title.IndexOf($hint, [StringComparison]::OrdinalIgnoreCase) -ge 0) { $matched = $true; break }
+            }
+            $matched
+          })
         }
         if ($candidates.Count -gt 0) { $found = $candidates[0]; break }
       }

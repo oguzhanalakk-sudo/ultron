@@ -82,9 +82,29 @@ test('bağlam budama araç çağrısı ile sonuç kimlik eşleşmesini korur', (
   ]
   const compacted = compactAgentContext(messages, 300)
   assert.equal(compacted[0], messages[0])
+  assert.ok(compacted.includes(messages[1]), 'En yeni kullanıcı mesajı aşırı küçük bütçede bile korunmalı')
   assert.ok(compacted.some((item) => item.tool_calls === toolCall.tool_calls))
-  assert.ok(compacted.some((item) => item.role === 'tool' && item.tool_call_id === 't1'))
-  assert.ok(compacted.reduce((total, item) => total + JSON.stringify(item).length, 0) <= 350)
+  const toolResult = compacted.find((item) => item.role === 'tool' && item.tool_call_id === 't1')
+  assert.ok(toolResult, 'araç çağrısı sonucu korunmalı')
+  assert.ok(String(toolResult.content).length < 'result'.repeat(100).length, 'eski araç çıktısı bütçeye göre kısaltılmalı')
+})
+
+test('bağlam bütçesi aşılırsa en yeni kullanıcı görevi ve etkin araç turu korunur', () => {
+  const toolCall = { role: 'assistant', content: '', tool_calls: [{ id: 't2', type: 'function', function: { name: 'read_file', arguments: '{}' } }] }
+  const latestRequest = { role: 'user', content: 'verification-recover: dosyayı düzelt ve testi tekrar çalıştır' }
+  const messages = [
+    { role: 'system', content: 'system'.repeat(500) },
+    { role: 'user', content: 'çok eski konuşma'.repeat(100) },
+    latestRequest,
+    toolCall,
+    { role: 'tool', tool_call_id: 't2', name: 'read_file', content: 'dosya içeriği' },
+  ]
+
+  const compacted = compactAgentContext(messages, 250)
+  assert.ok(compacted.includes(latestRequest), 'çok büyük sistem istemi son kullanıcı görevini silememeli')
+  assert.ok(compacted.includes(toolCall), 'etkin araç çağrısı korunmalı')
+  assert.ok(compacted.some((item) => item.role === 'tool' && item.tool_call_id === 't2'), 'etkin araç sonucu korunmalı')
+  assert.ok(!compacted.some((item) => item.content?.includes('çok eski konuşma')), 'eski sohbet bağlamı önce atılmalı')
 })
 
 test('bağlam bütçesi araç şeması ve çıktı payını gerçek pencereye göre düşürür', () => {

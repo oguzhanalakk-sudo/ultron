@@ -165,6 +165,7 @@ export function compactAgentContext(messages: Record<string, unknown>[], maxChar
   const system = messages[0]
   const conversationEnd = firstKeptToolCall >= 0 ? toolCallIndices[0] : messages.length
   const priorConversation = messages.slice(1, conversationEnd).filter((message) => ['user', 'assistant'].includes(String(message.role)) && !Array.isArray(message.tool_calls)).slice(-4)
+  const latestUserMessage = [...priorConversation].reverse().find((message) => message.role === 'user')
   const activeToolTurn = firstKeptToolCall >= 0 ? messages.slice(firstKeptToolCall) : []
   for (const callIndex of toolCallIndices.filter((index) => index < latestToolCall && index >= firstKeptToolCall)) {
     const end = toolCallIndices.find((index) => index > callIndex) ?? latestToolCall
@@ -178,8 +179,10 @@ export function compactAgentContext(messages: Record<string, unknown>[], maxChar
   }
   const assemble = () => [system, ...priorConversation, ...activeToolTurn].filter((message): message is Record<string, unknown> => Boolean(message))
   let compacted = assemble()
-  while (priorConversation.length && compacted.reduce((total, message) => total + size(message), 0) > maxCharacters) {
-    priorConversation.shift()
+  while (priorConversation.some((message) => message !== latestUserMessage) && compacted.reduce((total, message) => total + size(message), 0) > maxCharacters) {
+    const removableIndex = priorConversation.findIndex((message) => message !== latestUserMessage)
+    if (removableIndex < 0) break
+    priorConversation.splice(removableIndex, 1)
     compacted = assemble()
   }
   if (compacted.reduce((total, message) => total + size(message), 0) > maxCharacters) {

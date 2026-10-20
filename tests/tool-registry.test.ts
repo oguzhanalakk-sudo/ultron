@@ -126,6 +126,12 @@ test('masaüstü kontrolü kapalıyken masaüstü araçları modele hiç göster
     selectToolsForTask(tools, request, { desktopEnabled: false }).map((tool) => tool.function.name),
     ['read_file'],
   )
+  // Masaüstü kontrolü açıkken anahtar kelime şartı yoktur: opt-in tek başına yeterlidir.
+  assert.deepEqual(
+    selectToolsForTask(tools, 'Bugün hava nasıl, sadece bilgi ver', { desktopEnabled: true }).map((tool) => tool.function.name).sort(),
+    ['desktop_launch_app', 'desktop_mouse_click', 'desktop_state', 'read_file'],
+    'Masaüstü kontrolü açıkken masaüstü araçları her istekte görünür olmalı',
+  )
 })
 
 test('görev yetenekleri araç görünürlüğünü merkezi kayıttan belirler', () => {

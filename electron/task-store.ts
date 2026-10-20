@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type { AgentErrorAnalysis, AgentStage, VerificationFailure, VerificationReceipt } from './shared'
+import { normalizeAgentDecision, type DecisionState, type ExecutionEvidence, type PlanStep } from './ai-core.ts'
 import { writeJsonAtomically } from './atomic-json.ts'
 import { acceptanceCommandKey, isChangeVerification, isVerificationTool } from './agent-verification.ts'
 
@@ -18,6 +19,8 @@ export type JournalTask = {
   completedSteps: string[]
   acceptanceTests?: string[]
   completedStepIds?: string[]
+  /** Locally suggested steps are informational until the model commits a real task plan. */
+  planIsAdvisory?: boolean
   pendingSteps: string[]
   usedTools: string[]
   events: JournalEvent[]
@@ -31,6 +34,7 @@ export type JournalTask = {
   verificationFailures?: VerificationFailure[]
   verificationResults?: VerificationReceipt[]
   verificationRequired?: boolean
+  aiDecision?: DecisionState
   createdAt: string
   updatedAt: string
 }
@@ -54,6 +58,29 @@ function cleanList(value: unknown, limit: number, maxLength: number): string[] {
 
 const cleanAcceptanceTests = (value: unknown) => cleanList(value, 30, 1_000)
 const cleanCompletedStepIds = (value: unknown) => [...new Set(cleanList(value, 40, 120).map((item) => item.trim()))]
+function cleanDecision(value: unknown): DecisionState | undefined {
+  const decision = normalizeAgentDecision(value)
+  if (!decision) return undefined
+  return {
+    ...decision,
+    intent: {
+      ...decision.intent,
+      primaryGoal: clean(decision.intent.primaryGoal, 600),
+      constraints: decision.intent.constraints.map((item) => clean(item, 300)),
+      desiredOutcomes: decision.intent.desiredOutcomes.map((item) => clean(item, 300)),
+      unknowns: decision.intent.unknowns.map((item) => clean(item, 300)),
+      risks: decision.intent.risks.map((item) => clean(item, 300)),
+    },
+    plan: decision.plan.map((step: PlanStep) => ({
+      ...step, id: clean(step.id, 80), title: clean(step.title, 300), objective: clean(step.objective, 600),
+      tools: step.tools.map((item) => clean(item, 100)), dependsOn: step.dependsOn.map((item) => clean(item, 80)),
+      validation: step.validation.map((item) => clean(item, 300)),
+    })),
+    evidence: decision.evidence.map((item: ExecutionEvidence) => ({ source: clean(item.source, 120), ok: item.ok, detail: clean(item.detail, 1_000) })),
+    uncertainty: decision.uncertainty.map((item) => clean(item, 300)),
+    nextAction: clean(decision.nextAction, 500),
+  }
+}
 const cleanSummary = (value: unknown, fallback = '') => {
   const summary = typeof value === 'string' ? value.trim() : ''
   return summary ? clean(summary, 600).slice(0, 600) : fallback
@@ -114,6 +141,7 @@ export class TaskStore {
         completedSteps: Array.isArray(task.completedSteps) ? task.completedSteps.slice(0, 40).map((item) => clean(item, 300)) : [],
         acceptanceTests: cleanAcceptanceTests(task.acceptanceTests),
         completedStepIds: cleanCompletedStepIds(task.completedStepIds),
+        planIsAdvisory: task.planIsAdvisory === true,
         pendingSteps: Array.isArray(task.pendingSteps) ? task.pendingSteps.slice(0, 40).map((item) => clean(item, 300)) : [],
         usedTools: Array.isArray(task.usedTools) ? task.usedTools.slice(-80).map((item) => clean(item, 100)) : [],
         events: Array.isArray(task.events) ? task.events.slice(-MAX_EVENTS).filter((event) => event && typeof event.name === 'string' && ['tool', 'approval', 'result', 'error'].includes(event.type))
@@ -122,6 +150,7 @@ export class TaskStore {
         verificationFailures: cleanFailures(task.verificationFailures),
         verificationResults: cleanReceipts(task.verificationResults),
         verificationRequired: task.verificationRequired === true,
+        aiDecision: cleanDecision(task.aiDecision),
         stage: (['analyzing', 'planning', 'awaiting_approval', 'executing', 'evaluating', 'correcting', 'testing', 'finalizing', 'paused', 'interrupted', 'blocked', 'completed', 'failed', 'cancelled'] as const).includes(String(task.stage) as any)
           ? String(task.stage) as any
           : 'analyzing',
@@ -158,7 +187,7 @@ export class TaskStore {
     return this.serialize(async () => {
       const task = (await this.list()).find((entry) => entry.id === id)
       if (!task) throw new Error('Sürdürülecek görev bulunamadı veya başka bir projeye ait.')
-      const hasPendingWork = task.pendingSteps.length > 0 || (task.plan.length > 0 && task.status !== 'completed')
+      const hasPendingWork = (!task.planIsAdvisory && task.pendingSteps.length > 0) || (!task.planIsAdvisory && task.plan.length > 0 && task.status !== 'completed')
       if (!['interrupted', 'paused', 'blocked', 'needs_review', 'failed', 'cancelled'].includes(task.status) && !hasPendingWork) throw new Error('Yalnızca yarım kalmış veya plan adımı bulunan görevler sürdürülebilir; doğrulama bekleyen, blokeli ya da başarısız görevler de sürdürülebilir.')
       return this.updateUnsafe(id, { status: 'running', stage: 'analyzing', currentTool: '', errors: [], events: [...task.events, { at: new Date().toISOString(), type: 'result', name: 'task-resumed', detail: 'Görev sürdürüldü.' }] })
     })
@@ -181,6 +210,7 @@ export class TaskStore {
       completedSteps: (patch.completedSteps ?? current.completedSteps).slice(0, 40).map((item) => clean(item, 300)),
       acceptanceTests: cleanAcceptanceTests(patch.acceptanceTests ?? current.acceptanceTests),
       completedStepIds: cleanCompletedStepIds(patch.completedStepIds ?? current.completedStepIds),
+      planIsAdvisory: (patch.planIsAdvisory ?? current.planIsAdvisory) === true,
       pendingSteps: (patch.pendingSteps ?? current.pendingSteps).slice(0, 40).map((item) => clean(item, 300)),
       usedTools: [...new Set((patch.usedTools ?? current.usedTools).slice(-80).map((item) => clean(item, 100)))],
       events: (patch.events ?? current.events).slice(-MAX_EVENTS).map((event) => ({ ...event, at: clean(event.at, 40), type: event.type, name: clean(event.name, 120), status: event.status ? clean(event.status, 80) : undefined, detail: event.detail ? clean(event.detail, 1_000) : undefined })),
@@ -194,6 +224,7 @@ export class TaskStore {
       verificationFailures: cleanFailures(patch.verificationFailures ?? current.verificationFailures),
       verificationResults: cleanReceipts(patch.verificationResults ?? current.verificationResults),
       verificationRequired: (patch.verificationRequired ?? current.verificationRequired) === true,
+      aiDecision: Object.hasOwn(patch, 'aiDecision') ? cleanDecision(patch.aiDecision) : cleanDecision(current.aiDecision),
     }
     await this.upsert(next, tasks)
     return next
@@ -222,9 +253,10 @@ export class TaskStore {
         if (failed.length || task.errorAnalysis) {
           status = 'failed'
           detail = failed.length ? `${failed.length} doğrulama hatası çözülmeden görev tamamlanamaz.` : 'Açık araç veya yürütme hatası çözülmeden görev tamamlanamaz.'
-        } else if (stale.length || task.pendingSteps.length || missingAcceptanceTests.length || missingChangeVerification) {
+        } else if (stale.length || (!task.planIsAdvisory && task.pendingSteps.length) || missingAcceptanceTests.length || missingChangeVerification) {
           status = 'needs_review'
-          detail = `${task.pendingSteps.length} açık plan adımı, ${stale.length} eski doğrulama ve ${missingAcceptanceTests.length} çalıştırılmamış kabul kontrolü nedeniyle görev doğrulama bekliyor.`
+          const pendingPlanSteps = task.planIsAdvisory ? 0 : task.pendingSteps.length
+          detail = `${pendingPlanSteps} açık plan adımı, ${stale.length} eski doğrulama ve ${missingAcceptanceTests.length} çalıştırılmamış kabul kontrolü nedeniyle görev doğrulama bekliyor.`
         }
       }
       return this.updateUnsafe(id, {

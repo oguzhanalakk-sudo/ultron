@@ -69,6 +69,10 @@ export function selectToolsForTask<T extends AgentToolLike>(tools: T[], request:
   capabilities.add('research')
   // Masaüstü kontrolü kullanıcı tarafından açılmadıysa o araçlar modele hiç gösterilmez.
   if (options.desktopEnabled === false) capabilities.delete('desktop')
+  // Kullanıcı masaüstü kontrolünü açtıysa bu, tek başına yeterli onaydır: masaüstü
+  // araçları istek anahtar kelimesine bağlı olarak gizlenmez. (Web araçlarıyla aynı
+  // sorunu yaşamamak için: "erişim yok" diyen bir ajan, aracı hiç görmemiştir.)
+  if (options.desktopEnabled === true) capabilities.add('desktop')
   return tools.filter((tool) => {
     for (const [capability, names] of Object.entries(toolsByCapability) as Array<[ToolCapability, readonly string[]]>) {
       if (names.includes(tool.function.name) && !capabilities.has(capability)) return false

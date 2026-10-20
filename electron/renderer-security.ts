@@ -17,7 +17,13 @@ export function isTrustedRendererUrl(candidate: string, expected: string): boole
 }
 
 export function isAllowedExternalUrl(value: string): boolean {
-  try { return ['http:', 'https:', 'mailto:'].includes(new URL(value).protocol) }
+  try {
+    if (!value || value.length > 2_048 || value.trim() !== value || /[\u0000-\u001f\u007f]/.test(value)) return false
+    const url = new URL(value)
+    if (url.username || url.password) return false
+    if (url.protocol === 'http:' || url.protocol === 'https:') return Boolean(url.hostname)
+    return url.protocol === 'mailto:'
+  }
   catch { return false }
 }
 

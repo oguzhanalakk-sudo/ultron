@@ -12,10 +12,12 @@ import {
   Globe2, Database, Cpu, Gauge, Box, Download, Puzzle, ChevronsRight,
 } from 'lucide-react'
 import type { ActivityItem, AndroidDevice, AndroidEnvironment, AppConfig, AppEvent, ApprovalDecision, ApprovalGrantScope, ApprovalRequest, BuildRecord, LocalAIStatus, LocalPullProgress, MemoryKind, ModelStatus, PermissionCategory, PermissionGrant, PermissionProfile, ProjectInfo, ProjectMemory, Proposal, ResourceRoot, TaskPlan, TaskRecord, TreeNode, UserMemory, VoiceStatus, WorkspaceState, WebProjectAnalysis, WindowsEnvironment } from '../electron/shared'
+import { broadAccessPermissions } from '../electron/shared'
 import type { AndroidProjectAnalysis } from '../electron/android-build-tool'
 import type { WindowsProjectAnalysis } from '../electron/windows-build-tool'
 import DesktopAutomationPanel from './DesktopAutomationPanel'
 import DeveloperToolsPanel from './DeveloperToolsPanel'
+import { openUrlInBrowser } from './open-url'
 
 type Message = { id: string; role: 'user' | 'assistant'; content: string }
 type SideTab = 'changes' | 'activity' | 'android' | 'web' | 'research' | 'windows' | 'localai' | 'memory' | 'files' | 'software' | 'plugins' | 'desktop' | 'tools'
@@ -93,9 +95,12 @@ function DiffPreview({ proposal }: { proposal: Proposal }) {
   </div>
 }
 
-function Markdown({ children }: { children: string }) {
+function Markdown({ children, onOpenUrlError }: { children: string; onOpenUrlError?: () => void }) {
   return <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-    a: ({ children: label, ...props }) => <a {...props} target="_blank" rel="noreferrer">{label}</a>,
+    a: ({ children: label, href, ...props }) => <a {...props} href={href} target="_blank" rel="noreferrer" onClick={(event) => {
+      event.preventDefault()
+      if (href) void openUrlInBrowser(href).then((opened) => { if (!opened) onOpenUrlError?.() })
+    }}>{label}</a>,
     code: ({ className, children: value, ...props }) => className ? <code className={className} {...props}>{value}</code> : <code className="inline-code" {...props}>{value}</code>,
   }}>{children}</ReactMarkdown>
 }
@@ -811,7 +816,7 @@ function App() {
         </div>
         <div className="conversation-scroll" ref={scrollRef}>
           {!messages.length ? noProjectContent : <div className="conversation">
-            {messages.map((message) => <article className={`message ${message.role}`} key={message.id}><div className="message-avatar">{message.role === 'assistant' ? <div className="assistant-mark"><Sparkles size={14} /></div> : <div className="user-avatar">{settings.profileName.trim().charAt(0).toLocaleUpperCase('tr-TR') || 'S'}</div>}</div><div className="message-body"><div className="message-topline"><strong>{message.role === 'assistant' ? 'Ultron' : 'Sen'}</strong>{message.role === 'assistant' && <span className="message-model"><Bot size={11} /> {status?.selectedModel ?? 'Yerel model'}</span>}{message.role === 'assistant' && message.content && <span className="message-time">{timeNow()}</span>}</div>{message.content ? <div className="markdown-body"><Markdown>{message.content}</Markdown></div> : busy && message.role === 'assistant' ? <div className="thinking"><span /><span /><span /><em>{phase}</em></div> : null}</div></article>)}
+            {messages.map((message) => <article className={`message ${message.role}`} key={message.id}><div className="message-avatar">{message.role === 'assistant' ? <div className="assistant-mark"><Sparkles size={14} /></div> : <div className="user-avatar">{settings.profileName.trim().charAt(0).toLocaleUpperCase('tr-TR') || 'S'}</div>}</div><div className="message-body"><div className="message-topline"><strong>{message.role === 'assistant' ? 'Ultron' : 'Sen'}</strong>{message.role === 'assistant' && <span className="message-model"><Bot size={11} /> {status?.selectedModel ?? 'Yerel model'}</span>}{message.role === 'assistant' && message.content && <span className="message-time">{timeNow()}</span>}</div>{message.content ? <div className="markdown-body"><Markdown onOpenUrlError={() => setToast('Bağlantı varsayılan tarayıcıda açılamadı.')}>{message.content}</Markdown></div> : busy && message.role === 'assistant' ? <div className="thinking"><span /><span /><span /><em>{phase}</em></div> : null}</div></article>)}
             {busy && <div className="agent-progress"><LoaderCircle size={13} className="spin" /><span>{phase}</span><div className="progress-track"><i /></div></div>}
           </div>}
         </div>
@@ -940,9 +945,29 @@ function WorkspaceModal({ workspace, projectPath, onClose, onSaved }: { workspac
     else if (mode === 'advanced') setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: permissions.allowDesktopControl, allowBroadAccess: false, broadAccessConfirmedAt: null })
     else setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: true, allowSystemChanges: true, allowDesktopControl: permissions.allowDesktopControl, allowBroadAccess: false, broadAccessConfirmedAt: null })
   }
-  function toggleUnrestrictedAccess(enabled: boolean) {
-    if (enabled && !window.confirm('Açık erişim modu proje dışı kapsamları değerlendirmeye izin verir. Tehlikeli işlemler yine onay ister. Etkinleştirilsin mi?')) return
-    setPermissions({ ...permissions, allowBroadAccess: enabled, broadAccessConfirmedAt: enabled ? new Date().toISOString() : null })
+  async function toggleUnrestrictedAccess(enabled: boolean) {
+    const previousPermissions = permissions
+    let nextPermissions: PermissionProfile
+    if (enabled) {
+      if (!window.confirm('Açık erişim modu proje dışı kapsamları değerlendirmeye izin verir. Tehlikeli işlemler yine onay ister. Etkinleştirilsin mi?')) return
+      // İzin profilini ana süreçteki kalıcı workspace kaydına yaz.
+      nextPermissions = { ...broadAccessPermissions, broadAccessConfirmedAt: new Date().toISOString() }
+    } else {
+      nextPermissions = { ...permissions, allowBroadAccess: false, broadAccessConfirmedAt: null }
+    }
+
+    setPermissions(nextPermissions)
+    setSaving(true)
+    setError('')
+    try {
+      const saved = await window.kodAtolyesi.saveWorkspace({ permissions: nextPermissions })
+      setPermissions(saved.permissions)
+    } catch (exception) {
+      setPermissions(previousPermissions)
+      setError((exception as Error).message || 'İzin profili kaydedilemedi.')
+    } finally {
+      setSaving(false)
+    }
   }
   function changeGrantScope(id: string, scope: PermissionGrant['scope']) {
     setPermissionGrants((items) => items.map((grant) => grant.id !== id ? grant : {
@@ -981,7 +1006,7 @@ function WorkspaceModal({ workspace, projectPath, onClose, onSaved }: { workspac
         <label className="permission-check"><input type="checkbox" checked={permissions.allowPackageInstalls} onChange={(event) => setPermissions({ ...permissions, allowPackageInstalls: event.target.checked })} /><span><b>Paket kurulumlarını otomatik çalıştır</b><small>npm/pip/Gradle bağımlılık indirmeleri</small></span></label>
         <label className="permission-check"><input type="checkbox" checked={permissions.allowSystemChanges} onChange={(event) => setPermissions({ ...permissions, allowSystemChanges: event.target.checked })} /><span><b>Sistem araçlarını otomatik çalıştır</b><small>Yönetici yetkisi kendiliğinden yükseltilmez</small></span></label>
         <label className="permission-check"><input type="checkbox" checked={permissions.allowDesktopControl} onChange={(event) => setPermissions({ ...permissions, allowDesktopControl: event.target.checked })} /><span><b>Masaüstü kontrolünü etkinleştir</b><small>Ajanın fare, klavye ve ekranı kullanmasına izin ver (kapalıyken bu araçlar ajana hiç gösterilmez)</small></span></label>
-        <label className="permission-check"><input type="checkbox" checked={permissions.allowBroadAccess} onChange={(event) => toggleUnrestrictedAccess(event.target.checked)} /><span><b>Geniş erişim modunu etkinleştir</b><small>İnternet, uygulama, masaüstü ve dosya kapsamı genişletilebilir; riskli işlemler yine onay ister.</small>{permissions.allowBroadAccess && <em className="permission-active-label">Geniş erişim etkin · onay: {permissions.broadAccessConfirmedAt ? new Date(permissions.broadAccessConfirmedAt).toLocaleString('tr-TR') : 'mevcut profil'}</em>}</span></label>
+        <label className="permission-check"><input type="checkbox" checked={permissions.allowBroadAccess} disabled={saving} onChange={(event) => void toggleUnrestrictedAccess(event.target.checked)} /><span><b>Geniş erişim modunu etkinleştir</b><small>İnternet, uygulama, masaüstü ve dosya kapsamı genişletilebilir; riskli işlemler yine onay ister.</small>{permissions.allowBroadAccess && <em className="permission-active-label">Geniş erişim etkin · onay: {permissions.broadAccessConfirmedAt ? new Date(permissions.broadAccessConfirmedAt).toLocaleString('tr-TR') : 'mevcut profil'}</em>}</span></label>
         <p className="workspace-security-note"><ShieldCheck size={13} /> Tam erişim profilinde işlemler onay kartı olmadan Windows hesabının mevcut erişimleriyle çalışır. Dosya geri alma yedekleri ve işlem günlüğü kullanılmaya devam eder.</p>
       </section>
       <section className="workspace-section"><h3><ShieldCheck size={14} /> Kaydedilmiş izinler</h3><p className="profile-description">Görev ve proje izinleri bu projede, kategori izinleri tüm projelerde saklanır. Tam erişim profilinde bu izin kayıtlarına gerek kalmadan işlemler otomatik çalışır.</p>

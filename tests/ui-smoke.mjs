@@ -68,7 +68,10 @@ const mockModelServer = createServer((request, response) => {
           ['apply_patch', { path: editPath, old_text: 'process.exitCode = 1', new_text: 'process.exitCode = 0', description: 'Testten sonra kaynağı değiştir' }],
           ['update_task_step', { step: 1, status: 'done' }],
         ]
-        const step = steps[completed]
+        // Context sıkıştırması eski çağrıları düşürebilir; görevin ilerleme
+        // araç sonucu, sabit mesaj sayacından daha güvenilir tamamlanma sinyalidir.
+        const planStepUpdated = recent.some((message) => message.role === 'tool' && message.tool_name === 'update_task_step')
+        const step = planStepUpdated ? null : steps[completed]
         send(step ? [toolEvent(step[0], step[1])] : contentEvents('Tüm testler geçti, görev tamamlandı.'))
         return
       }
@@ -672,7 +675,7 @@ try {
     await page.waitForFunction(() => document.querySelector('.ready-chip')?.textContent?.includes('Başarısız'), null, { timeout: 5_000 })
     await page.evaluate(({ id, request }) => window.kodAtolyesi.resumeTask(id, [{ role: 'user', content: request }]), { id: failedTask.id, request: `verification-recover ${smokeRunId}: Test hatasını düzelt ve aynı kontrolü yeniden çalıştır.` })
     const recoveredTask = await page.evaluate((id) => window.kodAtolyesi.getTasks().then((tasks) => tasks.find((task) => task.id === id)), failedTask.id)
-    assert.equal(recoveredTask.status, 'completed', 'Ajan gerçek dosya düzeltmesi ve aynı başarılı kontrol sonrası görevi tamamlayabilmeli')
+    assert.equal(recoveredTask.status, 'completed', `Ajan gerçek dosya düzeltmesi ve aynı başarılı kontrol sonrası görevi tamamlayabilmeli: ${JSON.stringify(recoveredTask)}`)
     assert.equal(recoveredTask.verificationFailures.length, 0)
     assert.ok(recoveredTask.events.some((event) => event.name === 'task-resumed'))
     assert.match(await fs.readFile(path.join(project, 'verification-fail.cjs'), 'utf8'), /process.exitCode = 0/)
@@ -692,11 +695,13 @@ try {
     assert.equal(missingTask.status, 'needs_review', `Modelin done beyanı çalıştırılmamış kabul testinin yerini tutamaz: ${JSON.stringify(missingTask)}`)
     assert.deepEqual(missingTask.acceptanceTests, ['node verification-ok.cjs'])
     assert.equal(missingTask.pendingSteps.length, 0)
-    assert.match((await page.evaluate(() => window.kodAtolyesi.getWorkspace())).messages.at(-1).content, /1 kabul komutu/)
+    const missingTaskResult = await page.evaluate(() => window.__smokeEvents.filter((event) => event.type === 'done').at(-1))
+    assert.equal(missingTaskResult?.status, 'needs_review', 'Eksik kabul testi kullanıcıya doğrulama bekliyor olarak bildirilmelidir')
+    assert.match(missingTaskResult?.message ?? '', /1 kabul komutu/, 'Sonuç mesajı çalıştırılmamış kabul komutunu açıklamalı')
     const staleRequest = `freshness-stale ${smokeRunId}: Testleri çalıştır, kaynak sürümünü kontrol et.`
     await page.evaluate((request) => window.kodAtolyesi.sendMessage([{ role: 'user', content: request }]), staleRequest)
     const staleTask = await page.evaluate((request) => window.kodAtolyesi.getTasks().then((tasks) => tasks.find((task) => task.request === request)), staleRequest)
-    assert.equal(staleTask.status, 'needs_review', 'Başarılı testten sonra değişen kaynak eski kanıtla tamamlanamaz')
+    assert.equal(staleTask.status, 'needs_review', `Başarılı testten sonra değişen kaynak eski kanıtla tamamlanamaz: ${JSON.stringify(staleTask)}`)
     assert.equal(staleTask.verificationRequired, true)
     assert.equal(staleTask.verificationResults.length, 0)
     assert.equal(staleTask.verificationFailures[0].status, 'stale')

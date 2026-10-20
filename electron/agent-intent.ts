@@ -10,6 +10,34 @@ export function requiresFileOperation(request: string) {
   return fileOperationIntent.test(affirmativeRequest) || additionalFileOperationIntent.test(affirmativeRequest) || requestedNewApplication.test(affirmativeRequest)
 }
 
+// Terminal/otomatik komut çalıştırma niyeti. Modelin "komutu çalıştırdım" demesinin
+// gerçek bir araç çağrısıyla desteklenmesini sağlar (dosyaya yazmak ≠ komut çalıştırmak).
+const commandNouns = '(?:komut\\w*|command\\w*|script\\w*|betik\\w*|powershell|cmd|terminal\\w*|konsol\\w*|shell|bash)'
+const commandVerbs = '(?:çalıştır(?!ma\\b)\\w*|calistir(?!ma\\b)\\w*|koş(?!ma\\b)\\w*|kos(?!ma\\b)\\w*|yürüt(?!ma\\b)\\w*|yurut(?!ma\\b)\\w*|execute\\w*|run\\b)'
+const commandExecutionIntent = new RegExp(
+  '(?:' +
+  // "PowerShell/cmd/terminal ile ... çalıştır"
+  '(?:powershell|cmd|terminal|konsol|shell|bash)(?:\\s+\\p{L}+){0,6}?\\s*' + commandVerbs +
+  '|' +
+  // "komut/script ... çalıştır"
+  commandNouns + '(?:\\s+\\p{L}+){0,6}?\\s*' + commandVerbs +
+  '|' +
+  // "çalıştır ... komut"
+  commandVerbs + '(?:\\s+\\p{L}+){0,3}?\\s*' + commandNouns +
+  '|' +
+  // "execute et / run et"
+  '(?:execute|run)\\s+(?:et|edilsin|edilir)' +
+  '|' +
+  // "powershell komutunun çıktısını göster" (komut adı + çıktı beklentisi)
+  '(?:powershell|cmd|terminal|konsol|command|komut\\w*|script\\w*|betik\\w*)(?:\\s+\\p{L}+){0,4}?\\s+(?:çıktı\\w*|sonuç\\w*|output\\w*)' +
+  ')', 'iu')
+const negatedCommandExecution = /\b(?:çalıştırma|koşma|yürütme|execute|run)\w*\s+(?:yapma|yapmayın|yapmayız|istemiyorum|istemiyoruz)\b|\b(?:do not|don't|never)\s+(?:execute|run)\b|(?:hiçbir|herhangi bir|asla)\s+\p{L}+(?:\s+\p{L}+){0,2}\s+(?:çalıştır\w*|koş\w*|yürüt\w*|execute\w*|run\b)/giu
+
+export function requiresCommandExecution(request: string) {
+  const affirmativeRequest = request.replace(negatedCommandExecution, ' ')
+  return commandExecutionIntent.test(affirmativeRequest)
+}
+
 // "Yapay zekâ asistanı uygulaması istiyorum" gibi kısa ürün istekleri, dosya oluşturma
 // anlamı taşır. Bu kalıp platform adı içermese bile uygulama başlatıcılarını görünür kılar.
 export function requestsNewApplication(request: string) {

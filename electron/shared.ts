@@ -1,3 +1,5 @@
+import type { DecisionState } from './ai-core'
+
 export type TreeNode = { name: string; path: string; kind: 'file' | 'directory'; children?: TreeNode[] }
 export type ProjectInfo = { name: string; path: string }
 export type ModelProvider = 'ollama' | 'openai-compatible'
@@ -87,12 +89,14 @@ export type TaskRecord = {
   summary?: string
   plan: string[]; completedSteps: string[]; pendingSteps: string[]; usedTools: string[]
   acceptanceTests?: string[]; completedStepIds?: string[]
+  planIsAdvisory?: boolean
   events: { at: string; type: 'tool' | 'approval' | 'result' | 'error'; name: string; status?: string; detail?: string }[]
   errors: string[]; status: 'running' | 'waiting_approval' | 'interrupted' | 'paused' | 'blocked' | 'needs_review' | 'completed' | 'failed' | 'cancelled'
   stage: AgentStage; currentTool?: string; toolCalls: number; correctionAttempts: number; errorAnalysis?: AgentErrorAnalysis
   verificationFailures?: VerificationFailure[]
   verificationResults?: VerificationReceipt[]
   verificationRequired?: boolean
+  aiDecision?: DecisionState
   createdAt: string; updatedAt: string
 }
 export type WorkspaceState = {

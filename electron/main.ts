@@ -9,13 +9,14 @@ import os from 'node:os'
 import { writeJsonAtomically } from './atomic-json'
 import { defaultPermissions, emptyMemory, emptyUserMemory, emptyUserProfile, type ActivityItem, type AndroidBuildArtifact, type AndroidBuildRecord, type AndroidDevice, type AndroidEnvironment, type AndroidEnvironmentCheck, type AppConfig, type AppEvent, type ApprovalDecision, type ApprovalGrantScope, type BuildRecord, type ChatMessage, type LocalAIStatus, type LocalAiStats, type LocalHardware, type LocalModelActionResult, type LocalModelEntry, type LocalModelInfo, type LocalPullProgress, type LoadedLocalModel, type MemoryEntry, type MemoryKind, type ModelStatus, type PermissionCategory, type PermissionGrant, type PermissionProfile, type ProjectMemory, type Proposal, type ResourceRoot, type TaskPlan, type TaskRecord, type TreeNode, type UserMemory, type UserProfile, type VoiceStatus, type VoiceToolCheck, type WindowsEnvironment, type WindowsToolCheck, type WindowsDesktopArtifact, type WindowsDesktopBuild, type WorkspaceState } from './shared'
 import { classifyCommand, isSafePowerShellQuery } from './permissions'
-import { canAccessExternalUrl, canPerformAutomatically, canRememberCategory, createPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, requiresApprovalForCommand, sanitizePermissionGrants, sanitizeResourceRoots } from './permission-manager'
+import { canAccessExternalUrl, canLaunchApplication, canPerformAutomatically, canReadOrWriteAnyPath, canRememberCategory, canUseDesktopAutomation, createPermissionGrant, findResourceRoot, isBroadAccessEnabled, isValidApprovalDecision, requestDesktopAutomationApproval, requiresApprovalForCommand, sanitizePermissionGrants, sanitizeResourceRoots } from './permission-manager'
 import { analyzeSourceSecurity } from './source-security'
 import { normalizeInventoryPorts, parseAuthorizedPrivateCidr, scanPrivateTcpInventory } from './network-inventory'
 import { planTaskRecord, TaskStore, type JournalTask } from './task-store'
 import { validateToolArguments } from './tool-validation'
 import { selectToolsForTask, taskCapabilitiesForRequest } from './tool-registry'
 import { AgentLimitError, AgentOrchestrator, analyzeAgentError, compactAgentContext, computeAgentContextBudget, shouldStopForIdleTurns, type AgentStage } from './agent-orchestrator'
+import { AIEngine, alignDecisionWithPlan, buildAgentDecision, describeAgentTools, formatDecisionGuidance, prioritizeAgentTools, type DecisionState, type EngineContext } from './ai-core'
 import { analyzeAndroidBuildFailure, analyzeAndroidProjectFiles, isSafeAndroidGradleTask, isValidZipContainer, parseAndroidDevices } from './android-build-tool'
 import { analyzeWebProjectFiles, checkLocalWebUrl, sqliteWorkerScript, validateLocalWebUrl, validateSqliteReadQuery } from './web-build-tool'
 import { analyzeWindowsBuildFailure, analyzeWindowsProjectFiles, createWindowsBuildPlan, isValidWindowsPeHeader, type WindowsBuildAction } from './windows-build-tool'
@@ -27,7 +28,7 @@ import { decodeGithubContent, githubRequest, summarizeGithubUser, validateGithub
 import { answerLocally, estimateModelFit, isValidLocalModelReference, parseOllamaMetrics, parseOllamaPs, parseOllamaTags, recommendLocalModels } from './local-ai'
 import { filterSensitiveFileTree, isSensitiveFilePath } from './sensitive-files'
 import { isAllowedExternalUrl, isTrustedRendererUrl, normalizeDevelopmentRendererUrl } from './renderer-security'
-import { requestsProposalOnly, requiresFileOperation, requiresReadOperation, shouldIsolateNewProjectRequest } from './agent-intent'
+import { requestsProposalOnly, requiresCommandExecution, requiresFileOperation, requiresReadOperation, shouldIsolateNewProjectRequest } from './agent-intent'
 import { createCommandEnvironment } from './command-environment'
 import { assessToolOutcome, isChangeVerification, isExecutableVerification, VerificationLedger, verificationKey } from './agent-verification'
 import { projectFingerprint } from './project-fingerprint'
@@ -90,6 +91,7 @@ import { buildAdapterCommand, describeAdaptersForTool, findAdapter, listAdapters
 import { defaultPluginState, checkDependencies, checkToolConflicts, compareVersions, computePackageChecksum, isPluginAgentToolName, parsePluginAgentToolName, pluginAgentToolName, validateManifest, type EnabledPluginTools, type PluginManifest, type PluginStateEntry, type PluginStateFile } from './plugin-manager'
 import { readZipEntries } from './zip-lite'
 import { buildDesktopPayload, desktopResultFileName, DESKTOP_HOST_SCRIPT, parseDesktopResult, PROTECTED_PROCESS_NAMES, resolveTrustedApplicationTarget, type DesktopActionKind, type DesktopState } from './desktop-control'
+import { ALLOWED_APPLICATIONS, expectedWindowTitles, validateAppName } from './app-launcher'
 import { ValidationEngine, type ValidationPlan, type ValidationCategory } from './validation-engine'
 import { detectToolAvailability, TOOL_DEFINITIONS, validateCommandSafety, type ToolAvailability } from './tool-catalog'
 import { validateGitArguments } from './git-operations'
@@ -192,7 +194,7 @@ function createWindow() {
   const bundledRendererUrl = pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
   const trustedRendererUrl = developmentRendererUrl ?? bundledRendererUrl
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (isAllowedExternalUrl(url)) void shell.openExternal(url).catch(() => undefined)
+    if (isAllowedExternalUrl(url)) void openExternalUrl(url)
     return { action: 'deny' }
   })
   mainWindow.webContents.on('will-navigate', (event, url) => {
@@ -201,6 +203,15 @@ function createWindow() {
   if (developmentRendererUrl) void mainWindow.loadURL(developmentRendererUrl)
   else void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   mainWindow.on('closed', () => { mainWindow = null })
+}
+
+async function openExternalUrl(url: string): Promise<boolean> {
+  try {
+    await shell.openExternal(url)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function userDataFile(name: string) { return path.join(app.getPath('userData'), name) }
@@ -454,6 +465,93 @@ function taskStore() {
     while (taskStores.size > 12) taskStores.delete(taskStores.keys().next().value!)
   }
   return store
+}
+
+async function createTaskFromRequest(request: string, context: EngineContext): Promise<JournalTask> {
+  const store = taskStore()
+  const task = await store.create(request)
+  const decision = buildAgentDecision(request, context)
+  const planned = planTaskRecord(task, {
+    title: task.title,
+    objective: task.objective,
+    steps: decision.plan.map((step) => step.title),
+    // Ön analiz adımları, model açık bir yürütme planı oluşturmadan zorunlu
+    // tamamlanma kapısına dönüşmemeli. Kabul testleri ise çalıştırılabilir komut olmalı.
+    tests: [],
+  })
+
+  return store.update(task.id, {
+    ...planned,
+    planIsAdvisory: true,
+    stage: 'planning',
+    aiDecision: decision,
+    pendingSteps: decision.plan.map((step) => step.title),
+  })
+}
+
+async function recordExecutionEvidence(
+  taskId: string,
+  source: string,
+  ok: boolean,
+  detail: string,
+  engine: AIEngine,
+  nextAction?: string,
+): Promise<DecisionState | undefined> {
+  const store = taskStore()
+  const task = await store.get(taskId)
+  if (!task) return undefined
+
+  const currentDecision = task.aiDecision ?? buildAgentDecision(task.request, {
+    projectPath: task.projectPath,
+    availableTools: [],
+  })
+  const recorded = engine.recordEvidence(currentDecision, { source, ok, detail: detail.slice(0, 1_000) }, nextAction)
+  const updatedDecision: DecisionState = {
+    ...recorded,
+    shouldReplan: !ok || recorded.uncertainty.length > 0 || currentDecision.intent.confidence !== 'high',
+  }
+
+  await store.update(taskId, {
+    aiDecision: updatedDecision,
+    stage: ok ? 'evaluating' : 'correcting',
+  })
+  await publishTaskHistory()
+  return updatedDecision
+}
+
+async function maybeReplan(taskId: string, failedReason: string, context: EngineContext): Promise<DecisionState | undefined> {
+  const store = taskStore()
+  const task = await store.get(taskId)
+  if (!task?.aiDecision) return undefined
+
+  const decision = buildAgentDecision(task.request, {
+    ...context,
+    projectPath: task.projectPath,
+    constraints: task.aiDecision.intent.constraints,
+    priorContext: [
+      ...task.aiDecision.plan.map((step) => step.title),
+      `Son başarısızlık: ${failedReason.slice(0, 500)}`,
+    ],
+  })
+  const shouldReplan = decision.shouldReplan
+    || task.aiDecision.shouldReplan
+    || /hata|başarısız|çökmüş/i.test(failedReason)
+  if (!shouldReplan) return undefined
+
+  const replanned: DecisionState = {
+    ...decision,
+    evidence: task.aiDecision.evidence,
+    uncertainty: [...new Set([...task.aiDecision.uncertainty, failedReason.slice(0, 300)])].slice(-20),
+    nextAction: `Başarısız adımı yeniden değerlendir: ${failedReason}`.slice(0, 500),
+    shouldReplan: true,
+  }
+  await store.update(taskId, {
+    aiDecision: replanned,
+    stage: 'planning',
+    pendingSteps: replanned.plan.map((step) => step.title),
+  })
+  await publishTaskHistory()
+  return replanned
 }
 
 function validateChatMessages(value: unknown): ChatMessage[] {
@@ -1124,7 +1222,9 @@ async function runDesktopHost(action: DesktopActionKind, payload: Record<string,
   if (desktopControlPaused) throw new Error('Masaüstü otomasyonu durduruldu; yeni eylemler çalıştırılmıyor.')
   const profile = await readWorkspace()
   const trustedLaunch = action === 'launch_app' && options.allowTrustedApplication === true
-  if (!profile.permissions.allowDesktopControl && !profile.permissions.allowBroadAccess && !trustedLaunch) throw new Error('Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden masaüstü kontrolünü veya açık erişim profilini etkinleştirin.')
+  // Merkezi politika: masaüstü otomasyonu yalnızca açık onayla (veya geniş erişimde) çalışır.
+  const desktopPolicy = canUseDesktopAutomation(profile.permissions, action === 'launch_app' ? 'app-launch' : 'input-control', projectRoot ?? currentProject(), profile.task?.id)
+  if (!desktopPolicy.allowed && !trustedLaunch) throw new Error('Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden masaüstü kontrolünü veya açık erişim profilini etkinleştirin.')
   const scriptPath = await ensureDesktopHostScript()
   const powershell = await resolveExecutable('powershell')
   const outputPath = options.screenshot ? userDataFile(path.join('screenshots', desktopResultFileName('desktop'))) : ''
@@ -1138,12 +1238,27 @@ async function runDesktopHost(action: DesktopActionKind, payload: Record<string,
 
 /** Güvenli allowlist'teki uygulamayı açar; pencere doğrulanmadan başarılı saymaz. */
 async function openTrustedApplication(input: unknown) {
-  const target = resolveTrustedApplicationTarget(input)
-  const payload = buildDesktopPayload({ action: 'launch_app', payload: { path: target } })
-  const { state } = await runDesktopHost('launch_app', payload, { allowTrustedApplication: true })
-  const launched = (state as { launched?: { verified?: boolean; process?: string; pid?: number; window?: { title?: string } | null }; note?: string }).launched
-  if (!launched?.verified) throw new Error(`Uygulama süreci başlatıldı ancak penceresi doğrulanamadı.${(state as { note?: string }).note ? ` ${(state as { note?: string }).note}` : ''}`)
-  return { target, launched, state }
+  // İzin listesi (electron/app-launcher.ts) uygulamayı sınırlar; ardından
+  // çalıştırılabilir dosya adına çevrilir.
+  const allowedName = validateAppName(String(input ?? ''))
+  const target = resolveTrustedApplicationTarget(allowedName)
+  const profile = await readWorkspace()
+  const launchPolicy = canLaunchApplication(profile.permissions, currentProject(), profile.task?.id)
+  const execute = async () => {
+    const payload = buildDesktopPayload({ action: 'launch_app', payload: { path: target, expect_titles: expectedWindowTitles(allowedName) } })
+    const { state } = await runDesktopHost('launch_app', payload, { allowTrustedApplication: true })
+    const launched = (state as { launched?: { verified?: boolean; process?: string; pid?: number; window?: { title?: string } | null }; note?: string }).launched
+    if (!launched?.verified) throw new Error(`Uygulama süreci başlatıldı ancak penceresi doğrulanamadı.${(state as { note?: string }).note ? ` ${(state as { note?: string }).note}` : ''}`)
+    return { target, launched, state }
+  }
+  if (!launchPolicy.allowed) {
+    // Kontrollü profilde uygulama başlatma kullanıcı onayına bağlıdır.
+    const queued = askApproval('command', `Uygulama başlatma: ${allowedName}`, launchPolicy.reason ?? 'Uygulama başlatma için kullanıcı onayı gerekir.', async () => JSON.stringify(await execute()), undefined, 'low', 'app-launch', profile.task?.id, 'DesktopControlTool')
+    const raw = await queued.result
+    // Onay reddedilirse düz metin döner; JSON ayrıştırması güvenli olmalı.
+    try { return JSON.parse(raw) } catch { return { ok: false, message: raw } }
+  }
+  return execute()
 }
 
 async function runDesktopTool(action: DesktopActionKind, rawPayload: Record<string, unknown>) {
@@ -2426,7 +2541,7 @@ async function makeTaskPlan(args: Record<string, unknown>) {
   if (activeJournalTaskId) {
     const store = taskStore()
     const entry = await store.get(activeJournalTaskId)
-    if (entry) await store.update(activeJournalTaskId, planTaskRecord(entry, { title: task.title, objective: task.objective, steps, tests: task.tests }))
+    if (entry) await store.update(activeJournalTaskId, { ...planTaskRecord(entry, { title: task.title, objective: task.objective, steps, tests: task.tests }), planIsAdvisory: false })
     await publishTaskHistory()
   }
   emit({ type: 'task', task: workspace.task })
@@ -2450,6 +2565,7 @@ async function updateTaskStep(args: Record<string, unknown>) {
       completedSteps: steps.filter((step) => step.status === 'done').map((step) => step.title),
       completedStepIds: steps.flatMap((step, position) => step.status === 'done' ? [`step-${position + 1}`] : []),
       pendingSteps: steps.filter((step) => step.status !== 'done').map((step) => step.title),
+      planIsAdvisory: false,
     })
     await publishTaskHistory()
   }
@@ -3749,7 +3865,7 @@ const agentTools = [
   { type: 'function', function: { name: 'desktop_focus_window', description: 'Başlığı verilen pencereye odaklanır (başlık parçası eşleşir) ve yeni odaklı pencereyi doğrular.', parameters: { type: 'object', properties: { title: { type: 'string', minLength: 1, maxLength: 200 } }, required: ['title'] } } },
   { type: 'function', function: { name: 'desktop_close_window', description: 'Başlığı verilen pencereye zarif kapanma isteği (WM_CLOSE) gönderir. Ultron kendi penceresini kapatamaz.', parameters: { type: 'object', properties: { title: { type: 'string', minLength: 1, maxLength: 200 } }, required: ['title'] } } },
   { type: 'function', function: { name: 'desktop_launch_app', description: 'Kullanıcının belirttiği masaüstü uygulamasını başlatır ve 25 saniye içinde penceresinin açılıp açılmadığını doğrular. Uygulama adı (örn. "not defteri", "notepad", "hesap makinesi") veya çalıştırılabilir dosya yolu verilebilir; ad verilirse PATH ve sistem klasörü aranır. Ultron kendi uygulamasını başlatmak için kullanılamaz.', parameters: { type: 'object', properties: { path: { type: 'string', minLength: 1, maxLength: 600, description: 'Çalıştırılabilir dosyanın tam yolu (örn. notepad.exe).' } }, required: ['path'] } } },
-  { type: 'function', function: { name: 'open_application', description: 'Güvenli Windows uygulama listesinden Hesap Makinesi, Not Defteri, Dosya Gezgini, Paint, Denetim Paneli, Görev Yöneticisi veya Ekran Alıntısı Aracı uygulamasını gerçekten başlatır. Genel masaüstü kontrolü kapalı olsa bile yalnızca bu allowlist için kullanılabilir; yeni pencere doğrulanmadan başarılı dönmez.', parameters: { type: 'object', properties: { name: { type: 'string', enum: ['hesap makinesi', 'not defteri', 'dosya gezgini', 'paint', 'denetim paneli', 'görev yöneticisi', 'ekran görüntüsü aracı'] } }, required: ['name'] } } },
+  { type: 'function', function: { name: 'open_application', description: 'Güvenli listedeki bir Windows uygulamasını gerçekten başlatır ve yeni pencereyi doğrular: Hesap Makinesi, Not Defteri, Dosya Gezgini, Paint, Denetim Paneli, Görev Yöneticisi, Ekran Görüntüsü Aracı, Microsoft Edge, Google Chrome, Firefox, Brave, Opera, Vivaldi. Genel masaüstü kontrolü kapalı olsa bile yalnızca bu allowlist için kullanılabilir; yeni pencere doğrulanmadan başarı bildirmez. Listede olmayan uygulamalar için masaüstü kontrolünü aç ve desktop_launch_app aracını kullan.', parameters: { type: 'object', properties: { name: { type: 'string', enum: ALLOWED_APPLICATIONS } }, required: ['name'] } } },
   { type: 'function', function: { name: 'desktop_open_explorer', description: 'Dosya Gezgini\'ni verilen klasörde açar ve açılan pencereyi doğrular. Klasör yoksa hata verir.', parameters: { type: 'object', properties: { path: { type: 'string', minLength: 1, maxLength: 600, description: 'Açılacak klasörün tam yolu.' } }, required: ['path'] } } },
   { type: 'function', function: { name: 'desktop_process_list', description: 'Windows süreçlerini PID, ad, pencere başlığı ve yanıt durumu ile listeler. İsteğe bağlı ad veya PID ile süzebilir.', parameters: { type: 'object', properties: { name: { type: 'string', maxLength: 260 }, pid: { type: 'integer', minimum: 1 } } } } },
   { type: 'function', function: { name: 'desktop_process_start', description: 'Güvenli uygulama çözümleme katmanıyla bir Windows süreci başlatır ve PID’sini doğrular. Kabuk yorumlayıcıları ve keyfî komutlar çalıştırılmaz.', parameters: { type: 'object', properties: { name: { type: 'string', minLength: 1, maxLength: 260 } }, required: ['name'] } } },
@@ -3759,7 +3875,7 @@ const agentTools = [
   { type: 'function', function: { name: 'request_scope', description: 'Kullanıcıdan bilgisayarındaki bir klasöre erişim yetkisi ister. Yol verilirse o klasör, verilmezse kullanıcı bir klasör seçer. Yetki verildiğinde o klasör @resource/<id> adresiyle dosya araçlarına açılır. Yazma izni isteniyorsa kullanıcı onay kartı görür.', parameters: { type: 'object', properties: { path: { type: 'string', maxLength: 600, description: 'Yetkilendirilecek klasörün tam yolu; boş bırakılırsa kullanıcı seçer.' }, access: { type: 'string', enum: ['read', 'read-write'], description: 'Erişim türü; varsayılan read.' }, reason: { type: 'string', maxLength: 300, description: 'Kullanıcıya gösterilecek kısa gerekçe.' } } } } },
   { type: 'function', function: { name: 'list_scopes', description: 'Erişebileceğin tüm kapsamları listeler: seçili proje kökü ve kullanıcının açıkça yetkilendirdiği ek klasörler. Ek klasörler @resource/<id> adresiyle kullanılır (read = salt okunur, read-write = yazılabilir). Bilgisayardaki bir klasörde çalışman gerekiyorsa önce bu aracı çağır ve doğru kapsamı seç.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'list_files', description: 'Seçili proje ve açıkça yetkilendirilmiş ek kaynak klasörlerinin dosya ağacını listeler. Ek kaynak yolları @resource/<id>/... biçimindedir.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Başlangıç klasörü; boş bırakırsan proje kökü ve yetkili kaynak kökleri.' } } } } },
-  { type: 'function', function: { name: 'open_file', description: 'Kapsam içindeki mevcut bir dosyayı veya klasörü Windows varsayılan uygulamasıyla açar ve açma işleminin gerçekten başlatıldığını bildirir. Çalıştırılabilir/komut türleri (.exe,.bat,.cmd,.ps1,.msi,.lnk,.js,...) güvenlik nedeniyle reddedilir. Kapsam: boş=proje, @user/masaüstü|belgeler|indirilenler|resimler|videolar|muzikler, @resource/<id>.', parameters: { type: 'object', properties: { path: { type: 'string', maxLength: 400, description: 'Kapsama göre göreli yol (örn. "not.txt", "rapor.pdf"); kapsamı başka bir klasördeyse yolu bölme.' }, scope: { type: 'string', maxLength: 60, description: 'Boş bırak=proje; veya @user/masaüstü, @user/belgeler, @user/indirilenler, @user/resimler, @user/videolar, @user/muzikler, @resource/<id>.' } }, required: ['path'] } } },
+  { type: 'function', function: { name: 'open_file', description: 'Kapsam içindeki mevcut bir dosyayı veya klasörü Windows varsayılan uygulamasıyla açar ve açma işleminin gerçekten başlatıldığını bildirir. Çalıştırılabilir/komut türleri (.exe,.bat,.cmd,.ps1,.msi,.lnk,.js,...) güvenlik nedeniyle reddedilir. Kapsam: boş=seçili proje, @user/masaüstü|belgeler|indirilenler|resimler|videolar|muzikler, @resource/<id>. Seçili projenin tam disk yolunu scope içine yazma; proje için scope parametresini boş bırak.', parameters: { type: 'object', properties: { path: { type: 'string', maxLength: 400, description: 'Kapsama göre göreli yol (örn. "not.txt", "rapor.pdf"); kapsamı başka bir klasördeyse yolu bölme.' }, scope: { type: 'string', maxLength: 60, description: 'Proje için boş bırak; yalnızca @user/... veya @resource/<id> sanal kapsam belirtecini kullan.' } }, required: ['path'] } } },
 
   { type: 'function', function: { name: 'open_url', description: 'Bir web adresini (http/https) sistem varsayılan tarayıcısında açar. Sadece http: ve https: protokollerine izin verilir. Yerel dosya veya özel protokoller (file:, ftp:, vb.) desteklenmez.', parameters: { type: 'object', properties: { url: { type: 'string', maxLength: 2048, description: 'Açılacak web adresi (örn. https://google.com)' } }, required: ['url'] } } },
 
@@ -4101,6 +4217,16 @@ async function requestScopeAccess(options: { path?: string; access?: string; rea
   const stat = await fs.stat(resolved).catch(() => null)
   if (!stat?.isDirectory()) return JSON.stringify({ ok: false, message: 'Klasör bulunamadı: ' + resolved })
   if (path.dirname(resolved) === resolved) return JSON.stringify({ ok: false, message: 'Disk kökü tüm bilgisayarı kapsar; dar bir klasör seç.' })
+  // Seçili proje kökü zaten ajan kapsamındadır. Bunu harici bir resource root
+  // olarak eklemek sanitizeResourceRoots tarafından bilinçli biçimde reddedilir.
+  const [realTarget, realProject] = await Promise.all([
+    fs.realpath(resolved).catch(() => resolved),
+    fs.realpath(currentProject()).catch(() => currentProject()),
+  ])
+  const projectRelative = path.relative(realProject, realTarget)
+  const isInsideProject = projectRelative === ''
+    || (!path.isAbsolute(projectRelative) && projectRelative !== '..' && !projectRelative.startsWith(`..${path.sep}`))
+  if (isInsideProject) return JSON.stringify({ ok: true, alreadyAuthorized: true, path: resolved, access: 'read-write', project: true })
   if (workspace.resourceRoots.some((entry) => entry.path.toLocaleLowerCase('en-US') === resolved.toLocaleLowerCase('en-US'))) {
     return JSON.stringify({ ok: true, alreadyAuthorized: true, path: resolved })
   }
@@ -4114,6 +4240,9 @@ async function requestScopeAccess(options: { path?: string; access?: string; rea
     return JSON.stringify({ ok: true, scope: '@resource/' + id, path: resolved, access })
   }
   if (access === 'read-write') {
+    // Geniş erişim profilinde proje dışı yazma izni doğrudan uygulanır.
+    const pathPolicy = canReadOrWriteAnyPath(workspace.permissions, currentProject(), options.taskId ?? workspace.task?.id ?? undefined)
+    if (pathPolicy.allowed) return applyScope()
     const queued = askApproval('system', 'Erişim izni: ' + resolved, reason, applyScope, [resolved], 'medium', 'system', options.taskId ?? workspace.task?.id ?? undefined, 'ScopeTool')
     return queued.result
   }
@@ -4154,13 +4283,13 @@ async function runTool(name: string, rawArgs: string, readFiles: Set<string>, to
       if (!url) throw new Error('url parametresi gerekli')
       try {
         const parsed = new URL(url)
-        if (!['http:', 'https:'].includes(parsed.protocol)) {
+        if (!['http:', 'https:'].includes(parsed.protocol) || !isAllowedExternalUrl(url)) {
           throw new Error('Sadece http: ve https: protokollerine izin verilir')
         }
       } catch {
         throw new Error('Geçersiz URL formatı')
       }
-      await shell.openExternal(url)
+      if (!await openExternalUrl(url)) throw new Error('Varsayılan tarayıcı bağlantıyı açamadı.')
       activity('success', 'URL tarayıcıda açıldı', url, { tool: 'open_url', operation: 'url-open', target: url, result: 'success' })
       return JSON.stringify({ ok: true, url, message: 'URL sistem varsayılan tarayıcısında açıldı.' })
     }
@@ -4924,12 +5053,50 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
   let journalTask: JournalTask | null = null
   try {
     if (resumeTaskId) journalTask = await taskStore().resume(resumeTaskId)
-    else journalTask = await taskStore().create(latestUserMessage)
+    const workspace = await readWorkspace()
+    const requestForTools = resumeTaskId && journalTask
+      ? `${journalTask.request}\n${latestUserMessage}\n${journalTask.usedTools.join(' ')}`
+      : latestUserMessage
+    const allActiveTools = [...await toolsForRequest(requestForTools), ...(await buildPluginToolSchemas())]
+    const availableToolDescriptors = describeAgentTools(allActiveTools)
+    const aiEngine = new AIEngine(availableToolDescriptors)
+    const decisionContext: EngineContext = {
+      projectPath: currentProject(),
+      resourceRoots: workspace.resourceRoots.map((root) => root.path),
+      constraints: [
+        'güvenli',
+        'küçük değişiklik',
+        'önce doğrula',
+        'yerel kaynaklar kullan',
+        `Düzenleme modu: ${workspace.permissions.editMode}`,
+        `Komut modu: ${workspace.permissions.commandMode}`,
+      ],
+      availableTools: availableToolDescriptors,
+      ...(journalTask ? { priorContext: journalTask.events.slice(-8).map((event) => `${event.name}: ${event.detail ?? event.status ?? ''}`) } : {}),
+    }
+    let aiDecision: DecisionState
+    if (resumeTaskId) {
+      if (!journalTask) throw new Error('Sürdürülecek görev yüklenemedi.')
+      aiDecision = buildAgentDecision(`${journalTask.request}\n${latestUserMessage}`, decisionContext)
+      if (journalTask.aiDecision) {
+        aiDecision = {
+          ...aiDecision,
+          plan: journalTask.aiDecision.plan.length ? journalTask.aiDecision.plan : aiDecision.plan,
+          evidence: journalTask.aiDecision.evidence,
+          uncertainty: journalTask.aiDecision.uncertainty,
+          nextAction: journalTask.aiDecision.nextAction,
+        }
+      }
+      journalTask = await taskStore().update(journalTask.id, { aiDecision })
+    } else {
+      journalTask = await createTaskFromRequest(latestUserMessage, decisionContext)
+      aiDecision = journalTask.aiDecision ?? buildAgentDecision(latestUserMessage, decisionContext)
+    }
     activeJournalTaskId = journalTask.id
-    const allActiveTools = [...await toolsForRequest(resumeTaskId ? `${journalTask.request}\n${latestUserMessage}\n${journalTask.usedTools.join(' ')}` : latestUserMessage), ...(await buildPluginToolSchemas())]
     // Yeni proje isteğinde ilk dosya yazılana kadar yalnızca iskelet/yazma araçlarını
     // modele göster; eski proje ağacına yönelen keşif çağrıları böylece baştan engellenir.
-    let activeTools = newProjectIntent ? toolsForNewProjectScaffold(allActiveTools) : allActiveTools
+    const preferredTools = aiDecision.plan.flatMap((step) => step.tools)
+    let activeTools = prioritizeAgentTools(newProjectIntent ? toolsForNewProjectScaffold(allActiveTools) : allActiveTools, preferredTools)
     // Araç şeması da modele gönderilen istemin parçasıdır. Sabit 24k karakter
     // bütçesi 16k bağlamda sessiz kırpmaya yol açabildiği için gerçek şema
     // boyutundan ve model penceresinden türetilir. Yeni proje filtresi açılsa bile
@@ -4937,6 +5104,8 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
     // bağlam sessizce taşmaz.
     const contextBudget = computeAgentContextBudget({ contextWindow: 16_384, toolSchemaCharacters: JSON.stringify(allActiveTools).length })
     const verification = new VerificationLedger(journalTask.verificationFailures, journalTask.verificationResults)
+    const exploratoryToolNames = new Set(['open_file', 'list_files', 'read_file', 'search_code', 'search_files', 'find_files', 'search_file_contents', 'project_info', 'analyze_android_project', 'analyze_web_project', 'analyze_windows_project', 'android_environment', 'windows_environment', 'android_devices', 'find_android_artifacts'])
+    const recoveryEvidenceTools = new Set(['read_file', 'list_files', 'search_code', 'search_files', 'find_files', 'search_file_contents', 'project_info', 'propose_file_edit', 'write_file', 'apply_patch', 'run_tests', 'run_command', 'run_powershell', 'analyze_android_project', 'analyze_web_project', 'analyze_windows_project'])
     const initialSource = await captureVerificationSource()
     verification.invalidate(resumeTaskId ? undefined : initialSource)
     const mutationTools = new Set(['write_file', 'apply_patch', 'create_directory', 'rename_path', 'delete_file', 'undo_change', 'create_android_project', 'create_web_project', 'create_windows_desktop_project', 'project_scaffold', 'run_command', 'run_powershell', 'run_tests', 'build_android', 'windows_build', 'web_database', 'web_start_service'])
@@ -4950,7 +5119,7 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
     const saveVerification = async () => taskStore().update(journalTask!.id, { verificationFailures: verification.pending, verificationResults: verification.results, verificationRequired })
     await saveVerification()
     let operationalError = journalTask.errorAnalysis && !verification.pending.some((item) => item.tool === journalTask!.errorAnalysis?.tool && item.analysis.message === journalTask!.errorAnalysis?.message) ? journalTask.errorAnalysis : undefined
-    const planTitles = journalTask.plan
+    const planTitles = journalTask.planIsAdvisory ? [] : journalTask.plan
     const restorePlan: TaskPlan = {
       id: journalTask.id, title: journalTask.title, objective: journalTask.objective || journalTask.request, status: 'active',
       steps: planTitles.map((title, index) => ({ title, status: journalTask!.completedStepIds?.includes(`step-${index + 1}`) ? 'done' : 'pending' })),
@@ -4958,19 +5127,24 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
     }
     if (restorePlan.steps.length && !restorePlan.steps.some((step) => step.status === 'done')) restorePlan.steps[0] = { ...restorePlan.steps[0], status: 'in_progress' }
     await writeWorkspace({ messages, task: restorePlan })
-    await taskStore().update(journalTask.id, {
-      completedSteps: restorePlan.steps.filter((step) => step.status === 'done').map((step) => step.title),
-      completedStepIds: restorePlan.steps.flatMap((step, index) => step.status === 'done' ? [`step-${index + 1}`] : []),
-      pendingSteps: restorePlan.steps.filter((step) => step.status !== 'done').map((step) => step.title),
-    })
+    if (!journalTask.planIsAdvisory) {
+      await taskStore().update(journalTask.id, {
+        completedSteps: restorePlan.steps.filter((step) => step.status === 'done').map((step) => step.title),
+        completedStepIds: restorePlan.steps.flatMap((step, index) => step.status === 'done' ? [`step-${index + 1}`] : []),
+        pendingSteps: restorePlan.steps.filter((step) => step.status !== 'done').map((step) => step.title),
+      })
+    }
     await updateAgentProgress('analyzing', orchestrator.snapshot, journalTask.id)
     await recordTaskEvent({ type: 'result', name: resumeTaskId ? 'task-resumed' : 'task-started', detail: resumeTaskId ? 'Dosya durumu ve izinler araç çağrısı öncesinde yeniden doğrulanacak.' : 'Yeni görev kaydı oluşturuldu.' }, journalTask.id)
+    await recordTaskEvent({ type: 'result', name: 'ai-preanalysis', detail: `${aiDecision.intent.approach}; ${aiDecision.intent.complexity}; ${aiDecision.plan.length} önerilen adım; ${aiDecision.intent.confidence} güven.` }, journalTask.id)
     await recordTaskEvent({ type: 'result', name: 'context-budget', detail: `${activeTools.length} araç şeması · ${contextBudget} karakter sohbet bütçesi · 16384 token pencere` }, journalTask.id)
     await publishTaskHistory()
-    const workspace = await readWorkspace()
 
     // Variable declarations moved up for auto-planning
     const requiresFileOperationForRequest = requiresFileOperation(latestUserMessage)
+  // Terminal komutu çalıştırma niyeti: "komut çalıştır" denildiğinde gerçekten
+  // terminal aracı çağrılmalı; dosyaya yazmak komut çalıştırmak değildir.
+  const requiresCommandExecutionForRequest = requiresCommandExecution(latestUserMessage)
     const requiresReadOperationForRequest = requiresReadOperation(latestUserMessage)
   // Web kanıtı zorunluluğu: istek bir adres içeriyorsa veya açıkça araştırma istiyorsa
   // modelin web aracını GERÇEKTEN çağırması gerekir; "baktım" demek için çağrı şart.
@@ -4983,22 +5157,27 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
   const requiresWebEvidence = requestHasUrl || requestWantsResearch || requestWantsDownload
 
     // ===== AUTO-PLANNING: Otomatik plan oluşturma (çok adımlı görevler için) =====
-    if (!resumeTaskId && !restorePlan.steps.length && !proposalOnlyRequest) {
+    if (!resumeTaskId && !proposalOnlyRequest) {
       const needsPlanning = requiresFileOperationForRequest || requiresReadOperationForRequest ||
         /\b(yap|oluştur|ekle|düzelt|refactor|test|debug|analiz|optimize|migrate|implement|geliştir|kodla)\b/i.test(latestUserMessage)
       if (needsPlanning) {
         const autoPlan = await generateAutoPlan(latestUserMessage, activeTools, [], controller.signal, journalTask.id, newProjectIntent)
         if (autoPlan.ok && autoPlan.plan) {
           await makeTaskPlan(autoPlan.plan)
+          aiDecision = alignDecisionWithPlan(aiDecision, autoPlan.plan)
+          await taskStore().update(journalTask.id, { aiDecision })
           activity('tool', 'Otonom plan oluşturuldu', autoPlan.plan.title, { taskId: journalTask.id })
         } else if (requiresFileOperationForRequest) {
+          const fallbackSteps = aiDecision.plan.map((step) => step.title).slice(0, 12)
           await makeTaskPlan({
             title: latestUserMessage.slice(0, 80) || 'Geliştirme görevi',
             objective: latestUserMessage.slice(0, 500),
-            steps: ['Proje durumunu ve gereken dosyaları belirle', 'Gereken dosya değişikliklerini araçlarla uygula', 'Test veya derleme kanıtıyla doğrula'],
+            steps: fallbackSteps.length ? fallbackSteps : ['Proje durumunu ve gereken dosyaları belirle', 'Gereken dosya değişikliklerini araçlarla uygula', 'Test veya derleme kanıtıyla doğrula'],
             tests: [],
           })
-          activity('status', 'Model planı üretilemedi; güvenli yedek adım planı uygulandı', '3 adım', { taskId: journalTask.id })
+          aiDecision = alignDecisionWithPlan(aiDecision, { title: latestUserMessage.slice(0, 80), objective: latestUserMessage.slice(0, 500), steps: fallbackSteps })
+          await taskStore().update(journalTask.id, { aiDecision })
+          activity('status', 'Model planı üretilemedi; yerel ön analizden güvenli yedek adım planı oluşturuldu', `${fallbackSteps.length} adım`, { taskId: journalTask.id })
         }
       }
     }
@@ -5006,7 +5185,7 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
     const taskContextMessages: ChatMessage[] = newProjectIntent
       ? [{ role: 'user', content: latestUserMessage }]
       : trimConversationContext(messages)
-    const system = buildAgentSystemPrompt({
+    const system = `${buildAgentSystemPrompt({
       project: currentProject(),
       taskId: journalTask.id,
       request: latestUserMessage,
@@ -5020,11 +5199,13 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
       solutionHints: newProjectIntent ? '' : await loadSolutionMemoryHints(latestUserMessage),
       newProject: newProjectIntent,
       proposalOnly: proposalOnlyRequest,
-    })
+    })}\n\n${formatDecisionGuidance(aiDecision, activeTools.map((tool) => tool.function.name))}`
     const chain: Record<string, unknown>[] = [{ role: 'system', content: `${system} Yürütme bütçesi: en fazla ${orchestrator.limits.maxModelTurns} model turu; yanıt başına ${orchestrator.limits.maxToolCallsPerTurn}, görev başına ${orchestrator.limits.maxToolCalls} araç çağrısı; hata düzeltme denemesi ${orchestrator.limits.maxCorrectionAttempts}. Aynı başarısız çağrıyı yineleme. Açık plan adımlarını doğrulamadan tamamlandı ilan etme.` }, ...taskContextMessages.map((message) => ({ role: message.role, content: message.content }))]
     const baseSystemContent = String(chain[0]?.content ?? '')
     const readFiles = new Set<string>()
     let requiredToolRetry = 0
+  let requiredCommandRetry = 0
+  let commandToolUsed = false
     let requiredReadRetry = 0
     let fileChangeToolUsed = false
     let readFileToolUsed = false
@@ -5057,10 +5238,10 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
       const compacted = compactAgentContext(chain, contextBudget)
       if (compacted !== chain) chain.splice(0, chain.length, ...compacted)
       const livePlan = await taskStore().get(journalTask.id)
-      const planStatus = livePlan?.plan?.length
+      const planStatus = livePlan?.plan?.length && !livePlan.planIsAdvisory
         ? `\n\nGÜNCEL PLAN (tamamlanan adımları update_task_step ile done yap):\n${livePlan.plan.map((title, index) => `${index + 1}. [${livePlan.completedStepIds?.includes(`step-${index + 1}`) ? 'done' : 'pending'}] ${title}`).join('\n')}${livePlan.acceptanceTests?.length ? `\nKabul testleri (run_tests command parametresine birebir ver): ${livePlan.acceptanceTests.join(' || ')}` : ''}`
         : ''
-      chain[0] = { role: 'system', content: `${baseSystemContent}${planStatus}` }
+      chain[0] = { role: 'system', content: `${baseSystemContent}${planStatus}\n\n${formatDecisionGuidance(aiDecision, activeTools.map((tool) => tool.function.name))}` }
       if (prefetchedWebContext) {
         // Ön getirilen web içeriği modele GERÇEK kanıt olarak verilir (araç çalıştırılmıştır).
         // Sistem mesajında olması, modelin bunu görev kanıtı olarak kullanmasını sağlar.
@@ -5080,7 +5261,7 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
       if (!result.toolCalls.length) {
         // Check if task is truly complete (has plan, all steps done, tests passing)
         const latestRecord = await taskStore().get(journalTask.id)
-        const hasPlan = (latestRecord?.plan?.length ?? 0) > 0
+        const hasPlan = Boolean((latestRecord?.plan?.length ?? 0) > 0 && !latestRecord?.planIsAdvisory)
         const pendingSteps = latestRecord?.pendingSteps?.length ?? 0
         const hasFailedChecks = verification.pending.some((item) => item.status !== 'stale')
         const missingAcceptance = (latestRecord?.acceptanceTests ?? []).filter((command) => !verification.hasAcceptance(command))
@@ -5120,6 +5301,14 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
             : 'SON UYARI: Bir önceki turda da yalnızca açıklama yazdın; metin yanıtı tamamlanmış iş sayılmaz. Bu turda YANITIN YALNIZCA araç çağrısı içermeli: doğrudan write_file veya apply_patch çağır. Açıklama, plan özeti veya vaat yazma.' })
           continue
         }
+        if (requiresCommandExecutionForRequest && requiredCommandRetry < 2 && !commandToolUsed) {
+          requiredCommandRetry++
+          activity('status', `Terminal komutu için gerçek araç çağrısı isteniyor (${requiredCommandRetry}/2)`)
+          chain.push({ role: 'system', content: requiredCommandRetry === 1
+            ? 'ZORUNLU: Kullanıcı bir komut çalıştırmanı istedi. Dosyaya yazmak veya açıklama yapmak komut çalıştırmak DEĞİLDİR. Önce run_command (veya run_powershell / run_tests) aracını çağır, çıktıyı al ve YALNIZCA gerçek çıktıyı bildir. Komutu çalıştıramıyorsan bunu açıkça söyle; uydurma çıktı verme.'
+            : 'SON UYARI: Bu turda YANITIN YALNIZCA bir terminal aracı çağrısı içermeli (run_command, run_powershell veya run_tests). Açıklama veya dosya yazma; doğrudan komutu çalıştır.' })
+          continue
+        }
         const webRequirementMet = requestHasUrl || requestWantsDownload ? webPageToolUsed : webToolUsed
         if (requiresWebEvidence && requiredWebRetry < 2 && !webRequirementMet) {
           requiredWebRetry++
@@ -5138,7 +5327,9 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
             : 'SON UYARI: Bir önceki turda da yalnızca açıklama yazdın. Bu turda YANITIN YALNIZCA read_file araç çağrısı içermeli. Açıklama yazma; doğrudan aracı çağır.' })
           continue
         }
-        const modelMessage = requiredReadRetry > 0 && requiresReadOperationForRequest && !requestHasUrl && !readFileToolUsed && !chain.slice(-3).some((entry) => Array.isArray(entry.tool_calls))
+        const modelMessage = requiredCommandRetry > 0 && requiresCommandExecutionForRequest && !commandToolUsed && !chain.slice(-3).some((entry) => Array.isArray(entry.tool_calls))
+          ? 'İstenen komutu gerçek bir terminal aracı çağrısı olmadan çalıştıramadım; model komut çıktısı uydurdu. Terminal aracının kullanılabilirliğini ve komut izinlerini kontrol edip tekrar deneyin.'
+          : requiredReadRetry > 0 && requiresReadOperationForRequest && !requestHasUrl && !readFileToolUsed && !chain.slice(-3).some((entry) => Array.isArray(entry.tool_calls))
           ? 'İstenen dosya içeriğini gerçek read_file çağrısı olmadan doğrulayamadım; model bellekten içerik üretti. Dosyanın proje yetkisi veya kaynak kapsamı içinde olduğundan emin olup tekrar deneyin.'
           : requiredToolRetry > 0 && requiresFileOperationForRequest && !chain.slice(-3).some((entry) => Array.isArray(entry.tool_calls))
             ? 'İstenen kod değişikliğini gerçek dosya aracıyla hazırlayamadım; model bu denemede araç çağrısı üretmedi. Modelin araç çağrısı desteğini ve proje izinlerini kontrol edip tekrar deneyin.'
@@ -5150,14 +5341,24 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
         verificationRequired ||= activeTaskFilesChanged || Boolean(initialSource && finalSource && initialSource !== finalSource)
         await saveVerification()
 
-        const couldNotUseRequiredFileTool = (requiredToolRetry > 0 && requiresFileOperationForRequest && !fileChangeToolUsed) || (requiredReadRetry > 0 && requiresReadOperationForRequest && !readFileToolUsed)
-        const hasUnverifiedSteps = Boolean(latestRecord?.plan.length && latestRecord.pendingSteps.length)
+        const couldNotUseRequiredFileTool = (requiredToolRetry > 0 && requiresFileOperationForRequest && !fileChangeToolUsed) || (requiredReadRetry > 0 && requiresReadOperationForRequest && !readFileToolUsed) || (requiredCommandRetry > 0 && requiresCommandExecutionForRequest && !commandToolUsed)
+        const hasUnverifiedSteps = Boolean(latestRecord?.plan.length && !latestRecord.planIsAdvisory && latestRecord.pendingSteps.length)
         const failedChecks = verification.pending.filter((item) => item.status !== 'stale')
         const missingChangeVerification = verificationRequired && !verification.results.some(isChangeVerification)
-        const exploratoryTools = new Set(['list_files', 'read_file', 'search_code', 'search_files', 'find_files', 'project_info', 'analyze_android_project', 'analyze_web_project', 'analyze_windows_project', 'android_environment', 'windows_environment', 'android_devices', 'find_android_artifacts'])
-        const exploratoryOnlyError = operationalError && exploratoryTools.has(String(operationalError.tool ?? '')) ? operationalError : undefined
+        const exploratoryOnlyError = operationalError && exploratoryToolNames.has(String(operationalError.tool ?? '')) ? operationalError : undefined
         const unresolvedError = Boolean(failedChecks.length) || Boolean(operationalError && !exploratoryOnlyError)
         let finalStatus: 'failed' | 'needs_review' | 'completed' = couldNotUseRequiredFileTool || unresolvedError ? 'failed' : exploratoryOnlyError || hasUnverifiedSteps || verification.pending.length || missingAcceptance.length || missingChangeVerification ? 'needs_review' : 'completed'
+        const evidenceReview = aiEngine.verifyOutcome(aiDecision.evidence, [])
+        if (!evidenceReview.pass) {
+          aiDecision = {
+            ...aiDecision,
+            uncertainty: [...new Set([...aiDecision.uncertainty, ...evidenceReview.issues])].slice(-20),
+            nextAction: 'Başarılı araç kanıtı yok; tamamlanma iddiası gerçek görev kontrollerine göre ayrıca doğrulanmalı.',
+          }
+        } else {
+          aiDecision = { ...aiDecision, nextAction: 'Araç kanıtı toplandı; sonuç ve görev kontrolleri değerlendirildi.' }
+        }
+        await taskStore().update(journalTask.id, { aiDecision })
         await taskStore().update(journalTask.id, { errorAnalysis: operationalError ?? verification.latestError })
         const finished = await taskStore().finish(journalTask.id, finalStatus, finalStatus === 'completed' ? modelMessage : 'Görev, güncel araç kanıtları ve açık plan adımları denetlenerek sonlandırıldı.')
         if (!finished || !['completed', 'needs_review', 'failed'].includes(finished.status)) throw new Error('Görevin son durumu kalıcı olarak kaydedilemedi.')
@@ -5210,6 +5411,9 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
         await updateAgentProgress(stage, { ...orchestrator.snapshot, tool: call.function.name }, journalTask.id)
         activity('tool', `Araç: ${call.function.name}`, 'Çalıştırılıyor', { taskId: journalTask.id, tool: call.function.name, operation: 'tool-call' })
         await recordTaskEvent({ type: 'tool', name: call.function.name, status: 'started', detail: 'Araç parametreleri doğrulanıyor.' }, journalTask.id)
+        // Terminal aracı çağrıldıysa "uydurma" sayılmaz: başarısız bir komut da
+        // gerçek bir yürütme girişimidir ve dürüst hata mesajı korunmalıdır.
+        if (['run_command', 'run_powershell', 'run_tests', 'desktop_process_start'].includes(call.function.name)) commandToolUsed = true
         let output: string
         let analysis: ReturnType<typeof analyzeAgentError> | undefined
         let toolFailed = false
@@ -5253,17 +5457,35 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
           if (failure.shouldBlock) blockedReason = failure.reason ?? 'Düzeltme denemesi sınırına ulaşıldı.'
         } else {
           verification.record(call.function.name, call.function.arguments, undefined, isCheck ? { fingerprint: sourceAfter, stable: Boolean(sourceBefore && sourceBefore === sourceAfter && mutationBefore === activeMutationEpoch) } : undefined)
-          if (operationalError?.tool === call.function.name) operationalError = undefined
+          if (operationalError?.tool === call.function.name
+            || (operationalError?.tool && exploratoryToolNames.has(operationalError.tool) && recoveryEvidenceTools.has(call.function.name))) {
+            // Araştırma/önizleme çağrısındaki parametre hatası, aynı görevde
+            // başarılı alternatif inceleme veya istenen işlemle giderilebilir.
+            // Hata olayı geçmişte korunur; çözülmüş hata tamamlanmayı kilitlemez.
+            operationalError = undefined
+          }
           if (['propose_file_edit', 'write_file', 'apply_patch', 'create_directory', 'create_android_project', 'create_web_project', 'create_windows_desktop_project', 'project_scaffold'].includes(call.function.name)) {
             fileChangeToolUsed = true
             newProjectStallTurns = 0
-            if (newProjectIntent) activeTools = allActiveTools
+            if (newProjectIntent) activeTools = prioritizeAgentTools(allActiveTools, preferredTools)
           }
           if (call.function.name === 'read_file') readFileToolUsed = true
+          if (['run_command', 'run_powershell', 'run_tests', 'desktop_process_start'].includes(call.function.name)) commandToolUsed = true
       if (webToolNamesUsed.has(call.function.name)) webToolUsed = true
       if (webPageToolNamesUsed.has(call.function.name)) webPageToolUsed = true
           await recordTaskEvent({ type: 'tool', name: call.function.name, status: 'completed', detail: output.slice(0, 900) }, journalTask.id)
           await taskStore().update(journalTask.id, { currentTool: '', toolCalls: orchestrator.snapshot.toolCalls, correctionAttempts: orchestrator.snapshot.correctionAttempts, errorAnalysis: operationalError ?? verification.latestError, verificationFailures: verification.pending })
+        }
+        aiDecision = await recordExecutionEvidence(
+          journalTask.id,
+          call.function.name,
+          !toolFailed,
+          output,
+          aiEngine,
+          analysis?.nextAction,
+        ) ?? aiDecision
+        if (toolFailed) {
+          aiDecision = await maybeReplan(journalTask.id, analysis?.message ?? output, decisionContext) ?? aiDecision
         }
         await saveVerification()
         if (verification.pending.some((item) => item.status === 'stale')) output += '\nUygulama doğrulaması: Kaynak değişti veya parmak izi doğrulanamadı. Önceki başarılı kontroller güncel kanıt sayılmaz; aynı kontrolleri tekrar çalıştır.'
@@ -5890,6 +6112,10 @@ function registerIpcHandler<T extends unknown[]>(channel: string, handler: (even
 }
 
 function registerIpc() {
+  registerIpcHandler('external:open-url', async (_event, rawUrl: unknown) => {
+    if (typeof rawUrl !== 'string' || !isAllowedExternalUrl(rawUrl)) return false
+    return openExternalUrl(rawUrl)
+  })
   registerIpcHandler('project:get', () => projectRoot ? { name: path.basename(projectRoot), path: projectRoot } : null)
   registerIpcHandler('project:open', async () => {
     if (busy || pendingApprovals.size || runningCommands.size) throw new Error('Görev veya işlem çalışırken proje değiştirilemez. Önce görevi tamamlayın ya da durdurun.')
