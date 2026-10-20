@@ -18,6 +18,22 @@ export type WebResearchHit = {
   rank: number
 }
 
+/** Bir veya daha fazla güvenli sayfa okumasının ortak sonuç biçimleri. */
+export type WebResearchPage = {
+  title: string
+  text: string
+  url: string
+  fetchedAt: string
+}
+
+export type WebResearchResponse = {
+  hits: WebResearchHit[]
+  warning?: string
+}
+
+/** Web araştırma istekleri için sabit, kimlik bilgisi içermeyen istemci tanımı. */
+export const SAFE_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 UltronResearch/1.0'
+
 export type WebFetchRequest = {
   url: string
   timeoutMs: number
@@ -65,7 +81,7 @@ export function duckDuckGoEndpoint(): { url: string; headers: Record<string, str
     url: 'https://html.duckduckgo.com/html/',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Ultron-compatible UltronResearch/1.0',
+      'User-Agent': SAFE_AGENT,
     },
   }
 }
@@ -219,6 +235,13 @@ export function validateFetchableUrl(input: string): { ok: true; url: URL } | { 
   if (isPrivateOrBogonIp(host)) return { ok: false, reason: 'Özel ağ adresleri araştırılamaz (SSRF koruması).' }
   if (!host.includes('.') && !host.startsWith('[')) return { ok: false, reason: 'Geçerli bir genel yöntem değil.' }
   return { ok: true, url: parsed }
+}
+
+/** Eski sağlayıcı adaptörleri için boolean tabanlı güvenli URL sözleşmesi.
+ *  Gerçek karar mevcut SSRF filtresinden geçer; ikinci, daha zayıf bir ağ yolu açmaz. */
+export function validateExternalUrl(input: string): { allowed: boolean; reason?: string } {
+  const result = validateFetchableUrl(input)
+  return result.ok ? { allowed: true } : { allowed: false, reason: result.reason }
 }
 
 // --- Güvenilmeyen metin işaretleyici: web talimatları KOMUT DEĞİL sayılır ---
