@@ -356,7 +356,7 @@ async function readWorkspace(): Promise<WorkspaceState> {
     const messages = parsed.messages
     return {
       permissions: permissions && ['review', 'automatic'].includes(permissions.editMode) && ['confirm', 'automatic'].includes(permissions.commandMode)
-        ? { mode: ['controlled', 'advanced', 'personal'].includes(permissions.mode) ? permissions.mode : 'controlled', editMode: permissions.editMode, commandMode: permissions.commandMode, allowPackageInstalls: Boolean(permissions.allowPackageInstalls), allowSystemChanges: Boolean(permissions.allowSystemChanges), allowDesktopControl: permissions.allowDesktopControl === true, allowUnrestrictedAccess: permissions.allowUnrestrictedAccess === true, allowBroadAccess: permissions.allowBroadAccess === true, broadAccessConfirmedAt: typeof permissions.broadAccessConfirmedAt === 'string' ? permissions.broadAccessConfirmedAt.slice(0, 40) : null }
+        ? { mode: ['controlled', 'advanced', 'personal'].includes(permissions.mode) ? permissions.mode : 'controlled', editMode: permissions.editMode, commandMode: permissions.commandMode, allowPackageInstalls: Boolean(permissions.allowPackageInstalls), allowSystemChanges: Boolean(permissions.allowSystemChanges), allowDesktopControl: permissions.allowDesktopControl === true, allowBroadAccess: permissions.allowBroadAccess === true, broadAccessConfirmedAt: typeof permissions.broadAccessConfirmedAt === 'string' ? permissions.broadAccessConfirmedAt.slice(0, 40) : null }
         : fallback.permissions,
       permissionGrants: [
         ...sanitizePermissionGrants(parsed.permissionGrants, currentProject()).filter((grant) => grant.scope !== 'category'),
@@ -396,7 +396,6 @@ async function writeWorkspaceUnsafe(patch: Partial<WorkspaceState>) {
     allowPackageInstalls: Boolean(patch.permissions.allowPackageInstalls),
     allowSystemChanges: Boolean(patch.permissions.allowSystemChanges),
     allowDesktopControl: patch.permissions.allowDesktopControl === true,
-    allowUnrestrictedAccess: patch.permissions.allowUnrestrictedAccess === true,
     allowBroadAccess: patch.permissions.allowBroadAccess === true,
     broadAccessConfirmedAt: typeof patch.permissions.broadAccessConfirmedAt === 'string' ? patch.permissions.broadAccessConfirmedAt.slice(0, 40) : null,
   }
@@ -1125,7 +1124,7 @@ async function runDesktopHost(action: DesktopActionKind, payload: Record<string,
   if (desktopControlPaused) throw new Error('Masaüstü otomasyonu durduruldu; yeni eylemler çalıştırılmıyor.')
   const profile = await readWorkspace()
   const trustedLaunch = action === 'launch_app' && options.allowTrustedApplication === true
-  if (!profile.permissions.allowDesktopControl && !profile.permissions.allowUnrestrictedAccess && !trustedLaunch) throw new Error('Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden masaüstü kontrolünü veya açık erişim profilini etkinleştirin.')
+  if (!profile.permissions.allowDesktopControl && !profile.permissions.allowBroadAccess && !trustedLaunch) throw new Error('Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden masaüstü kontrolünü veya açık erişim profilini etkinleştirin.')
   const scriptPath = await ensureDesktopHostScript()
   const powershell = await resolveExecutable('powershell')
   const outputPath = options.screenshot ? userDataFile(path.join('screenshots', desktopResultFileName('desktop'))) : ''

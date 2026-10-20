@@ -4,7 +4,7 @@ import { canAccessExternalUrl, canPerformAutomatically, canUseDesktopAutomation,
 import type { PermissionProfile } from '../electron/shared.ts'
 
 const projectPath = 'C:\\work\\demo'
-const controlled: PermissionProfile = { mode: 'controlled', editMode: 'review', commandMode: 'confirm', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: false, allowUnrestrictedAccess: false }
+const controlled: PermissionProfile = { mode: 'controlled', editMode: 'review', commandMode: 'confirm', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: false, allowBroadAccess: false, broadAccessConfirmedAt: null }
 
 test('dış URL politikası güvenli adresi profil ve merkezi onay akışına göre sınırlar', () => {
   assert.equal(canAccessExternalUrl('https://example.com', controlled, projectPath).allowed, false)
@@ -24,7 +24,7 @@ test('masaüstü otomasyonu profil kapısını ve merkezi kullanıcı onayını 
 })
 
 test('açık erişim yardımcıları kapsam kapısını kaldırır ancak URL güvenliğini korur', () => {
-  const unrestricted = { ...controlled, allowUnrestrictedAccess: true }
+  const unrestricted = { ...controlled, allowBroadAccess: true, broadAccessConfirmedAt: new Date().toISOString() }
   assert.equal(isBroadAccessEnabled(unrestricted), true)
   assert.equal(canLaunchApplication(unrestricted, projectPath).allowed, true)
   assert.equal(canReadOrWriteAnyPath(unrestricted, projectPath).allowed, true)

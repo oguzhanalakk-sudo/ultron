@@ -18,14 +18,8 @@ export type PermissionContext = {
 const categories = new Set<PermissionCategory>(['development', 'package', 'system', 'system-script', 'network-scan', 'destructive', 'security-audit', 'file-rename', 'file-delete', 'screen-capture', 'input-control', 'app-launch', 'file-read', 'file-create', 'file-edit'])
 const scopes = new Set<ApprovalGrantScope>(['operation', 'task', 'project', 'category'])
 const pathKey = (value: string) => path.resolve(value).toLocaleLowerCase('en-US')
-export function isUnrestrictedAccessEnabled(profile: PermissionProfile): boolean {
-  const broadConfirmed = profile.allowBroadAccess === true && typeof profile.broadAccessConfirmedAt === 'string' && Number.isFinite(Date.parse(profile.broadAccessConfirmedAt))
-  return profile.allowUnrestrictedAccess === true || broadConfirmed
-}
-
-/** Geriye dönük uyumluluk adı; geniş erişim yine onay tarihi ve güvenlik kapılarından geçer. */
 export function isBroadAccessEnabled(profile: PermissionProfile): boolean {
-  return isUnrestrictedAccessEnabled(profile)
+  return profile.allowBroadAccess === true && typeof profile.broadAccessConfirmedAt === 'string' && Number.isFinite(Date.parse(profile.broadAccessConfirmedAt))
 }
 
 export function sanitizeResourceRoots(value: unknown, projectPath: string): ResourceRoot[] {
@@ -215,7 +209,7 @@ export function canAccessExternalUrl(
   projectPath: string,
   taskId?: string,
 ): { allowed: boolean; reason?: string; grantId?: string } {
-  if (isUnrestrictedAccessEnabled(profile)) {
+  if (isBroadAccessEnabled(profile)) {
     const safety = validateExternalUrl(url)
     return safety.allowed ? { allowed: true, reason: 'Açık erişim profili etkin; URL güvenlik filtresi yine uygulandı.' } : { allowed: false, reason: safety.reason }
   }
@@ -231,7 +225,7 @@ export function canAccessExternalUrl(
 export function canLaunchApplication(profile: PermissionProfile, projectPath: string, taskId?: string): { allowed: boolean; reason?: string } {
   void projectPath
   void taskId
-  if (isUnrestrictedAccessEnabled(profile)) return { allowed: true, reason: 'Açık erişim profili etkin; yalnız güvenilir uygulama hedefleri başlatılabilir.' }
+  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Açık erişim profili etkin; yalnız güvenilir uygulama hedefleri başlatılabilir.' }
   if (profile.mode === 'controlled') return { allowed: false, reason: 'Uygulama başlatma için kullanıcı onayı gerekir.' }
   return { allowed: true }
 }
@@ -239,7 +233,7 @@ export function canLaunchApplication(profile: PermissionProfile, projectPath: st
 export function canReadOrWriteAnyPath(profile: PermissionProfile, projectPath: string, taskId?: string): { allowed: boolean; reason?: string } {
   void projectPath
   void taskId
-  if (isUnrestrictedAccessEnabled(profile)) return { allowed: true, reason: 'Açık erişim profili etkin; işletim sistemi izinleri ve hassas dosya filtreleri yine geçerlidir.' }
+  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Açık erişim profili etkin; işletim sistemi izinleri ve hassas dosya filtreleri yine geçerlidir.' }
   return { allowed: false, reason: 'Dosya erişimi seçili proje ve tanımlı kaynak kapsamlarıyla sınırlı.' }
 }
 

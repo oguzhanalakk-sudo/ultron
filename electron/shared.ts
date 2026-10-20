@@ -34,8 +34,6 @@ export type PermissionProfile = {
   allowSystemChanges: boolean
   /** Masaüstü kontrolü (fare/klavye/ekran) varsayılan olarak kapalıdır; kullanıcı açıkça açar. */
   allowDesktopControl: boolean
-  /** Sınırsız erişim açıkça seçilmedikçe güvenlik kapsamı dışına çıkılmaz. */
-  allowUnrestrictedAccess: boolean
   /** Kullanıcının açık onayıyla genişletilmiş erişim profili. */
   allowBroadAccess: boolean
   broadAccessConfirmedAt?: string | null
@@ -152,7 +150,6 @@ export const defaultPermissions: PermissionProfile = {
   allowPackageInstalls: false,
   allowSystemChanges: false,
   allowDesktopControl: false,
-  allowUnrestrictedAccess: false,
   allowBroadAccess: false,
   broadAccessConfirmedAt: null,
 }
@@ -164,7 +161,6 @@ export const broadAccessPermissions: PermissionProfile = {
   allowPackageInstalls: true,
   allowSystemChanges: true,
   allowDesktopControl: true,
-  allowUnrestrictedAccess: true,
   allowBroadAccess: true,
   broadAccessConfirmedAt: new Date().toISOString(),
 }
