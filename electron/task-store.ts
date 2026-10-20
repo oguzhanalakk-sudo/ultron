@@ -13,6 +13,7 @@ export type JournalTask = {
   request: string
   title: string
   objective: string
+  summary?: string
   plan: string[]
   completedSteps: string[]
   acceptanceTests?: string[]
@@ -53,6 +54,10 @@ function cleanList(value: unknown, limit: number, maxLength: number): string[] {
 
 const cleanAcceptanceTests = (value: unknown) => cleanList(value, 30, 1_000)
 const cleanCompletedStepIds = (value: unknown) => [...new Set(cleanList(value, 40, 120).map((item) => item.trim()))]
+const cleanSummary = (value: unknown, fallback = '') => {
+  const summary = typeof value === 'string' ? value.trim() : ''
+  return summary ? clean(summary, 600).slice(0, 600) : fallback
+}
 const isHash = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
 
 function validTask(value: unknown, projectPath: string): value is JournalTask {
@@ -66,9 +71,10 @@ function validTask(value: unknown, projectPath: string): value is JournalTask {
 
 function cleanFailures(value: unknown): VerificationFailure[] {
   if (!Array.isArray(value)) return []
-  return value.filter((item) => item && isHash(item.key) && isVerificationTool(item.tool) && item.analysis && ['syntax', 'build', 'runtime', 'dependency', 'configuration', 'permission', 'filesystem', 'network', 'test', 'resources', 'unknown'].includes(item.analysis.category))
+  return value.filter((item) => item && isHash(item.key) && isVerificationTool(item.tool) && item.analysis && ['syntax', 'build', 'runtime', 'dependency', 'configuration', 'permission', 'filesystem', 'network', 'test', 'resources', 'unknown'].includes(item.analysis.category)
+    && typeof item.analysis.message === 'string' && typeof item.analysis.nextAction === 'string')
     .slice(-48).map((item) => ({ key: item.key, tool: clean(item.tool, 100), status: item.status === 'stale' ? 'stale' : 'failed', analysis: {
-      category: item.analysis.category, stage: 'testing', message: clean(item.analysis.message, 1_000), nextAction: clean(item.analysis.nextAction, 1_000), tool: clean(item.tool, 100), retryable: item.analysis.retryable === true,
+      category: item.analysis.category, stage: 'testing', message: clean(item.analysis.message, 1_000), nextAction: clean(item.analysis.nextAction, 1_000), tool: clean(item.tool, 100), retryable: Boolean(item.analysis.retryable),
       ...(typeof item.analysis.exitCode === 'number' && Number.isFinite(item.analysis.exitCode) ? { exitCode: item.analysis.exitCode } : {}),
     } }))
 }
@@ -103,18 +109,22 @@ export class TaskStore {
       return value.filter((item): item is JournalTask => validTask(item, this.projectPath)).slice(-MAX_TASKS).reverse().map((task) => ({
         ...task,
         request: clean(task.request), title: clean(task.title, 180), objective: clean(task.objective),
+        summary: cleanSummary(task.summary, clean(task.request, 600)),
         plan: Array.isArray(task.plan) ? task.plan.slice(0, 40).map((item) => clean(item, 300)) : [],
         completedSteps: Array.isArray(task.completedSteps) ? task.completedSteps.slice(0, 40).map((item) => clean(item, 300)) : [],
         acceptanceTests: cleanAcceptanceTests(task.acceptanceTests),
         completedStepIds: cleanCompletedStepIds(task.completedStepIds),
         pendingSteps: Array.isArray(task.pendingSteps) ? task.pendingSteps.slice(0, 40).map((item) => clean(item, 300)) : [],
         usedTools: Array.isArray(task.usedTools) ? task.usedTools.slice(-80).map((item) => clean(item, 100)) : [],
-        events: Array.isArray(task.events) ? task.events.slice(-MAX_EVENTS).filter((event) => event && typeof event.name === 'string' && ['tool', 'approval', 'result', 'error'].includes(event.type)).map((event) => ({ ...event, name: clean(event.name, 120), detail: event.detail ? clean(event.detail, 1_000) : undefined })) : [],
+        events: Array.isArray(task.events) ? task.events.slice(-MAX_EVENTS).filter((event) => event && typeof event.name === 'string' && ['tool', 'approval', 'result', 'error'].includes(event.type))
+          .map((event) => ({ ...event, at: clean(event.at, 40), type: event.type, name: clean(event.name, 120), status: event.status ? clean(event.status, 80) : undefined, detail: event.detail ? clean(event.detail, 1_000) : undefined })) : [],
         errors: Array.isArray(task.errors) ? task.errors.slice(-30).map((item) => clean(item, 1_000)) : [],
         verificationFailures: cleanFailures(task.verificationFailures),
         verificationResults: cleanReceipts(task.verificationResults),
         verificationRequired: task.verificationRequired === true,
-        stage: (['analyzing', 'planning', 'awaiting_approval', 'executing', 'evaluating', 'correcting', 'testing', 'finalizing', 'paused', 'interrupted', 'blocked', 'completed', 'failed', 'cancelled'].includes(String(task.stage)) ? task.stage : 'analyzing') as AgentStage,
+        stage: (['analyzing', 'planning', 'awaiting_approval', 'executing', 'evaluating', 'correcting', 'testing', 'finalizing', 'paused', 'interrupted', 'blocked', 'completed', 'failed', 'cancelled'] as const).includes(String(task.stage) as any)
+          ? String(task.stage) as any
+          : 'analyzing',
         currentTool: typeof task.currentTool === 'string' ? clean(task.currentTool, 100) : undefined,
         toolCalls: Number.isInteger(task.toolCalls) && task.toolCalls >= 0 ? Math.min(task.toolCalls, 10_000) : 0,
         correctionAttempts: Number.isInteger(task.correctionAttempts) && task.correctionAttempts >= 0 ? Math.min(task.correctionAttempts, 1_000) : 0,
@@ -133,9 +143,10 @@ export class TaskStore {
     return this.serialize(async () => {
       const now = new Date().toISOString()
       const title = clean(request.split(/\r?\n/, 1)[0], 180) || 'Kodlama görevi'
+      const summary = cleanSummary(request, title)
       const task: JournalTask = {
         id: randomUUID(), projectPath: this.projectPath, request: clean(request), title,
-        objective: clean(request), plan: [], completedSteps: [], acceptanceTests: [], completedStepIds: [], pendingSteps: [], usedTools: [], events: [], errors: [],
+        objective: clean(request), summary, plan: [], completedSteps: [], acceptanceTests: [], completedStepIds: [], pendingSteps: [], usedTools: [], events: [], errors: [],
         status: 'running', stage: 'analyzing', toolCalls: 0, correctionAttempts: 0, verificationRequired: false, createdAt: now, updatedAt: now,
       }
       await this.upsert(task)
@@ -148,8 +159,8 @@ export class TaskStore {
       const task = (await this.list()).find((entry) => entry.id === id)
       if (!task) throw new Error('Sürdürülecek görev bulunamadı veya başka bir projeye ait.')
       const hasPendingWork = task.status === 'completed' && task.pendingSteps.length > 0
-      if (!['interrupted', 'paused', 'blocked', 'needs_review', 'failed', 'cancelled'].includes(task.status) && !hasPendingWork) throw new Error('Yalnızca yarım kalmış, doğrulama bekleyen, başarısız veya açık plan adımı bulunan görevler sürdürülebilir.')
-      return this.updateUnsafe(id, { status: 'running', stage: 'analyzing', currentTool: '', errors: [], events: [...task.events, { at: new Date().toISOString(), type: 'result', name: 'task-resumed', detail: 'Görev yeniden açıldı; önceki izinler her araç çağrısında tekrar doğrulanacak.' }] })
+      if (!['interrupted', 'paused', 'blocked', 'needs_review', 'failed', 'cancelled'].includes(task.status) && !hasPendingWork) throw new Error('Yalnızca yarım kalmış, doğrulama bekleyen, blokeli veya başarısız görevler sürdürülür.')
+      return this.updateUnsafe(id, { status: 'running', stage: 'analyzing', currentTool: '', errors: [], events: [...task.events, { at: new Date().toISOString(), type: 'result', name: 'task-resumed', detail: 'Görev sürdürüldü.' }] })
     })
   }
 
@@ -165,6 +176,7 @@ export class TaskStore {
       ...current, ...patch, id: current.id, projectPath: this.projectPath,
       request: clean(patch.request ?? current.request), title: clean(patch.title ?? current.title, 180),
       objective: clean(patch.objective ?? current.objective),
+      summary: cleanSummary(patch.summary ?? current.summary ?? current.request, clean(patch.request ?? current.request, 600)),
       plan: (patch.plan ?? current.plan).slice(0, 40).map((item) => clean(item, 300)),
       completedSteps: (patch.completedSteps ?? current.completedSteps).slice(0, 40).map((item) => clean(item, 300)),
       acceptanceTests: cleanAcceptanceTests(patch.acceptanceTests ?? current.acceptanceTests),
@@ -212,7 +224,7 @@ export class TaskStore {
           detail = failed.length ? `${failed.length} doğrulama hatası çözülmeden görev tamamlanamaz.` : 'Açık araç veya yürütme hatası çözülmeden görev tamamlanamaz.'
         } else if (stale.length || task.pendingSteps.length || missingAcceptanceTests.length || missingChangeVerification) {
           status = 'needs_review'
-          detail = `${task.pendingSteps.length} açık plan adımı, ${stale.length} eski doğrulama ve ${missingAcceptanceTests.length} çalıştırılmamış kabul kontrolü nedeniyle görev doğrulama bekliyor.${missingChangeVerification ? ' Gerçek dosya değişikliği sonrasında başarılı test veya derleme kanıtı bulunamadı.' : ''}`
+          detail = `${task.pendingSteps.length} açık plan adımı, ${stale.length} eski doğrulama ve ${missingAcceptanceTests.length} çalıştırılmamış kabul kontrolü nedeniyle görev doğrulama bekliyor.`
         }
       }
       return this.updateUnsafe(id, {
@@ -251,6 +263,7 @@ export function planTaskRecord(task: JournalTask, plan: { title: string; objecti
   const steps = cleanList(plan.steps, 40, 300)
   return {
     title: clean(plan.title, 180), objective: clean(plan.objective),
+    summary: cleanSummary(plan.objective || task.objective || task.request, clean(plan.objective || task.objective || task.request, 600)),
     plan: steps,
     acceptanceTests: cleanAcceptanceTests(plan.tests),
     completedSteps: [] as string[],
