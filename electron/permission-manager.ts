@@ -23,6 +23,11 @@ export function isUnrestrictedAccessEnabled(profile: PermissionProfile): boolean
   return profile.allowUnrestrictedAccess === true || broadConfirmed
 }
 
+/** Geriye dönük uyumluluk adı; geniş erişim yine onay tarihi ve güvenlik kapılarından geçer. */
+export function isBroadAccessEnabled(profile: PermissionProfile): boolean {
+  return isUnrestrictedAccessEnabled(profile)
+}
+
 export function sanitizeResourceRoots(value: unknown, projectPath: string): ResourceRoot[] {
   if (!Array.isArray(value)) return []
   const project = pathKey(projectPath)

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canAccessExternalUrl, canPerformAutomatically, canUseDesktopAutomation, canLaunchApplication, canReadOrWriteAnyPath, createPermissionGrant, findPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, requestExternalUrlApproval, sanitizePermissionGrants, sanitizeResourceRoots } from '../electron/permission-manager.ts'
+import { canAccessExternalUrl, canPerformAutomatically, canUseDesktopAutomation, canLaunchApplication, canReadOrWriteAnyPath, createPermissionGrant, findPermissionGrant, findResourceRoot, isBroadAccessEnabled, isValidApprovalDecision, requestDesktopAutomationApproval, requestExternalUrlApproval, sanitizePermissionGrants, sanitizeResourceRoots } from '../electron/permission-manager.ts'
 import type { PermissionProfile } from '../electron/shared.ts'
 
 const projectPath = 'C:\\work\\demo'
@@ -25,6 +25,7 @@ test('masaüstü otomasyonu profil kapısını ve merkezi kullanıcı onayını 
 
 test('açık erişim yardımcıları kapsam kapısını kaldırır ancak URL güvenliğini korur', () => {
   const unrestricted = { ...controlled, allowUnrestrictedAccess: true }
+  assert.equal(isBroadAccessEnabled(unrestricted), true)
   assert.equal(canLaunchApplication(unrestricted, projectPath).allowed, true)
   assert.equal(canReadOrWriteAnyPath(unrestricted, projectPath).allowed, true)
   assert.equal(canAccessExternalUrl('https://example.com', unrestricted, projectPath).allowed, true)
