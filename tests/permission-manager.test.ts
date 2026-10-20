@@ -1,10 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canAccessExternalUrl, canPerformAutomatically, canUseDesktopAutomation, createPermissionGrant, findPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, requestExternalUrlApproval, sanitizePermissionGrants, sanitizeResourceRoots } from '../electron/permission-manager.ts'
+import { canAccessExternalUrl, canPerformAutomatically, canUseDesktopAutomation, canLaunchApplication, canReadOrWriteAnyPath, createPermissionGrant, findPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, requestExternalUrlApproval, sanitizePermissionGrants, sanitizeResourceRoots } from '../electron/permission-manager.ts'
 import type { PermissionProfile } from '../electron/shared.ts'
 
 const projectPath = 'C:\\work\\demo'
-const controlled: PermissionProfile = { mode: 'controlled', editMode: 'review', commandMode: 'confirm', allowPackageInstalls: false, allowSystemChanges: false }
+const controlled: PermissionProfile = { mode: 'controlled', editMode: 'review', commandMode: 'confirm', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: false, allowUnrestrictedAccess: false }
 
 test('dış URL politikası güvenli adresi profil ve merkezi onay akışına göre sınırlar', () => {
   assert.equal(canAccessExternalUrl('https://example.com', controlled, projectPath).allowed, false)
@@ -21,6 +21,14 @@ test('masaüstü otomasyonu profil kapısını ve merkezi kullanıcı onayını 
   assert.equal(canUseDesktopAutomation(enabled, 'app-launch', projectPath).allowed, true)
   assert.equal(canUseDesktopAutomation(enabled, 'system', projectPath).allowed, true)
   assert.equal(requestDesktopAutomationApproval('app-launch', projectPath).approved, false)
+})
+
+test('açık erişim yardımcıları kapsam kapısını kaldırır ancak URL güvenliğini korur', () => {
+  const unrestricted = { ...controlled, allowUnrestrictedAccess: true }
+  assert.equal(canLaunchApplication(unrestricted, projectPath).allowed, true)
+  assert.equal(canReadOrWriteAnyPath(unrestricted, projectPath).allowed, true)
+  assert.equal(canAccessExternalUrl('https://example.com', unrestricted, projectPath).allowed, true)
+  assert.equal(canAccessExternalUrl('file:///C:/secret.txt', unrestricted, projectPath).allowed, false)
 })
 
 test('onay kararları boolean ve kapsam/kaydetme alanları arasında tutarlı olmalı', () => {

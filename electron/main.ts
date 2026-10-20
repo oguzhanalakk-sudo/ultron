@@ -1123,7 +1123,7 @@ async function runDesktopHost(action: DesktopActionKind, payload: Record<string,
   if (desktopControlPaused) throw new Error('Masaüstü otomasyonu durduruldu; yeni eylemler çalıştırılmıyor.')
   const profile = await readWorkspace()
   const trustedLaunch = action === 'launch_app' && options.allowTrustedApplication === true
-  if (!profile.permissions.allowDesktopControl && !trustedLaunch) throw new Error('Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden "Masaüstü kontrolünü otomatik çalıştır" seçeneğini aç.')
+  if (!profile.permissions.allowDesktopControl && !profile.permissions.allowUnrestrictedAccess && !trustedLaunch) throw new Error('Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden masaüstü kontrolünü veya açık erişim profilini etkinleştirin.')
   const scriptPath = await ensureDesktopHostScript()
   const powershell = await resolveExecutable('powershell')
   const outputPath = options.screenshot ? userDataFile(path.join('screenshots', desktopResultFileName('desktop'))) : ''
