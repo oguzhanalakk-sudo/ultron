@@ -163,6 +163,7 @@ export type WebFetchRequest = {
   timeoutMs: number
   maxBytes: number
   method?: 'GET' | 'POST'
+  responseType?: 'text' | 'binary'
   body?: string
   headers?: Record<string, string>
   /** Internal controls for bounded multi-step research; never populated by renderer input. */
@@ -175,9 +176,14 @@ export type WebFetchResponse = {
   contentType: string | null
   finalUrl: string | null
   body: string
+  bodyBytes?: Uint8Array
 }
 
 export type WebFetchResearchClient = (request: WebFetchRequest) => Promise<WebFetchResponse>
+
+export function isWebDownloadRequest(request: string): boolean {
+  return /\b(?:indir\w*|download\w*)\b/iu.test(String(request ?? ''))
+}
 
 export type WebSearchProvider = {
   id: string

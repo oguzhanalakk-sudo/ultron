@@ -61,6 +61,7 @@ import {
   markUntrustedWebText,
   parseWebPageToStructured,
   isEvidenceSufficient,
+  isWebDownloadRequest,
   parseConfiguredSearchResponse,
   rankHitsForSubQuestion,
   searchBrave,
@@ -1746,24 +1747,10 @@ async function runWebResearch(query: string, options: { maxPages?: number; langu
 async function prefetchWebPages(request: string, taskId: string | null): Promise<string> {
   const urls = [...String(request ?? '').matchAll(/https?:\/\/[^\s"'<>)\]}]+/gi)].map((match) => match[0]).slice(0, 3)
   if (!urls.length) return ''
+  if (isWebDownloadRequest(request)) return ''
   const blocks: string[] = []
-  const wantsDownload = /\b(?:indir|indirilen|download)\b/i.test(String(request ?? ''))
   for (const url of urls) {
     try {
-      // "İndir" isteği varsa indirme çerçeve seviyesinde gerçekten yapılır.
-      if (wantsDownload) {
-        try {
-          const fileName = (new URL(url).pathname.split('/').filter(Boolean).pop() ?? 'indirilen.html')
-          const saved = await runWebDownload(url, `indirilenler/${fileName}`)
-          await recordTaskEvent({ type: 'tool', name: 'web_download', status: 'completed', detail: `${saved.path} (${saved.bytes} bayt)` }, taskId)
-          activity('tool', 'Web dosyası indirildi', saved.path, { taskId: taskId ?? undefined, tool: 'WebResearchTool', operation: 'download', target: saved.url.slice(0, 220), result: 'success', changedPaths: [saved.path] })
-          blocks.push(`İNDİRİLEN DOSYA: ${saved.path} (${saved.bytes} bayt, ${saved.contentType}) — kaynak: ${saved.url}`)
-          continue
-        } catch (error) {
-          blocks.push(`${url}\nİndirilemedi: ${(error as Error).message}`)
-          continue
-        }
-      }
       const decision = validateFetchableUrl(url)
       if (!decision.ok) { blocks.push(`${url}\nErişilemedi: ${decision.reason}`); continue }
       const response = await webFetchResearchClient({ url: decision.url.toString(), timeoutMs: webResearchLimits.pageFetchTimeoutMs, maxBytes: webResearchLimits.pageFetchMaxBytes, headers: { 'User-Agent': 'UltronResearch/1.0', 'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.6', 'Accept-Language': 'tr,en;q=0.8' }, method: 'GET' })
@@ -1804,15 +1791,61 @@ async function runWebDownload(url: string, relativeTarget: string) {
   if (!target) throw new Error('Dosyanın proje içindeki hedef yolunu belirt (örn. "belgeler/rapor.pdf").')
   if (target.length > 300) throw new Error('Hedef yol çok uzun.')
   if (/[&|<>^%`"'\r\n]/.test(target)) throw new Error('Hedef yolda güvenilmeyen karakter var.')
-  const resolved = await validateRelativePath(target)
-  const response = await webFetchResearchClient({ url: decision.url.toString(), timeoutMs: webResearchLimits.pageFetchTimeoutMs, maxBytes: 20 * 1024 * 1024, headers: { 'User-Agent': 'UltronResearch/1.0', 'Accept': '*/*' }, method: 'GET' })
-  if (response.status >= 400) throw new Error(`İndirilemedi (HTTP ${response.status}).`)
-  const contentType = response.contentType ?? 'application/octet-stream'
-  const buffer = Buffer.from(response.body, 'utf8')
-  await fs.mkdir(path.dirname(resolved), { recursive: true })
-  await fs.writeFile(resolved, buffer)
-  emit({ type: 'files-changed', paths: [target] })
-  return { url: decision.url.toString(), path: target, bytes: buffer.byteLength, contentType }
+  if (target.replace(/\\/g, '/').split('/')[0]?.toLowerCase() === '@resource') throw new Error('Web dosyaları yalnızca seçili proje içine indirilebilir.')
+  const resolved = await ensureInsideProject(await validateRelativePath(target), true)
+  await assertWritable(resolved)
+  const workspace = await readWorkspace()
+  const execute = async () => {
+    const response = await webFetchResearchClient({
+      url: decision.url.toString(),
+      timeoutMs: webResearchLimits.pageFetchTimeoutMs,
+      maxBytes: 20 * 1024 * 1024,
+      headers: { 'User-Agent': 'UltronResearch/1.0', 'Accept': '*/*' },
+      method: 'GET',
+      responseType: 'binary',
+    })
+    if (response.status >= 400) throw new Error(`İndirilemedi (HTTP ${response.status}).`)
+    if (!response.bodyBytes) throw new Error('Sunucu dosya içeriğini bayt dizisi olarak döndürmedi.')
+    const contentType = response.contentType ?? 'application/octet-stream'
+    await fs.mkdir(path.dirname(resolved), { recursive: true })
+    const safeTarget = await ensureInsideProject(resolved, true)
+    await assertWritable(safeTarget)
+    const buffer = Buffer.from(response.bodyBytes)
+    try {
+      await fs.writeFile(safeTarget, buffer, { flag: 'wx' })
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new Error('Hedef dosya zaten var; üzerine yazılmadı. Farklı bir yol seçin.')
+      throw error
+    }
+    emit({ type: 'files-changed', paths: [target] })
+    return { url: decision.url.toString(), path: target, bytes: buffer.byteLength, contentType }
+  }
+  const automatic = canPerformAutomatically({
+    profile: workspace.permissions,
+    grants: workspace.permissionGrants,
+    projectPath: currentProject(),
+    taskId: workspace.task?.id,
+    category: 'file-create',
+    risk: 'development',
+  })
+  if (automatic) {
+    activity('status', 'Web indirme izin profiliyle otomatik onaylandı', target, { taskId: workspace.task?.id, tool: 'WebResearchTool', operation: 'file-create', target, approvalOutcome: 'automatic' })
+    return execute()
+  }
+  const approval = askApproval(
+    'command',
+    `Web dosyası indir: ${target}`,
+    `Dosya ${decision.url.origin} adresinden seçili proje içine indirilecek; var olan dosyaların üzerine yazılmaz.`,
+    async () => JSON.stringify(await execute()),
+    [target],
+    'medium',
+    'file-create',
+    workspace.task?.id,
+    'WebResearchTool',
+  )
+  const outcome = await approval.result
+  try { return JSON.parse(outcome) as Awaited<ReturnType<typeof execute>> }
+  catch { throw new Error(outcome) }
 }
 async function runPowerShellScript(script: string, reason: string) {
   if (!script.trim() || script.length > 12_000) throw new Error('PowerShell komut dosyası boş veya 12.000 karakterden uzun.')
