@@ -49,11 +49,11 @@ test('şablon dosyaları eksikse boş dosya üretilmez, minimal iskelet ve uyar�
   const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'ultron-scaffold-'))
   try {
     const result = await buildProjectFromSpec({
-      name: 'web-durum', description: 'Şablon dosyası olmayan masaüstü şablonu', category: 'desktop', templateId: 'tauri-react',
+      name: 'masaustu-durum', description: 'Şablon dosyası olmayan masaüstü şablonu', category: 'desktop', templateId: 'tauri-react',
       techStack: { language: 'typescript', framework: 'tauri' }, features: [],
     }, { workspaceRoot })
     assert.equal(result.success, true)
-    const projectRoot = path.join(workspaceRoot, 'web-durum')
+    const projectRoot = path.join(workspaceRoot, 'masaustu-durum')
     const files = await listFilesRecursive(projectRoot)
     assert.ok(files.length > 0, 'En az bir dosya oluşmalı')
     for (const file of files) {

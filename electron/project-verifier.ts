@@ -189,6 +189,8 @@ export type VerificationCheck = {
   detail?: string
   command?: string
   result?: VerificationResult
+  /** skipped olsa da "tam doğrulama" sayılmasında sakınca olmayan, gerçekten gereksiz adım. */
+  notApplicable?: boolean
 }
 
 export type VerificationPhaseReport = {
@@ -374,7 +376,7 @@ export async function verifyProject(root: string, options: VerifyProjectOptions)
   let depsReady = !usesNpm && stack !== 'python-fastapi'
   const installChecks: VerificationCheck[] = []
   if (stack === 'go' || stack === 'rust') {
-    installChecks.push({ name: 'Bağımlılık kurulumu', status: 'skipped', detail: 'Bu yığın için ayrı kurulum adımı yok; bağımlılıklar build/test sırasında çözülür.' })
+    installChecks.push({ name: 'Bağımlılık kurulumu', status: 'skipped', notApplicable: true, detail: 'Bu yığın için ayrı kurulum adımı yok; bağımlılıklar build/test sırasında çözülür.' })
   } else if (options.install) {
     const command = stack === 'python-fastapi' ? 'python' : 'npm'
     const args = stack === 'python-fastapi' ? ['-m', 'pip', 'install', '-r', 'requirements.txt'] : ['install']
@@ -384,7 +386,7 @@ export async function verifyProject(root: string, options: VerifyProjectOptions)
   } else {
     depsReady = usesNpm && await exists(path.join(projectRoot, 'node_modules'))
     installChecks.push(depsReady
-      ? { name: 'Bağımlılık kurulumu', status: 'skipped', detail: 'node_modules zaten var; kurulum çalıştırılmadı.' }
+      ? { name: 'Bağımlılık kurulumu', status: 'skipped', notApplicable: true, detail: 'node_modules zaten var; kurulum çalıştırılmadı.' }
       : notRun('Bağımlılık kurulumu', '--install verilmedi; bağımlılıklar kurulmadı.'))
   }
   phases.push(phase('install', installChecks))
@@ -426,7 +428,7 @@ export async function verifyProject(root: string, options: VerifyProjectOptions)
   const checks = phases.flatMap((item) => item.checks)
   return {
     ok: phases.every((item) => item.ok),
-    complete: checks.every((check) => check.status === 'passed' || (check.status === 'skipped' && check.name === 'Bağımlılık kurulumu')),
+    complete: checks.every((check) => check.status === 'passed' || (check.status === 'skipped' && check.notApplicable === true)),
     phases,
   }
 }

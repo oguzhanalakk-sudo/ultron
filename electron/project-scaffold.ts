@@ -4,6 +4,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { renderTemplateString } from './project-template-engine.ts'
+import { generateStackFiles } from './project-generators.ts'
 import { buildProjectPlan, hasPlanErrors } from './project-plan.ts'
 import { ancestorStaysInside, writeProjectPlan } from './project-writer.ts'
 import type { ProjectStack } from './project-template-registry.ts'
@@ -303,8 +304,7 @@ export async function buildProjectFromSpec(spec: ProjectSpec, options: { workspa
 
     if (template.stack) {
       // Plan (diske yazmaz) -> statik denetim -> yazma (üzerine yazmaz).
-      const generatedPlan = buildProjectPlan({ name: slugify(spec.name), description: spec.description, stack: template.stack })
-      const taken = new Set(generatedPlan.files.map((file) => file.path.toLowerCase()))
+      const taken = new Set(generateStackFiles(template.stack, { name: slugify(spec.name), description: spec.description }).map((file) => file.path.toLowerCase()))
       const extraFiles = structureFiles.filter((file) => {
         if (!taken.has(file.path.toLowerCase())) return true
         filesSkipped.push(file.path)

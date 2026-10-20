@@ -1,7 +1,7 @@
 // Mevcut projelere güvenli özellik ekleme: önce değişiklik planı (hangi dosya
 // yeni / hangisi düzenlenecek), hedefli düzenleme (tam yeniden yazım yok),
 // değişiklik öncesi/sonrası doğrulama ve kullanıcı değişikliklerini ezmeme.
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -209,9 +209,16 @@ export async function applyChangePlan(plan: ChangePlan, options: ApplyOptions = 
       if (current === undefined || sha(current) !== edit.sha256) {
         throw new Error('Dosya plan sonrasında değişmiş (kullanıcı değişikliği korunuyor); yeniden planlayın.')
       }
-      const temporary = `${target}.ultron-${process.pid}.tmp`
-      await fs.writeFile(temporary, edit.after, { encoding: 'utf8', flag: constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL })
-      try { await fs.rename(temporary, target) } catch (error) { await fs.rm(temporary, { force: true }); throw error }
+      const temporary = `${target}.ultron-${randomBytes(6).toString('hex')}.tmp`
+      const mode = (await fs.stat(target)).mode & 0o777
+      await fs.writeFile(temporary, edit.after, { encoding: 'utf8', flag: constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, mode })
+      try {
+        await fs.chmod(temporary, mode)
+        await fs.rename(temporary, target)
+      } catch (error) {
+        await fs.rm(temporary, { force: true })
+        throw error
+      }
       report.edited.push(edit.path)
       remaining.delete(edit.path)
     }

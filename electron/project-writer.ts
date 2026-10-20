@@ -2,7 +2,7 @@
 // Politika: üzerine yazma yok (`never`), silme yok, tüm yollar proje kökü içinde
 // (symlink/`..` dahil) doğrulanır, kısmi yazmada net rapor üretilir.
 import { constants } from 'node:fs'
-import { lstat, mkdir, realpath, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, realpath, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { PlanIssue } from './project-analysis.ts'
 import { checkProjectPlan, hasPlanErrors, type ProjectPlan } from './project-plan.ts'
@@ -34,7 +34,7 @@ export type WriteOptions = {
 
 function within(root: string, target: string): boolean {
   const relative = path.relative(root, target)
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+  return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative))
 }
 
 function message(error: unknown): string {
@@ -95,9 +95,9 @@ export async function writeProjectPlan(plan: ProjectPlan, options: WriteOptions)
   // Kök: yoksa oluşturulacak, varsa dizin olmalı.
   let rootExisted = false
   try {
-    const stat = await lstat(root)
-    if (!stat.isDirectory() && !stat.isSymbolicLink()) return failure(root, plan, { issues, error: `Hedef bir dizin değil: ${root}` })
+    await lstat(root)
     rootExisted = true
+    if (!(await stat(root).then((info) => info.isDirectory(), () => false))) return failure(root, plan, { issues, error: `Hedef bir dizin değil: ${root}` })
   } catch {
     rootExisted = false
   }

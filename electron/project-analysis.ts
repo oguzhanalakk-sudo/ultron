@@ -85,7 +85,7 @@ export function tomlProblem(text: string): string | undefined {
   return multiline ? 'Kapatılmamış çok satırlı metin.' : undefined
 }
 
-const REQUIREMENT_LINE = /^[A-Za-z0-9][A-Za-z0-9._-]*(\[[^\]]+\])?\s*((===|==|>=|<=|~=|!=|>|<)\s*[^;#\s,]+(\s*,\s*(===|==|>=|<=|~=|!=|>|<)\s*[^;#\s,]+)*)?\s*(;[^#]*)?(#.*)?$/
+const REQUIREMENT_LINE = /^[A-Za-z0-9][A-Za-z0-9._-]*(\[[^\]]+\])?\s*((===|==|>=|<=|~=|!=|>|<)\s*[^;#\s,<>=!~]+(\s*,\s*(===|==|>=|<=|~=|!=|>|<)\s*[^;#\s,<>=!~]+)*)?\s*(;[^#]*)?(#.*)?$/
 
 type PackageJson = {
   main?: string

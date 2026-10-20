@@ -67,5 +67,7 @@ test('şablon motoru: değişken, koşul, yineleme; eval ve fonksiyon yok', () =
   assert.equal(renderTemplateString('{{#each fs}}{{n}},{{/each}}', { fs: [{ n: 'a' }, { n: 'b' }] }), 'a,b,')
   assert.equal(renderTemplateString('{{f}}{{constructor}}{{__proto__}}', { f: () => 'x' }), '')
   assert.equal(renderTemplateString('{{a.b}}', { a: { b: 'ok' } }), 'ok')
+  assert.equal(renderTemplateString('{{#if a}}1{{#if b}}2{{else}}3{{/if}}4{{/if}}5', { a: true, b: false }), '1345')
+  assert.equal(renderTemplateString('{{#each xs}}{{#if this}}y{{/if}}{{/each}}', { xs: [1, 0, 2] }), 'yy')
   assert.throws(() => renderTemplateString('{{#if a}}açık', { a: true }), /kapatılmamış/)
 })

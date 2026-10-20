@@ -32,13 +32,25 @@ function stringify(value: unknown): string {
 
 function findClose(source: string, start: number, open: string, close: string): { bodyEnd: number; end: number } {
   let depth = 1
-  const pattern = new RegExp(`\\{\\{(?:${open}\\s+[^}]*|/${close})\\}\\}`, 'g')
+  const pattern = new RegExp(`\\{\\{(?:#${open}\\s+[^}]*|/${close})\\}\\}`, 'g')
   pattern.lastIndex = start
   for (let match = pattern.exec(source); match; match = pattern.exec(source)) {
     depth += match[0].startsWith('{{/') ? -1 : 1
     if (depth === 0) return { bodyEnd: match.index, end: pattern.lastIndex }
   }
   throw new Error(`Şablonda kapatılmamış {{#${open}}} bloğu var.`)
+}
+
+/** Yalnızca en dış düzeydeki {{else}} konumunu döner (iç içe bloklardakiler sayılmaz). */
+function topLevelElse(body: string): number {
+  let depth = 0
+  const tags = /\{\{(#(?:if|each)\s+[^}]*|\/(?:if|each)|else)\}\}/g
+  for (let match = tags.exec(body); match; match = tags.exec(body)) {
+    if (match[1].startsWith('#')) depth += 1
+    else if (match[1].startsWith('/')) depth -= 1
+    else if (depth === 0) return match.index
+  }
+  return -1
 }
 
 export function renderTemplateString(source: string, data: Scope, depth = 0): string {
@@ -54,7 +66,7 @@ export function renderTemplateString(source: string, data: Scope, depth = 0): st
       const body = source.slice(tag.lastIndex, bodyEnd)
       const value = lookup(data, match[2])
       if (kind === 'if') {
-        const elseAt = body.indexOf('{{else}}')
+        const elseAt = topLevelElse(body)
         const thenPart = elseAt >= 0 ? body.slice(0, elseAt) : body
         const elsePart = elseAt >= 0 ? body.slice(elseAt + '{{else}}'.length) : ''
         output += renderTemplateString(truthy(value) ? thenPart : elsePart, data, depth + 1)
