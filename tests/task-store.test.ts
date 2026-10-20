@@ -35,6 +35,23 @@ test('görev, plan, araçlar, onaylar ve sonuçlar diske yazılır ve uygulama y
   assert.equal(resumed?.stage, 'analyzing')
 }))
 
+test('özet ve kısa görev özeti kalıcıdır ve sürdürülen görevlerde korunur', async () => withProject(async (project) => {
+  const store = new TaskStore(project)
+  const task = await store.create('Önce dosyayı oku, sonra testi çalıştır')
+  await store.update(task.id, {
+    summary: 'Dosya içeriğini incele, hatayı düzelt ve ardından ilgili testi çalıştır.',
+    plan: ['Dosyayı incele', 'Düzelt', 'Test et'],
+    pendingSteps: ['Düzelt', 'Test et'],
+  })
+
+  const reloaded = await new TaskStore(project).get(task.id)
+  assert.equal(reloaded?.summary, 'Dosya içeriğini incele, hatayı düzelt ve ardından ilgili testi çalıştır.')
+
+  const resumed = await new TaskStore(project).resume(task.id)
+  assert.equal(resumed.summary, 'Dosya içeriğini incele, hatayı düzelt ve ardından ilgili testi çalıştır.')
+  assert.equal(resumed.status, 'running')
+}))
+
 test('yeniden başlatmada yalnızca yarım kalan görevler sürdürülür ve proje kapsamı korunur', async () => withProject(async (project) => {
   const store = new TaskStore(project)
   const completed = await store.create('Biten görev')
@@ -147,7 +164,7 @@ test('kabul kontrolü ve adım kimliği alanları boyut sınırına ve gizlilik 
   assert.ok(reloaded?.completedStepIds?.every((item) => item.length <= 120))
   assert.equal((await readFile(path.join(project, '.codex-local', 'tasks.json'), 'utf8')).includes('private-acceptance-secret'), false)
 
-  await writeFile(path.join(project, '.codex-local', 'tasks.json'), JSON.stringify([{ ...task, acceptanceTests: [null, 7, {}, '', '  ', 'password=on-disk-secret'], completedStepIds: [null, 4, {}, '', 'same-id', 'same-id'] }]))
+  await writeFile(path.join(project, '.codex-local', 'tasks.json'), JSON.stringify([{ ...task, acceptanceTests: [null, 7, {}, '', '  ', 'password=on-disk-secret'], completedStepIds: [null, 4, {}, 'same-id'] }]))
   const malformed = await new TaskStore(project).get(task.id)
   assert.deepEqual(malformed?.acceptanceTests, ['password=[REDACTED]'])
   assert.deepEqual(malformed?.completedStepIds, ['same-id'])
@@ -250,7 +267,7 @@ test('gerçek değişiklik sonrası test gereksinimi yeniden planlamada korunur 
 test('bilinmeyen doğrulama türü atılır ve eski Windows makbuzu test veya build kanıtına yükseltilmez', async () => withProject(async (project) => {
   const store = new TaskStore(project)
   const task = await store.create('Windows kanıt türünü doğrula')
-  await writeFile(path.join(project, '.codex-local', 'tasks.json'), JSON.stringify([{ ...task, verificationRequired: true, verificationResults: [{ ...receipt('configure-only', 'windows_build'), kind: 'unrecognized' }] }]))
+  await writeFile(path.join(project, '.codex-local', 'tasks.json'), JSON.stringify([{ ...task, verificationRequired: true, verificationResults: [{ ...receipt('configure-only', 'windows_build'), kind: 'configuration' }] }]))
   const reopened = new TaskStore(project)
   assert.equal((await reopened.get(task.id))?.verificationResults?.[0].kind, undefined)
   await reopened.finish(task.id, 'completed')

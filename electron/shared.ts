@@ -4,11 +4,11 @@ export type ModelProvider = 'ollama' | 'openai-compatible'
 export type ModelStatus = { connected: boolean; models: string[]; selectedModel: string; provider: ModelProvider; baseUrl: string; note?: string }
 export type LocalModelInfo = { name: string; sizeBytes: number; digest: string | null; modifiedAt: string | null; family: string | null; parameterSize: string | null; quantization: string | null }
 export type LoadedLocalModel = { name: string; sizeBytes: number; sizeVramBytes: number; expiresAt: string | null }
-export type LocalHardware = { os: string; architecture: string; cpu: string; cpuCores: number; memoryTotalBytes: number; memoryFreeBytes: number; gpu: string | null; gpuMemoryBytes: number | null; diskFreeBytes: number | null; diskTotalBytes: number | null; detectedAt: string }
+export type LocalHardware = { os: string; architecture: string; cpu: string; cpuCores: number; memoryTotalBytes: number; memoryFreeBytes: number; gpu: string | null; gpuMemoryBytes: number | null; diskFreeBytes: number | null }
 export type LocalModelFit = { level: 'gpu' | 'partial' | 'cpu' | 'too-large' | 'unknown'; label: string; detail: string; requiredBytes: number }
 export type LocalRecommendation = { name: string; reason: string; sizeHint: string }
 export type LocalModelEntry = LocalModelInfo & { fit: LocalModelFit; loaded: boolean }
-export type LocalAiStats = { requests: number; failedRequests: number; lastDurationMs: number | null; lastTokensPerSecond: number | null; lastEvaluatedTokens: number | null; lastPromptTokens: number | null; lastMeasuredAt: string | null; totalEvaluatedTokens: number }
+export type LocalAiStats = { requests: number; failedRequests: number; lastDurationMs: number | null; lastTokensPerSecond: number | null; lastEvaluatedTokens: number | null; lastPromptTokens: number | null; lastCompletionTokens: number | null }
 export type LocalAIStatus = {
   connected: boolean
   provider: 'ollama'
@@ -35,7 +35,7 @@ export type PermissionProfile = {
   /** Masaüstü kontrolü (fare/klavye/ekran) varsayılan olarak kapalıdır; kullanıcı açıkça açar. */
   allowDesktopControl: boolean
 }
-export type PermissionCategory = 'development' | 'package' | 'system' | 'system-script' | 'network-scan' | 'destructive' | 'security-audit' | 'file-rename' | 'file-delete' | 'screen-capture' | 'input-control' | 'app-launch' | 'file-read' | 'file-create' | 'file-edit'
+export type PermissionCategory = 'development' | 'package' | 'system' | 'system-script' | 'network-scan' | 'destructive' | 'security-audit' | 'file-rename' | 'file-delete' | 'screen-capture' | 'app-launch' | 'file-read' | 'file-create' | 'file-edit' | 'network' | 'user-approval'
 export type ApprovalGrantScope = 'operation' | 'task' | 'project' | 'category'
 export type PermissionGrant = {
   id: string
@@ -81,6 +81,7 @@ export type VerificationFailure = { key: string; tool: string; analysis: AgentEr
 export type VerificationReceipt = { key: string; tool: string; checkedAt: string; fingerprint: string; commandKey?: string; kind?: 'test' | 'build' | 'runtime' | 'command' | 'configuration' }
 export type TaskRecord = {
   id: string; projectPath: string; request: string; title: string; objective: string
+  summary?: string
   plan: string[]; completedSteps: string[]; pendingSteps: string[]; usedTools: string[]
   acceptanceTests?: string[]; completedStepIds?: string[]
   events: { at: string; type: 'tool' | 'approval' | 'result' | 'error'; name: string; status?: string; detail?: string }[]
@@ -102,18 +103,18 @@ export type WorkspaceState = {
 }
 export type AndroidCheckState = 'available' | 'missing' | 'not-configured' | 'error'
 export type AndroidEnvironmentCheck = { id: string; label: string; state: AndroidCheckState; path: string | null; version: string | null; required: boolean; detail?: string }
-export type AndroidEnvironment = { os: string; sdkPath: string; sdkAvailable: boolean; installedPlatforms: string[]; installedBuildTools: string[]; licensesPresent: boolean; checks: AndroidEnvironmentCheck[]; recommendations: string[] }
+export type AndroidEnvironment = { os: string; sdkPath: string; sdkAvailable: boolean; installedPlatforms: string[]; installedBuildTools: string[]; licensesPresent: boolean; checks: AndroidEnvironmentCheck[] }
 export type AndroidDevice = { serial: string; state: string; details: string }
 export type AndroidBuildArtifact = { path: string; format: 'apk' | 'aab'; size: number; modifiedAt: string; validZip: boolean; packageName?: string }
-export type AndroidBuildRecord = { task: string; buildType: 'debug' | 'release' | 'test' | 'bundle' | 'other'; startedAt: string; durationMs: number; projectName: string; artifacts: AndroidBuildArtifact[]; failure?: { category: string; summary: string; evidence: string[]; retryable: boolean; suggestedAction: string }; testStatus: 'not_run' | 'passed' | 'failed' | 'cancelled' }
+export type AndroidBuildRecord = { task: string; buildType: 'debug' | 'release' | 'test' | 'bundle' | 'other'; startedAt: string; durationMs: number; projectName: string; artifacts: AndroidBuildArtifact[] }
 export type WindowsToolCheck = { id: string; label: string; state: AndroidCheckState; path: string | null; version: string | null; detail?: string }
-export type WindowsEnvironment = { os: string; architecture: string; cpu: string; cpuCores: number; memoryTotalBytes: number; memoryFreeBytes: number; checks: WindowsToolCheck[]; pythonEnvironments: string[]; visualStudioPath: string | null; recommendations: string[] }
+export type WindowsEnvironment = { os: string; architecture: string; cpu: string; cpuCores: number; memoryTotalBytes: number; memoryFreeBytes: number; checks: WindowsToolCheck[]; pythonEnvironment: string | null; dotnetVersion: string | null }
 export type WindowsDesktopArtifact = { path: string; kind: 'application' | 'installer'; size: number; modifiedAt: string; valid: boolean }
-export type WindowsDesktopBuild = { action: string; technology: string; startedAt: string; durationMs: number; projectPath: string; commands: string[]; artifacts: WindowsDesktopArtifact[]; testStatus: 'not_run' | 'passed' | 'failed' | 'cancelled'; failure?: { category: string; summary: string; evidence: string[]; retryable: boolean; suggestedAction: string }; notes: string[] }
+export type WindowsDesktopBuild = { action: string; technology: string; startedAt: string; durationMs: number; projectPath: string; commands: string[]; artifacts: WindowsDesktopArtifact[]; testStatus: string | null }
 export type BuildRecord = { command: string; exitCode: number | null; output: string; completedAt: string; artifacts: { path: string; size: number }[]; android?: AndroidBuildRecord; windows?: WindowsDesktopBuild }
-export type WebProjectAnalysis = { filesScanned: number; frontend: string[]; backend: string[]; databases: string[]; dataAccess: string[]; packageManagers: string[]; tests: string[]; apiFiles: string[]; migrationFiles: string[]; hasAuthSignals: boolean; hasEnvironmentExample: boolean; hasDockerConfig: boolean; packageScripts: Record<string, string>; recommendations: string[] }
-export type ApprovalRequest = { requestId: string; kind: 'command' | 'delete' | 'system'; category: PermissionCategory; risk: 'low' | 'medium' | 'high'; command: string; reason: string; authority: string; allowRemember: boolean; taskId?: string; affectedPaths?: string[]; workingDirectory?: string; rollback: string; verification: string }
-export type ActivityItem = { id: string; kind: 'tool' | 'command' | 'status' | 'error' | 'success'; title: string; detail?: string; time: string; taskId?: string; tool?: string; operation?: string; target?: string; approvalOutcome?: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'automatic' | 'not_required'; result?: 'success' | 'failed' | 'cancelled' | 'denied'; error?: string; changedPaths?: string[]; exitCode?: number | null }
+export type WebProjectAnalysis = { filesScanned: number; frontend: string[]; backend: string[]; databases: string[]; dataAccess: string[]; packageManagers: string[]; tests: string[]; apiFiles: string[]; routes: string[] }
+export type ApprovalRequest = { requestId: string; kind: 'command' | 'delete' | 'system'; category: PermissionCategory; risk: 'low' | 'medium' | 'high'; command: string; reason: string; authority: string }
+export type ActivityItem = { id: string; kind: 'tool' | 'command' | 'status' | 'error' | 'success'; title: string; detail?: string; time: string; taskId?: string; tool?: string; operation?: string }
 export type AppEvent =
   | { type: 'status'; text: string }
   | { type: 'delta'; text: string }
