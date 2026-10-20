@@ -1730,4 +1730,224 @@ button,
   :root { color-scheme: light; }
 }
 
+/* ---------------------------------------------------------------- */
+/* Dark theme final pass                                             */
+/* ---------------------------------------------------------------- */
+
+:root {
+  color-scheme: dark !important;
+  --bg: #101112 !important;
+  --panel: #171819 !important;
+  --panel-2: #1d1e20 !important;
+  --line: #2b2d31 !important;
+  --line-strong: #3b3d42 !important;
+  --muted: #85878e !important;
+  --muted-2: #b7b8bd !important;
+  --text: #eeeef0 !important;
+  --accent: #b992ff !important;
+  --accent-2: #c9aaff !important;
+  --green: #92d7ac !important;
+  --red: #ef8b89 !important;
+  background: #101112 !important;
+  color: #eeeef0 !important;
+}
+
+html,
+body,
+#root,
+.app-shell,
+.workspace,
+.main-column,
+.left-sidebar,
+.right-sidebar,
+.right-panel-content,
+.activity-panel,
+.conversation-scroll {
+  background: #101112 !important;
+  color: #eeeef0 !important;
+}
+
+.topbar,
+.main-toolbar,
+.right-tabs,
+.right-footer,
+.sidebar-header,
+.panel-intro,
+.activity-intro,
+.composer-area {
+  background: #111213 !important;
+  border-color: #2b2d31 !important;
+  color: #eeeef0 !important;
+}
+
+.project-card,
+.proposal-card,
+.panel-card,
+.panel-blank,
+.approval-card,
+.desktop-automation-card,
+.developer-tools-list,
+.research-result,
+.research-summary,
+.localai-panel,
+.localai-status-card,
+.localai-model,
+.memory-panel,
+.memory-group,
+.memory-entry,
+.workspace-modal,
+.settings-modal,
+.file-modal,
+.permission-panel,
+.permissions-panel,
+.permission-card {
+  background: #171819 !important;
+  color: #eeeef0 !important;
+  border-color: #2f3135 !important;
+}
+
+.tree-search,
+.composer,
+.diff-preview,
+.approval-command,
+.terminal-output,
+.terminal-panel,
+.files-summary,
+.files-query,
+.files-scope,
+.software-list,
+.adapter-list,
+.plugin-tools,
+input,
+textarea,
+select,
+.settings-input,
+.settings-textarea,
+.workspace-textarea,
+.workspace-list-input {
+  background: #1d1e20 !important;
+  color: #eeeef0 !important;
+  border-color: #37393e !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.composer textarea::placeholder,
+.tree-search input::placeholder {
+  color: #777a82 !important;
+}
+
+.message-topline,
+.markdown-body,
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.panel-intro strong,
+.panel-blank strong,
+.proposal-title,
+.proposal-title strong,
+.approval-head strong,
+.localai-status-head,
+.localai-model-head,
+.files-hit-top strong,
+.software-info strong,
+.plugin-head strong,
+.developer-tool-row,
+.desktop-automation-head,
+.research-result strong,
+.research-summary strong,
+.memory-entry strong,
+.memory-entry p,
+.permission-panel strong,
+.permissions-panel strong {
+  color: #eeeef0 !important;
+}
+
+.project-meta span,
+.sidebar-section-title,
+.tree-empty,
+.welcome-copy,
+.message-time,
+.markdown-body blockquote,
+.panel-intro span,
+.panel-blank p,
+.proposal-size,
+.proposal-card > p,
+.approval-head span,
+.approval-card p,
+.files-hit-top span,
+.files-hit code,
+.software-info small,
+.plugin-description,
+.plugin-note,
+.developer-tool-row span,
+.desktop-muted,
+.desktop-automation-status,
+.research-result small,
+.research-summary small,
+.memory-entry small,
+.memory-entry-meta,
+.permission-panel p,
+.permissions-panel p {
+  color: #85878e !important;
+}
+
+button,
+.icon-button,
+.toolbar-button,
+.right-tabs button,
+.right-footer button,
+.sidebar-tool,
+.tree-item,
+.panel-action,
+.panel-action.ghost,
+.android-text-action,
+.reject-button,
+.files-hit-actions button,
+.software-actions button,
+.plugin-actions button,
+.plugin-tool-row button {
+  background: #1d1e20 !important;
+  color: #eeeef0 !important;
+  border-color: #37393e !important;
+}
+
+button:hover,
+.icon-button:hover,
+.toolbar-button:hover,
+.right-tabs button:hover,
+.right-footer button:hover,
+.sidebar-tool:hover,
+.tree-item:hover,
+.panel-action:hover {
+  background: #292b2f !important;
+  color: #ffffff !important;
+}
+
+.open-project-large,
+.send-button,
+.apply-button {
+  background: #9a70ce !important;
+  color: #20172c !important;
+  border-color: #b992ff !important;
+}
+
+.overlay,
+.modal-overlay,
+.workspace-overlay {
+  background: rgba(0, 0, 0, 0.62) !important;
+}
+
+.terminal-output,
+.terminal-output pre,
+.terminal-panel pre,
+.markdown-body pre {
+  background: #141516 !important;
+  color: #d9d6df !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark !important; }
+}
+
 
