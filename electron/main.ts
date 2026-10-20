@@ -91,7 +91,7 @@ import { defaultPluginState, checkDependencies, checkToolConflicts, compareVersi
 import { readZipEntries } from './zip-lite'
 import { buildDesktopPayload, desktopResultFileName, DESKTOP_HOST_SCRIPT, parseDesktopResult, PROTECTED_PROCESS_NAMES, resolveTrustedApplicationTarget, type DesktopActionKind, type DesktopState } from './desktop-control'
 import { ValidationEngine, type ValidationPlan, type ValidationCategory } from './validation-engine'
-import { detectToolAvailability, TOOL_DEFINITIONS, type ToolAvailability } from './tool-catalog'
+import { detectToolAvailability, TOOL_DEFINITIONS, validateCommandSafety, type ToolAvailability } from './tool-catalog'
 import { validateGitArguments } from './git-operations'
 
 let mainWindow: BrowserWindow | null = null
@@ -6009,6 +6009,53 @@ registerIpcHandler('files:scopes', async () => {
       }
     }
     return await Promise.all(requested.map((name) => detectToolAvailability(name, runner))) as ToolAvailability[]
+  })
+  registerIpcHandler('tools:detect', async (_event, name: unknown) => {
+    const tool = String(name ?? '').trim().toLowerCase()
+    if (!TOOL_DEFINITIONS[tool]) throw new Error(`Bilinmeyen geliştirici aracı: ${tool || 'boş'}`)
+    const runner = async (command: string[]) => {
+      try {
+        const result = await execFileAsync(command[0], command.slice(1), { cwd: currentProject(), windowsHide: true, encoding: 'utf8', timeout: 8_000 })
+        return { ok: true, path: command[0], stdout: result.stdout, stderr: result.stderr }
+      } catch (error) {
+        const details = error as NodeJS.ErrnoException & { stdout?: string; stderr?: string }
+        return { ok: false, path: null, stdout: details.stdout ?? '', stderr: details.stderr ?? details.message ?? '' }
+      }
+    }
+    return detectToolAvailability(tool, runner)
+  })
+  registerIpcHandler('tools:ensure', async (_event, name: unknown, projectPath: unknown) => {
+    const tool = String(name ?? '').trim().toLowerCase()
+    if (!TOOL_DEFINITIONS[tool]) throw new Error(`Bilinmeyen geliştirici aracı: ${tool || 'boş'}`)
+    const selected = path.resolve(currentProject())
+    if (projectPath !== undefined && String(projectPath).trim() && path.resolve(String(projectPath)) !== selected) throw new Error('Araç denetimi yalnızca seçili proje içinde yapılabilir.')
+    const availability = await (async () => {
+      try { const result = await execFileAsync(TOOL_DEFINITIONS[tool].versionCheck[0], TOOL_DEFINITIONS[tool].versionCheck.slice(1), { cwd: selected, windowsHide: true, encoding: 'utf8', timeout: 8_000 }); return { available: true, version: result.stdout.trim() || null } }
+      catch { return { available: false, version: null } }
+    })()
+    return { name: tool, ...availability, installRequired: !availability.available, installHint: TOOL_DEFINITIONS[tool].installHint ?? 'Kullanıcı tarafından kurulmalıdır.' }
+  })
+  registerIpcHandler('tools:run', async (_event, request: unknown) => {
+    if (!request || typeof request !== 'object') throw new Error('Araç isteği geçersiz.')
+    const raw = request as Record<string, unknown>
+    const tool = String(raw.tool ?? '').trim().toLowerCase()
+    if (!TOOL_DEFINITIONS[tool]) throw new Error(`Bilinmeyen geliştirici aracı: ${tool || 'boş'}`)
+    const args = Array.isArray(raw.args) ? raw.args.filter((value): value is string => typeof value === 'string').slice(0, 20) : []
+    const command = [tool, ...args].map(quoteCmdArgument).join(' ')
+    const safety = validateCommandSafety(command, currentProject())
+    if (!safety.ok) return { ok: false, blocked: true, blockReason: safety.reason, stderr: safety.reason, stdout: '', exitCode: 1 }
+    const queued = await queueCommand(command, String(raw.reason ?? 'Geliştirici aracı çalıştırma'), { forceApproval: true, workingDirectory: currentProject(), timeoutMs: 15 * 60 * 1000 })
+    return { requestId: queued.requestId, approvalRequired: queued.approvalRequired, result: queued.approvalRequired ? undefined : await queued.result }
+  })
+  registerIpcHandler('tools:git', async (_event, request: unknown) => {
+    if (!request || typeof request !== 'object') throw new Error('Git araç isteği geçersiz.')
+    const raw = request as Record<string, unknown>
+    const args = Array.isArray(raw.args) ? raw.args.filter((value): value is string => typeof value === 'string').slice(0, 20) : []
+    const validation = validateGitArguments(args)
+    if (!validation.ok) return { ok: false, blocked: true, blockReason: validation.reason, stderr: validation.reason, stdout: '' }
+    const command = ['git', ...args].map(quoteCmdArgument).join(' ')
+    const queued = await queueCommand(command, String(raw.reason ?? 'Git işlemi'), { forceApproval: true, workingDirectory: currentProject(), timeoutMs: 15 * 60 * 1000 })
+    return { requestId: queued.requestId, approvalRequired: queued.approvalRequired, result: queued.approvalRequired ? undefined : await queued.result }
   })
   registerIpcHandler('software:refresh', async () => ({ catalog: await ensureSoftwareCatalog(true) }))
   registerIpcHandler('software:test', async (_event, entryName: unknown) => {

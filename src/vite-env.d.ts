@@ -55,6 +55,10 @@ declare global {
       analyzeValidationFailure(output: string): Promise<ValidationFailureAnalysis>
       getToolCatalog(): Promise<ToolDefinition[]>
       getToolAvailability(names?: string[]): Promise<ToolAvailability[]>
+      detectTool(name: string): Promise<ToolAvailability>
+      ensureTool(name: string, projectPath?: string): Promise<ToolAvailability & { installRequired: boolean; installHint: string }>
+      runDeveloperTool(request: { tool: string; args?: string[]; reason?: string }): Promise<{ requestId?: string; approvalRequired?: boolean; result?: string; ok?: boolean; blocked?: boolean; blockReason?: string; stderr?: string; stdout?: string; exitCode?: number }>
+      runGitTool(request: { args: string[]; reason?: string }): Promise<{ requestId?: string; approvalRequired?: boolean; result?: string; ok?: boolean; blocked?: boolean; blockReason?: string; stderr?: string; stdout?: string }>
       getDesktopPaused(): Promise<boolean>
       setDesktopPaused(paused: boolean): Promise<boolean>
       getDesktopState(): Promise<{ ok: boolean; paused: boolean; state?: unknown; error?: string }>
