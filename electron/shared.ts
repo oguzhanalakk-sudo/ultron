@@ -36,6 +36,9 @@ export type PermissionProfile = {
   allowDesktopControl: boolean
   /** Sınırsız erişim açıkça seçilmedikçe güvenlik kapsamı dışına çıkılmaz. */
   allowUnrestrictedAccess: boolean
+  /** Kullanıcının açık onayıyla genişletilmiş erişim profili. */
+  allowBroadAccess: boolean
+  broadAccessConfirmedAt?: string | null
 }
 export type PermissionCategory = 'development' | 'package' | 'system' | 'system-script' | 'network-scan' | 'destructive' | 'security-audit' | 'file-rename' | 'file-delete' | 'screen-capture' | 'input-control' | 'app-launch' | 'file-read' | 'file-create' | 'file-edit'
 export type ApprovalGrantScope = 'operation' | 'task' | 'project' | 'category'
@@ -150,6 +153,20 @@ export const defaultPermissions: PermissionProfile = {
   allowSystemChanges: false,
   allowDesktopControl: false,
   allowUnrestrictedAccess: false,
+  allowBroadAccess: false,
+  broadAccessConfirmedAt: null,
+}
+
+export const broadAccessPermissions: PermissionProfile = {
+  mode: 'personal',
+  editMode: 'automatic',
+  commandMode: 'automatic',
+  allowPackageInstalls: true,
+  allowSystemChanges: true,
+  allowDesktopControl: true,
+  allowUnrestrictedAccess: true,
+  allowBroadAccess: true,
+  broadAccessConfirmedAt: new Date().toISOString(),
 }
 export const emptyMemory: ProjectMemory = {
   summary: '', architecture: '', technologies: [], commands: [], preferences: [], knownIssues: [], updatedAt: null,

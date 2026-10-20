@@ -356,7 +356,7 @@ async function readWorkspace(): Promise<WorkspaceState> {
     const messages = parsed.messages
     return {
       permissions: permissions && ['review', 'automatic'].includes(permissions.editMode) && ['confirm', 'automatic'].includes(permissions.commandMode)
-        ? { mode: ['controlled', 'advanced', 'personal'].includes(permissions.mode) ? permissions.mode : 'controlled', editMode: permissions.editMode, commandMode: permissions.commandMode, allowPackageInstalls: Boolean(permissions.allowPackageInstalls), allowSystemChanges: Boolean(permissions.allowSystemChanges), allowDesktopControl: permissions.allowDesktopControl === true, allowUnrestrictedAccess: permissions.allowUnrestrictedAccess === true }
+        ? { mode: ['controlled', 'advanced', 'personal'].includes(permissions.mode) ? permissions.mode : 'controlled', editMode: permissions.editMode, commandMode: permissions.commandMode, allowPackageInstalls: Boolean(permissions.allowPackageInstalls), allowSystemChanges: Boolean(permissions.allowSystemChanges), allowDesktopControl: permissions.allowDesktopControl === true, allowUnrestrictedAccess: permissions.allowUnrestrictedAccess === true, allowBroadAccess: permissions.allowBroadAccess === true, broadAccessConfirmedAt: typeof permissions.broadAccessConfirmedAt === 'string' ? permissions.broadAccessConfirmedAt.slice(0, 40) : null }
         : fallback.permissions,
       permissionGrants: [
         ...sanitizePermissionGrants(parsed.permissionGrants, currentProject()).filter((grant) => grant.scope !== 'category'),
@@ -397,6 +397,8 @@ async function writeWorkspaceUnsafe(patch: Partial<WorkspaceState>) {
     allowSystemChanges: Boolean(patch.permissions.allowSystemChanges),
     allowDesktopControl: patch.permissions.allowDesktopControl === true,
     allowUnrestrictedAccess: patch.permissions.allowUnrestrictedAccess === true,
+    allowBroadAccess: patch.permissions.allowBroadAccess === true,
+    broadAccessConfirmedAt: typeof patch.permissions.broadAccessConfirmedAt === 'string' ? patch.permissions.broadAccessConfirmedAt.slice(0, 40) : null,
   }
   if (patch.permissionGrants) {
     workspace.permissionGrants = sanitizePermissionGrants(patch.permissionGrants, currentProject()).map((grant) => grant.scope === 'category' ? { ...grant, projectPath: '*' } : grant)

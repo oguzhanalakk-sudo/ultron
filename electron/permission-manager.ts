@@ -18,7 +18,10 @@ export type PermissionContext = {
 const categories = new Set<PermissionCategory>(['development', 'package', 'system', 'system-script', 'network-scan', 'destructive', 'security-audit', 'file-rename', 'file-delete', 'screen-capture', 'input-control', 'app-launch', 'file-read', 'file-create', 'file-edit'])
 const scopes = new Set<ApprovalGrantScope>(['operation', 'task', 'project', 'category'])
 const pathKey = (value: string) => path.resolve(value).toLocaleLowerCase('en-US')
-export function isUnrestrictedAccessEnabled(profile: PermissionProfile): boolean { return profile.allowUnrestrictedAccess === true }
+export function isUnrestrictedAccessEnabled(profile: PermissionProfile): boolean {
+  const broadConfirmed = profile.allowBroadAccess === true && typeof profile.broadAccessConfirmedAt === 'string' && Number.isFinite(Date.parse(profile.broadAccessConfirmedAt))
+  return profile.allowUnrestrictedAccess === true || broadConfirmed
+}
 
 export function sanitizeResourceRoots(value: unknown, projectPath: string): ResourceRoot[] {
   if (!Array.isArray(value)) return []

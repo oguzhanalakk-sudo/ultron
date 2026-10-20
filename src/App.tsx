@@ -936,13 +936,13 @@ function WorkspaceModal({ workspace, projectPath, onClose, onSaved }: { workspac
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   function selectProfile(mode: PermissionProfile['mode']) {
-    if (mode === 'controlled') setPermissions({ mode, editMode: 'review', commandMode: 'confirm', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false })
-    else if (mode === 'advanced') setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false })
-    else setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: true, allowSystemChanges: true, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false })
+    if (mode === 'controlled') setPermissions({ mode, editMode: 'review', commandMode: 'confirm', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false, allowBroadAccess: false, broadAccessConfirmedAt: null })
+    else if (mode === 'advanced') setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false, allowBroadAccess: false, broadAccessConfirmedAt: null })
+    else setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: true, allowSystemChanges: true, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false, allowBroadAccess: false, broadAccessConfirmedAt: null })
   }
   function toggleUnrestrictedAccess(enabled: boolean) {
     if (enabled && !window.confirm('Açık erişim modu proje dışı kapsamları değerlendirmeye izin verir. Tehlikeli işlemler yine onay ister. Etkinleştirilsin mi?')) return
-    setPermissions({ ...permissions, allowUnrestrictedAccess: enabled })
+    setPermissions({ ...permissions, allowUnrestrictedAccess: enabled, allowBroadAccess: enabled, broadAccessConfirmedAt: enabled ? new Date().toISOString() : null })
   }
   function changeGrantScope(id: string, scope: PermissionGrant['scope']) {
     setPermissionGrants((items) => items.map((grant) => grant.id !== id ? grant : {
