@@ -1950,4 +1950,93 @@ button:hover,
   :root { color-scheme: dark !important; }
 }
 
+/* Catch legacy feature panels whose names were introduced outside the
+   central theme layer (memory, permissions, settings and feature cards). */
+[class*="memory"],
+[class*="permission"],
+[class*="resource"],
+[class*="settings"],
+[class*="profile-menu"],
+[class*="localai"],
+[class*="web-"],
+[class*="android-"],
+[class*="task-"] {
+  color: #eeeef0 !important;
+  border-color: #2f3135 !important;
+}
+
+[class*="memory"],
+[class*="permission"],
+[class*="resource"],
+[class*="settings"],
+[class*="profile-menu"],
+[class*="localai"],
+[class*="web-"],
+[class*="android-"],
+[class*="task-"] {
+  background-color: #171819 !important;
+}
+
+[class*="memory"] input,
+[class*="memory"] textarea,
+[class*="permission"] input,
+[class*="permission"] textarea,
+[class*="permission"] select,
+[class*="resource"] select,
+[class*="settings"] input,
+[class*="settings"] textarea,
+[class*="settings"] select,
+[class*="localai"] input,
+[class*="localai"] select {
+  background: #1d1e20 !important;
+  color: #eeeef0 !important;
+  border-color: #3b3d42 !important;
+}
+
+[class*="memory"] button,
+[class*="permission"] button,
+[class*="resource"] button,
+[class*="settings"] button,
+[class*="profile-menu"] button,
+[class*="localai"] button,
+[class*="web-"] button,
+[class*="android-"] button,
+[class*="task-"] button {
+  background: #1d1e20 !important;
+  color: #eeeef0 !important;
+  border-color: #3b3d42 !important;
+}
+
+[class*="memory"] button:hover,
+[class*="permission"] button:hover,
+[class*="settings"] button:hover,
+[class*="localai"] button:hover,
+[class*="web-"] button:hover,
+[class*="android-"] button:hover,
+[class*="task-"] button:hover {
+  background: #292b2f !important;
+  color: #ffffff !important;
+}
+
+.memory-danger-zone button,
+.memory-entry-actions button.danger,
+.settings-error,
+.panel-error,
+.android-inline-error,
+.task-verification-issue,
+.build-error-line {
+  background: #3a2426 !important;
+  color: #f0aaa7 !important;
+  border-color: #704247 !important;
+}
+
+.connection-status.connected,
+.localai-progress.done,
+.safety-note,
+.workspace-security-note {
+  background: #1d2b21 !important;
+  color: #a8d8b3 !important;
+  border-color: #365641 !important;
+}
+
 
