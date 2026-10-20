@@ -80,6 +80,32 @@ export type SourceAssessment = {
   notes: string[]
 }
 
+export type ResearchCitation = {
+  title: string
+  site: string
+  url: string
+  publishedAt: string | null
+  supports: string[]
+  contradicts: string[]
+}
+
+export type ResearchAnswerBundle = {
+  summary: string
+  findings: Array<{
+    claim: string
+    evidence: string[]
+    sourceUrls: string[]
+  }>
+  contradictions: Array<{
+    claim: string
+    sources: string[]
+  }>
+  sources: ResearchCitation[]
+  confidence: number
+  disclaimer: string
+  plainText: string
+}
+
 export type MultiResearchPlan = {
   question: string
   complexity: 'low' | 'medium' | 'high'
@@ -175,6 +201,20 @@ export const webResearchLimits = {
   maxResearchPages: 12,
   maxResearchQueries: 10,
   maxPagesPerQuery: 3,
+}
+
+/** Shared hard cap used to account for every outbound request in one research run. */
+export function createResearchRequestBudget(limit: number): { readonly used: number; consume(): boolean } {
+  const maximum = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 0
+  let used = 0
+  return {
+    get used() { return used },
+    consume() {
+      if (used >= maximum) return false
+      used += 1
+      return true
+    },
+  }
 }
 
 /** Prevent common credentials copied from logs/configuration from being sent as search terms. */
@@ -510,6 +550,10 @@ export function validateExternalUrl(input: string): { allowed: boolean; reason?:
 const injectionPatterns: Array<{ id: string; label: string; pattern: RegExp }> = [
   { id: 'override', label: 'önceki talimatları yok sayma girişimi', pattern: /ignore\s+(?:all\s+)?(?:previous|prior|earlier)\s+instructions?|önceki\s+talimatlar(?:[ıi])?\s+(?:yok\s*say|dinleme)/iu },
   { id: 'exfiltration', label: 'hassas bilgi aktarım önerisi', pattern: /(?:api[\s_-]?keys?|er[şs]i[şs]\s*anahtar[ıi]?n?|parol[ae]?n[ıi]?[z]?|credentials?|passwords?)\s*(?:gönder|paylaş|upload|send|ekle)|(?:send|gönder|paylaş|upload)\s+(?:your\s+|senin\s+|kendi\s+)?(?:api[\s_-]?keys?|passwords?|credentials?|er[şs]i[şs]\s*anahtar[ıi]?|parol[ae]?|şifren?)/iu },
+  { id: 'prompt-disclosure', label: 'sistem istemini açığa çıkarma isteği', pattern: /\b(?:reveal|print|show|disclose|output)\s+(?:(?:your|the|system)\s+)*(?:system\s+)?prompt\b|(?:sistem\s+)?istem(?:i|ini)\s+(?:açığa\s+çıkar|göster|yazdır)/iu },
+  { id: 'command-execution', label: 'web içeriğinden komut çalıştırma talimatı', pattern: /\b(?:run|execute)\s+(?:(?:this|the following|these)\s+)?(?:shell\s+)?commands?\b|\bexecute\s+shell\b|komut(?:u|ları)?\s+çalıştır/iu },
+  { id: 'local-probing', label: 'yerel veya bulut meta veri adresine erişim önerisi', pattern: /\b(?:curl|wget|invoke-webrequest)\b.{0,120}\b(?:localhost|127(?:\.\d{1,3}){3}|169\.254\.169\.254)\b/iu },
+  { id: 'sensitive-file', label: 'hassas yerel dosyaları okuma önerisi', pattern: /\b(?:cat|type|get-content|open|read)\b.{0,100}(?:\/etc\/passwd|(?:^|[\\/\s])\.env(?:\b|[\\/]))/iu },
   { id: 'elevation', label: 'yönetici yetkisiyle çalıştırma önerisi', pattern: /(?:y[öo]netici\s*olarak|run\s+as\s+admin(?:istrator)?|sudo\s+(?:rm|curl|wget|pip))/iu },
   { id: 'security-off', label: 'güvenlik denetimini kapatma önerisi', pattern: /(?:defender\s*disable|antivirus?\s+(?:kapat|disable)|firewall\s+(?:kapat|disable)|izin\s*kontrol\??\s*(?:kapat|bypass))/iu },
   { id: 'destructive', label: 'veri silme / dışa aktarma komutu', pattern: /\b(?:rm\s+-rf|del\s+\/[sSq?]|format\s+c:|remove-item\s+-recurse\s+-force|shred\s|wipe\s+disk)/iu },
@@ -1282,4 +1326,96 @@ export function compactResearchSummary(result: MultiResearchResult): string {
     result.stoppedReason === 'time_exhausted' ? 'Araştırma zaman sınırına ulaştığı için durdu.' : '',
     result.warnings.length ? `Sağlayıcı/erişim notları: ${result.warnings.slice(0, 3).join(' · ')}` : '',
   ].filter(Boolean).join(' ')
+}
+
+export function buildResearchAnswerBundle(args: {
+  question: string
+  result: MultiResearchResult
+}): ResearchAnswerBundle {
+  const question = String(args.question ?? '').trim()
+  const result = args.result
+  const sourceMap = new Map<string, ResearchCitation>()
+
+  for (const assessment of result.sourceAssessments) {
+    const cited = result.evidence.find((evidence) => evidence.sourceUrl === assessment.sourceUrl)
+    const title = cited?.title ?? assessment.domain
+    const site = assessment.publisher ?? assessment.domain
+    const url = assessment.sourceUrl
+    if (!sourceMap.has(url)) {
+      sourceMap.set(url, {
+        title,
+        site,
+        url,
+        publishedAt: assessment.publishedAt,
+        supports: [],
+        contradicts: [],
+      })
+    }
+  }
+
+  for (const claim of result.claims) {
+    for (const sourceUrl of claim.supportingSources) {
+      const entry = sourceMap.get(sourceUrl)
+      if (entry && !entry.supports.includes(claim.claim)) entry.supports.push(claim.claim)
+    }
+    for (const sourceUrl of claim.conflictingSources ?? []) {
+      const entry = sourceMap.get(sourceUrl)
+      if (entry && !entry.contradicts.includes(claim.claim)) entry.contradicts.push(claim.claim)
+    }
+  }
+
+  const findings = result.claims.slice(0, 6).map((claim) => ({
+    claim: claim.claim.slice(0, 300),
+    evidence: claim.supportingSources.slice(0, 3),
+    sourceUrls: claim.supportingSources.slice(0, 3),
+  }))
+
+  const contradictions = result.contradictions.slice(0, 5).map((item) => ({
+    claim: item.detail,
+    sources: item.sources.slice(0, 5),
+  }))
+
+  const sources: ResearchCitation[] = [...sourceMap.values()].slice(0, 25)
+  const totalConfidence = sources.reduce((sum, source) => sum + (result.sourceAssessments.find((assessment) => assessment.sourceUrl === source.url)?.confidence ?? 0), 0)
+  const confidence = sources.length ? Math.round((totalConfidence / sources.length) * 100) : 0
+
+  const summary = [
+    'Araştırma sonucu',
+    '',
+    `Soru: ${question}`,
+    '',
+    result.sufficient
+      ? 'Yeterli ve tutarlı kanıt bulundu; sonuç bu kanıtlar ışığında hazırlandı.'
+      : 'Kanıt sınırlı veya çelişkili olduğundan, sonuç dikkatli yorumlanmalıdır.',
+  ].join('\n')
+
+  const disclaimer = result.contradictions.length
+    ? 'Not: Bazı kaynaklar arasında çelişki tespit edildi. Çelişkili iddialar açıkça ayrıştırıldı.'
+    : result.missingTopics.length
+      ? 'Not: Bazı alanlarda yeterli doğrulama bulunamadı; sonuç eksik bilgi içerebilir.'
+      : 'Not: Araştırma, mevcut kanıtlar ve kaynaklar içinde en güvenilir olanlara dayanarak hazırlandı.'
+
+  const plainText = [
+    '**Araştırma sonucu**',
+    '',
+    summary,
+    '',
+    '**Önemli bulgular**',
+    ...findings.map((finding, index) => `${index + 1}. ${finding.claim} (${finding.sourceUrls.join(', ')})`),
+    '',
+    '**Kaynaklar**',
+    ...sources.map((source) => `- ${source.title} — ${source.site} — ${source.url}${source.publishedAt ? ` (${source.publishedAt})` : ''}`),
+    '',
+    disclaimer,
+  ].join('\n')
+
+  return {
+    summary,
+    findings,
+    contradictions,
+    sources,
+    confidence,
+    disclaimer,
+    plainText,
+  }
 }

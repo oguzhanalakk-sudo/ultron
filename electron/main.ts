@@ -35,16 +35,18 @@ import { assessToolOutcome, isChangeVerification, isExecutableVerification, Veri
 import { projectFingerprint } from './project-fingerprint'
 import { forgetMatchingEntries, isMemoryKind, memoryKindLabels, mergeIntoMemory, newMemoryEntry, removeMemoryEntry, sanitizeUserMemory, selectRelevantMemory, updateMemoryEntry } from './memory-store'
 import { sanitizeChatMessages } from './chat-history'
-import { buildChatSystemPrompt, classifyConversation, detectExplicitMemoryRequest, detectFeedbackCorrection, detectForgetRequest, isApplicationLaunchRequest, parseDesktopLaunchRequest, trimConversationContext } from './conversation'
+import { buildChatSystemPrompt, classifyConversation, decideResearchNeed, detectExplicitMemoryRequest, detectFeedbackCorrection, detectForgetRequest, isApplicationLaunchRequest, parseDesktopLaunchRequest, trimConversationContext } from './conversation'
 import { buildFileIndex, defaultScanOptions, diffFileIndex, findDuplicateFiles, formatSearchSummary, parseFileSearchRequest, scanDirectoryForQuery, searchFileIndex, type FileIndex, type ScanResult } from './file-search'
 import { detectLocalFileFastPath, extractPlainNameTerms, isOpenableFileExtension, parseLocalTextFileOperation, selectFastPathHit, userFolderHintNames, type UserFolderHint } from './local-file-actions'
 import {
   buildPageExcerpt,
   buildAdaptiveQueriesForSubQuestion,
+  buildResearchAnswerBundle,
   buildFollowUpQueriesFromGaps,
   buildMultiResearchPlan,
   buildSearchQueryFromError,
   compactResearchSummary,
+  createResearchRequestBudget,
   dedupeEvidence,
   dedupeWebHits,
   analyzeClaimSupport,
@@ -81,6 +83,7 @@ import {
   type MultiResearchPageEvidence,
   type MultiResearchResult,
 } from './web-research'
+import { relayAbortSignal, webFetchResearchClient } from './web-research-fetch'
 import {
   limitSolutionRecords,
   searchSolutionRecords,
@@ -1433,7 +1436,7 @@ async function runDesktopTool(action: DesktopActionKind, rawPayload: Record<stri
 
 // Çok adımlı web araştırması: alt soruları planla, kontrollü sorgular üret,
 // ilgili sayfaları oku ve kaynak kanıtlarını açık bütçe sınırlarıyla döndür.
-async function runWebResearch(query: string, options: { maxPages?: number; language?: string } = {}): Promise<MultiResearchResult> {
+async function runWebResearch(query: string, options: { maxPages?: number; language?: string; signal?: AbortSignal } = {}): Promise<MultiResearchResult> {
   const trimmed = sanitizeSearchQuery(query)
   if (!trimmed) throw new Error('Arama sorgusu boş.')
 
@@ -1453,8 +1456,9 @@ async function runWebResearch(query: string, options: { maxPages?: number; langu
   const startedAt = Date.now()
   const deadline = startedAt + plan.budgets.maxDurationMs
   const abortController = new AbortController()
+  const unlinkCallerAbort = relayAbortSignal(options.signal, abortController)
   const durationTimer = setTimeout(() => abortController.abort(), plan.budgets.maxDurationMs)
-  const requestBudget = { used: 0 }
+  const requestBudget = createResearchRequestBudget(plan.budgets.maxRequests)
   const warnings = new Set<string>()
   const evidence: MultiResearchPageEvidence[] = []
   const fetchedPages = new Map<string, WebParsedPage>()
@@ -1486,8 +1490,7 @@ async function runWebResearch(query: string, options: { maxPages?: number; langu
         abortController.abort()
         throw new Error('Research time budget was exhausted.')
       }
-      if (requestBudget.used >= plan.budgets.maxRequests) throw new Error('Research request budget was exhausted.')
-      requestBudget.used += 1
+      if (!requestBudget.consume()) throw new Error('Research request budget was exhausted.')
     },
   })
 
@@ -1705,6 +1708,7 @@ async function runWebResearch(query: string, options: { maxPages?: number; langu
     }
   } finally {
     clearTimeout(durationTimer)
+    unlinkCallerAbort()
   }
 
   const assessment = getCurrentAssessment()
@@ -4090,141 +4094,6 @@ async function refreshFileIndexForScope(scopeInput: string): Promise<{ scope: Fi
 type ResearchProviderFile = { version: number; providers: Array<ConfiguredSearchProvider & { apiKey: string | null; queryParam?: string | null }> }
 const researchProviderStore = createJsonStore<ResearchProviderFile>({ currentVersion: 1, fallback: () => ({ version: 1, providers: [] }), migrations: [] })
 
-const webFetchResearchClient: WebFetchResearchClient = async (request) => {
-  const timeoutMs = Math.min(Math.max(Number(request.timeoutMs) || webResearchLimits.pageFetchTimeoutMs, 1_000), 120_000)
-  const maxBytes = Math.min(Math.max(Number(request.maxBytes) || webResearchLimits.pageFetchMaxBytes, 1_024), 20 * 1024 * 1024)
-  const controller = new AbortController()
-  let timedOut = false
-  const abortForCaller = () => controller.abort(request.signal?.reason)
-  if (request.signal?.aborted) abortForCaller()
-  else request.signal?.addEventListener('abort', abortForCaller, { once: true })
-  const timeout = setTimeout(() => { timedOut = true; controller.abort() }, timeoutMs)
-  const maxRedirects = 5
-  let currentUrl = request.url
-  let method = request.method ?? 'GET'
-  let body = method === 'POST' ? request.body : undefined
-  const headers: Record<string, string> = {
-    'User-Agent': 'UltronResearch/1.0',
-    'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.6',
-    'Accept-Language': 'tr,en;q=0.8',
-    ...(request.headers ?? {}),
-  }
-
-  try {
-    for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
-      const safe = validateFetchableUrl(currentUrl)
-      if (!safe.ok) throw new Error(`URL blocked: ${safe.reason}`)
-      if (safe.url.username || safe.url.password) throw new Error('URL credentials are not allowed for web research.')
-
-      request.onRequestAttempt?.()
-      const response = await fetch(safe.url.toString(), {
-        method,
-        headers,
-        body,
-        redirect: 'manual',
-        signal: controller.signal,
-      })
-
-      const location = response.headers.get('location')
-      const isRedirect = [301, 302, 303, 307, 308].includes(response.status)
-      if (isRedirect && location) {
-        if (redirectCount === maxRedirects) {
-          await response.body?.cancel().catch(() => undefined)
-          throw new Error(`Too many redirects (maximum ${maxRedirects}).`)
-        }
-        let nextUrl: URL
-        try { nextUrl = new URL(location, safe.url) }
-        catch {
-          await response.body?.cancel().catch(() => undefined)
-          throw new Error('Redirect URL is invalid.')
-        }
-        const nextSafe = validateFetchableUrl(nextUrl.toString())
-        if (!nextSafe.ok) {
-          await response.body?.cancel().catch(() => undefined)
-          throw new Error(`Redirect blocked: ${nextSafe.reason}`)
-        }
-        if (nextSafe.url.username || nextSafe.url.password) {
-          await response.body?.cancel().catch(() => undefined)
-          throw new Error('Redirect URL credentials are not allowed for web research.')
-        }
-        if (safe.url.protocol === 'https:' && nextSafe.url.protocol === 'http:') {
-          await response.body?.cancel().catch(() => undefined)
-          throw new Error('HTTPS to HTTP redirects are blocked for web research.')
-        }
-        if (nextSafe.url.origin !== safe.url.origin) {
-          if (body !== undefined) {
-            await response.body?.cancel().catch(() => undefined)
-            throw new Error('Cross-origin redirects with a request body are blocked.')
-          }
-          for (const headerName of Object.keys(headers)) {
-            if (/(?:authorization|proxy-authorization|token|api[-_]?key|secret|cookie|credential)/iu.test(headerName)) delete headers[headerName]
-          }
-        }
-        await response.body?.cancel().catch(() => undefined)
-        if (response.status === 303 || ((response.status === 301 || response.status === 302) && method === 'POST')) {
-          method = 'GET'
-          body = undefined
-          delete headers['Content-Type']
-          delete headers['content-type']
-          delete headers['Content-Length']
-          delete headers['content-length']
-        }
-        currentUrl = nextSafe.url.toString()
-        continue
-      }
-      if (isRedirect && !location) {
-        await response.body?.cancel().catch(() => undefined)
-        throw new Error(`HTTP ${response.status} redirect did not include a Location header.`)
-      }
-
-      const finalUrl = response.url || safe.url.toString()
-      const finalSafe = validateFetchableUrl(finalUrl)
-      if (!finalSafe.ok || finalSafe.url.username || finalSafe.url.password) {
-        await response.body?.cancel().catch(() => undefined)
-        throw new Error(`Final URL blocked: ${finalSafe.ok ? 'URL credentials are not allowed.' : finalSafe.reason}`)
-      }
-      const contentType = response.headers.get('content-type')
-      const declaredLength = Number(response.headers.get('content-length'))
-      if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
-        await response.body?.cancel().catch(() => undefined)
-        throw new Error(`Response body exceeds the ${maxBytes}-byte limit.`)
-      }
-
-      const reader = response.body?.getReader()
-      if (!reader) return { status: response.status, contentType, finalUrl: finalSafe.url.toString(), body: '' }
-      const decoder = new TextDecoder()
-      let text = ''
-      let received = 0
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          if (!value) continue
-          received += value.byteLength
-          if (received > maxBytes) {
-            await reader.cancel().catch(() => undefined)
-            throw new Error(`Response body exceeds the ${maxBytes}-byte limit.`)
-          }
-          text += decoder.decode(value, { stream: true })
-        }
-        text += decoder.decode()
-      } catch (error) {
-        await reader.cancel().catch(() => undefined)
-        throw error
-      }
-      return { status: response.status, contentType, finalUrl: finalSafe.url.toString(), body: text }
-    }
-    throw new Error('Redirect handling ended unexpectedly.')
-  } catch (error) {
-    if (request.signal?.aborted) throw new Error('Research time budget was exhausted.')
-    if (timedOut) throw new Error(`Web request timed out after ${timeoutMs} ms.`)
-    throw error
-  } finally {
-    clearTimeout(timeout)
-    request.signal?.removeEventListener('abort', abortForCaller)
-  }
-}
-
 async function resolveBraveSearchApiKey(): Promise<{ key: string | null; source: 'env' | 'secure-file' | null; reason?: string }> {
   const environmentKey = normalizeApiKey(process.env[BRAVE_SEARCH_API_KEY_ENV])
   if (environmentKey) return { key: environmentKey, source: 'env' }
@@ -5161,12 +5030,19 @@ async function runTool(name: string, rawArgs: string, readFiles: Set<string>, to
     case 'web_research':
     case 'web_research_multi': {
       const researchQuestion = String(args.query ?? args.question ?? '')
-      const result = await runWebResearch(researchQuestion, { maxPages: typeof args.max_pages === 'number' ? args.max_pages : undefined, language: typeof args.language === 'string' ? args.language : undefined })
+      const result = await runWebResearch(researchQuestion, { maxPages: typeof args.max_pages === 'number' ? args.max_pages : undefined, language: typeof args.language === 'string' ? args.language : undefined, signal: activeAgentController?.signal })
       const usableEvidence = result.evidence.filter((item) => item.excerpt).length
       activity(usableEvidence ? 'tool' : 'error', usableEvidence ? 'Çok adımlı web araştırması yapıldı' : 'Web araştırmasında okunabilir kaynak bulunamadı', `${usableEvidence} kanıt · ${result.plan.subQuestions.length} alt konu · ${result.stoppedReason} · ${researchQuestion.slice(0, 120)}`, { tool: 'WebResearchTool', operation: 'research', target: researchQuestion.slice(0, 220), result: usableEvidence ? 'success' : 'failed', error: usableEvidence ? undefined : result.warnings.slice(0, 3).join(' · ') || 'Kaynak sayfaları okunamadı.' })
       if (name === 'web_research_multi') {
+        const bundle = buildResearchAnswerBundle({ question: researchQuestion, result })
         const sourceLines = result.sourceAssessments.slice(0, 5).map((source) =>
           `- ${source.domain} | tier=${source.authorityTier} | sezgisel puan=${Math.round(source.confidence * 100)}/100 | farklı alan adı desteği=${source.corroboratedByCount} | çelişki=${source.contradictionCount}`,
+        )
+        const findingLines = bundle.findings.map((finding, index) =>
+          `${index + 1}. ${finding.claim}\n   Kaynaklar: ${finding.sourceUrls.join(', ')}`,
+        )
+        const citationLines = bundle.sources.map((source) =>
+          `- ${source.title} — ${source.site} — [link](${source.url})${source.publishedAt ? ` — ${source.publishedAt}` : ''}`,
         )
         const output = [
           `Soru: ${result.question}`,
@@ -5182,12 +5058,30 @@ async function runTool(name: string, rawArgs: string, readFiles: Set<string>, to
           result.followUpQueries.length ? `Takip sorguları: ${result.followUpQueries.slice(0, 5).join(' | ')}` : '',
           `Yeterlilik: ${result.sufficient ? 'yeterli' : 'yetersiz/çelişkili'}`,
           `Kaynak analizi: ${result.sourceAssessments.length} kaynak puanlandı`,
+          '',
+          '**Araştırma sonucu**',
+          bundle.summary,
+          '',
+          '**Önemli bulgular**',
+          ...(findingLines.length ? findingLines : ['Desteklenmiş bulgu çıkarılamadı.']),
+          '',
+          '**Çelişkiler**',
+          ...(bundle.contradictions.length
+            ? bundle.contradictions.map((item) => `- ${item.claim} — kaynaklar: ${item.sources.join(', ')}`)
+            : ['Tespit edilmedi.']),
+          '',
+          '**Kaynaklar**',
+          ...(citationLines.length ? citationLines : ['Kullanılabilir kaynakça oluşturulamadı.']),
+          '',
+          bundle.disclaimer,
+          `Güven seviyesi: ${bundle.confidence}%`,
+          '',
           ...sourceLines,
           ...result.executionTrace.slice(0, 8).map((entry) => `İz/${entry.phase}: ${entry.decision} — ${entry.reason}`),
           `Durma nedeni: ${result.stoppedReason}`,
           `Özet: ${result.summary}`,
         ].filter(Boolean).join('\n')
-        return JSON.stringify({ ok: true, result, output })
+        return JSON.stringify({ ok: true, result, citations: bundle.sources, answer: bundle.plainText, output })
       }
       return JSON.stringify(result)
     }
@@ -5589,10 +5483,12 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
     toolKindCounts.clear()
     desktopActionCounts.clear()
     const localRequest = [...messages].reverse().find((message) => message.role === 'user')?.content ?? ''
-    if (await answerLocalTextFileFastPath(messages, localRequest)) return
-    if (await answerLocalFileFastPath(messages, localRequest)) return
-    if (await tryLocalAnswer(messages, localRequest)) return
-    if (await runDirectTrustedApplicationLaunch(messages, localRequest)) return
+    if (!decideResearchNeed(localRequest).needed) {
+      if (await answerLocalTextFileFastPath(messages, localRequest)) return
+      if (await answerLocalFileFastPath(messages, localRequest)) return
+      if (await tryLocalAnswer(messages, localRequest)) return
+      if (await runDirectTrustedApplicationLaunch(messages, localRequest)) return
+    }
     if (classifyConversation(localRequest) === 'chat') { await runChat(messages, localRequest); return }
     await captureFeedbackMemory(localRequest)
   }
@@ -5729,7 +5625,8 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
   const webPageToolNamesUsed = new Set(['web_research', 'web_research_multi', 'fetch_web_page', 'web_follow_link', 'web_download'])
   const requestHasUrl = /https?:\/\/[^\s]+/i.test(latestUserMessage)
   const requestWantsDownload = /\b(?:indir|indirilen|download)\b/i.test(latestUserMessage)
-  const requestWantsResearch = /\b(?:araştır|araştırarak|internette|internetten|web araması|güncel|karşılaştır)\b/i.test(latestUserMessage)
+  const researchDecision = decideResearchNeed(latestUserMessage)
+  const requestWantsResearch = researchDecision.needed
   const requiresWebEvidence = requestHasUrl || requestWantsResearch || requestWantsDownload
 
     // ===== AUTO-PLANNING: Otomatik plan oluşturma (çok adımlı görevler için) =====

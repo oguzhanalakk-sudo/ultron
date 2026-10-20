@@ -30,6 +30,71 @@ export function trimConversationContext(messages: ChatMessage[], options: { maxM
 
 export type ConversationKind = 'chat' | 'task'
 
+export type ResearchCategory = 'news' | 'prices' | 'software-releases' | 'legal' | 'science' | 'comparison' | 'statistics' | 'weather' | 'current-roles' | 'direct-url'
+
+export type ResearchDecision = {
+  needed: boolean
+  explicit: boolean
+  categories: ResearchCategory[]
+  reason: string
+}
+
+const explicitResearchPatterns = [
+  /(?:google(?:['’]da|da)?|internette|internetten|web(?:['’]de|de)?|çevrimiçi|online)\s*(?:araştır(?:ma|mak)?|ara|bul|kontrol et|bak|search)/iu,
+  /(?<![\p{L}\p{N}])(?:araştır(?:ma|mak)?|search the web|look it up|browse(?: the web| it)?)(?![\p{L}\p{N}])/iu,
+]
+
+const researchCategoryPatterns: Array<[ResearchCategory, RegExp]> = [
+  ['news', /güncel haber|son dakika|haberler|gündem|bugün ne oldu|latest news|current events|\bnews\b/iu],
+  ['prices', /fiyat(?:ı|i|lari|ları|lar)?|\bprice\b|\bpricing\b|kaç\s+tl|dolar\s+kuru|euro\s+kuru|döviz\s+kuru|exchange\s+rate|altın\s+fiyat|gold\s+price|bitcoin|crypto(?:currency)?|kripto(?:\s+para)?|\bhisse\b(?:\s+senedi)?|stock\s+price|share\s+price/iu],
+  ['software-releases', /en\s+son\s+(?:sürüm|versiyon|version|release)|(?:latest|current|new)\s+(?:version|release)|(?:sürüm|versiyon|version)\s+(?:not(?:ları|es)?|değişiklikleri|history)|release\s+notes|changelog|deprecated|breaking\s+changes?|migration\s+guide|api\s+değişiklik|yeni\s+sürüm/iu],
+  ['legal', /mevzuat|kanun|yönetmelik|resmî\s+gazete|resmi\s+gazete|vergi|kvkk|gdpr|uyumluluk|regulation|legal\s+requirement|compliance/iu],
+  ['science', /yeni\s+çalışma|new\s+study|recent\s+study|clinical\s+trial|klinik\s+araştırma|pubmed|arxiv|bilimsel\s+gelişme|latest\s+research|clinical\s+guideline/iu],
+  ['comparison', /karşılaştır\p{L}*|\bvs\b|hangisi\s+daha\s+iyi|\bcompare\b|\b(?:best|top)\b.{0,50}\b(?:software|model|tool|editor|app|laptop|phone)\b|en\s+iyi.{0,50}(?:yazılım|model|araç|editör|uygulama|telefon|bilgisayar)/iu],
+  ['statistics', /istatistik|latest\s+data|güncel\s+veri|enflasyon\s+oranı|işsizlik\s+oranı|pazar\s+payı|market\s+share|population|nüfus|gdp|gayrisafi\s+yurt\s+içi\s+hasıla/iu],
+  ['weather', /hava\s+durumu|hava\s+nasıl|weather\s+(?:in|for)|forecast/iu],
+  ['current-roles', /(?:şu\s+an|şu\s+anda|currently|as\s+of\s+today).{0,80}(?:başkan|president|ceo|bakan|minister|lider|leader|vali|governor|belediye\s+başkanı|mayor)/iu],
+]
+
+const mathOnlyPattern = /^\s*[\d\s+\-*\/().,%^=]+\s*$/u
+
+/** Determines when freshness or external evidence is needed; execution remains in the agent tool loop. */
+export function decideResearchNeed(request: string): ResearchDecision {
+  const text = String(request ?? '').trim()
+  if (!text) return { needed: false, explicit: false, categories: [], reason: 'Boş istek.' }
+
+  const explicit = explicitResearchPatterns.some((pattern) => pattern.test(text))
+  const hasUrl = /https?:\/\/[^\s]+/iu.test(text)
+  const categories = researchCategoryPatterns
+    .filter(([, pattern]) => pattern.test(text))
+    .map(([category]) => category)
+
+  if (hasUrl) categories.push('direct-url')
+  if (explicit || hasUrl) {
+    return {
+      needed: true,
+      explicit: explicit || hasUrl,
+      categories: [...new Set(categories)],
+      reason: hasUrl ? 'İstekte açılması veya doğrulanması gereken bir URL var.' : 'Kullanıcı açıkça internet araştırması istedi.',
+    }
+  }
+
+  if (categories.length) {
+    return {
+      needed: true,
+      explicit: false,
+      categories: [...new Set(categories)],
+      reason: `Güncel bilgi gerektiren konu algılandı: ${[...new Set(categories)].join(', ')}.`,
+    }
+  }
+
+  if (mathOnlyPattern.test(text)) {
+    return { needed: false, explicit: false, categories: [], reason: 'İstek yalnızca matematik ifadesi içeriyor.' }
+  }
+
+  return { needed: false, explicit: false, categories: [], reason: 'Güncel araştırma gerektiren bir işaret bulunmadı.' }
+}
+
 export type DesktopLaunchRequest = {
   target: 'hesap makinesi' | 'not defteri' | 'dosya gezgini' | 'paint' | 'denetim paneli' | 'görev yöneticisi' | 'ekran görüntüsü aracı'
 }
@@ -88,6 +153,7 @@ export function classifyConversation(request: string): ConversationKind {
   if (!text) return 'task'
   if (parseDesktopLaunchRequest(text) || isApplicationLaunchRequest(text)) return 'task'
   if (detectExplicitMemoryRequest(text) || detectForgetRequest(text)) return 'chat'
+  if (decideResearchNeed(text).needed) return 'task'
   if (taskControl.test(text)) return 'task'
   if (researchAction.test(text) || /https?:\/\/\S+/iu.test(text)) return 'task'
   if (actionIntent.test(text)) return 'task'

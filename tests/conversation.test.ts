@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildChatSystemPrompt, classifyConversation, describeRuntimeFacts, detectExplicitMemoryRequest, detectFeedbackCorrection, detectForgetRequest, isApplicationLaunchRequest, parseDesktopLaunchRequest, trimConversationContext } from '../electron/conversation.ts'
+import { buildChatSystemPrompt, classifyConversation, decideResearchNeed, describeRuntimeFacts, detectExplicitMemoryRequest, detectFeedbackCorrection, detectForgetRequest, isApplicationLaunchRequest, parseDesktopLaunchRequest, trimConversationContext } from '../electron/conversation.ts'
 import { newMemoryEntry } from '../electron/memory-store.ts'
 import type { ChatMessage, LocalAiStats, UserProfile } from '../electron/shared.ts'
 
@@ -28,6 +28,18 @@ test('kısa internet ve site istekleri araştırma görevine yönlenir', () => {
   assert.equal(classifyConversation("Google'da React 19 SSR hatasını ara"), 'task')
   assert.equal(classifyConversation('Bu siteye gir ve başlıkları oku'), 'task')
   assert.equal(classifyConversation('https://example.com adresini incele'), 'task')
+})
+
+test('güncel bilgi ve değişken veriler için araştırma zorunlu tutulur', () => {
+  const exchangeRate = decideResearchNeed('Bugün dolar kuru kaç TL?')
+  assert.equal(exchangeRate.needed, true)
+  assert.ok(exchangeRate.categories.includes('prices'))
+  assert.equal(classifyConversation('Bugün dolar kuru kaç TL?'), 'task')
+
+  assert.equal(decideResearchNeed('React en son sürümü nedir?').needed, true)
+  assert.equal(decideResearchNeed('KVKK mevzuatındaki güncel gereklilikler neler?').needed, true)
+  assert.equal(decideResearchNeed('13 * (7 + 2)').needed, false)
+  assert.equal(classifyConversation('Merhaba Ultron, bugün nasılsın?'), 'chat')
 })
 
 test('güvenli Windows uygulaması açma istekleri sohbet moduna düşmez', () => {
