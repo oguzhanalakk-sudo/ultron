@@ -143,6 +143,42 @@ function WebWorkspacePanel({ analysis, projectOpen, loading, error, onAnalyze }:
       {analysis.recommendations.map((item) => <div className="web-recommendation" key={item}><AlertCircle size={12} />{item}</div>)}
       <div className="web-analysis-foot">{[...analysis.dataAccess, ...analysis.packageManagers.filter((item) => item !== 'npm')].join(' · ') || 'Özel ORM veya ek paket yöneticisi algılanmadı'}</div>
     </>}
+    <ResearchPanel />
+  </div>
+}
+
+type ResearchHit = { title: string; url: string; snippet: string; provider: string; publishedAt: string | null; rank: number }
+type ResearchSummary = { title: string; text: string; url: string }
+
+function ResearchPanel() {
+  const [query, setQuery] = useState('React 19 useEffect SSR hatası')
+  const [loading, setLoading] = useState(false)
+  const [results, setResults] = useState<ResearchHit[]>([])
+  const [selected, setSelected] = useState<ResearchHit | null>(null)
+  const [summary, setSummary] = useState<ResearchSummary | null>(null)
+  const [error, setError] = useState('')
+  const search = useCallback(async () => {
+    if (query.trim().length < 3 || loading) return
+    setLoading(true); setError('')
+    try {
+      const response = await window.kodAtolyesi.researchSearch(query.trim(), 8, 'tr')
+      setResults(response.hits); setSelected(response.hits[0] ?? null)
+      if (response.hits[0]) await selectSource(response.hits[0])
+      else setSummary(null)
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Arama başarısız.'); setResults([]); setSummary(null) }
+    finally { setLoading(false) }
+  }, [loading, query])
+  const selectSource = useCallback(async (item: ResearchHit) => {
+    setSelected(item)
+    try { const page = await window.kodAtolyesi.researchFetch(item.url); setSummary({ title: page.title || item.title, text: page.text || item.snippet, url: page.url || item.url }) }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Kaynak okunamadı.') }
+  }, [])
+  return <div className="research-panel">
+    <div className="android-section-head"><strong>Güvenli web araştırması</strong><span>{loading ? 'Araştırılıyor…' : results.length ? `${results.length} sonuç` : 'Hazır'}</span></div>
+    <div className="research-search-row"><input className="settings-input" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void search() }} placeholder="Web araştırma sorgusu" /><button className="panel-action" disabled={loading || query.trim().length < 3} onClick={() => void search()}>{loading ? <LoaderCircle size={13} className="spin" /> : <Search size={13} />} Araştır</button></div>
+    {error && <div className="panel-error"><AlertCircle size={13} />{error}</div>}
+    <div className="research-grid"><div className="research-results">{results.map((item) => <button className={`research-result${selected?.url === item.url ? ' selected' : ''}`} key={`${item.url}-${item.rank}`} onClick={() => void selectSource(item)}><div><strong>{item.title}</strong><small>{item.provider}</small></div><code>{item.url}</code><span>{item.snippet || 'Özet yok.'}</span></button>)}{!results.length && !error && <div className="panel-blank small">Güncel kaynakları aramak için sorgu girin.</div>}</div><div className="research-summary"><small>SEÇİLİ KAYNAK</small>{summary ? <><strong>{summary.title}</strong><code>{summary.url}</code><p>{summary.text}</p></> : <span>Bir sonuç seçerek güvenli sayfa özetini okuyun.</span>}</div></div>
+    <div className="research-security"><ShieldCheck size={12} /> Yalnızca güvenli http/https kaynakları okunur; localhost ve özel ağ adresleri reddedilir.</div>
   </div>
 }
 

@@ -73,3 +73,20 @@
 .desktop-process-row { display: grid; grid-template-columns: minmax(90px, 1fr) auto minmax(90px, 1.5fr); gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--border-subtle, #273044); border-radius: 6px; font-size: 11px; }
 .desktop-process-row code { color: var(--text-primary, #e7edf7); }
 .desktop-process-row span, .desktop-process-row small { color: var(--text-muted, #8d99ae); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.research-panel { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border, #2d3748); }
+.research-search-row { display: flex; gap: 8px; align-items: center; }
+.research-search-row .settings-input { flex: 1; min-width: 0; }
+.research-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 10px; margin-top: 10px; }
+.research-results, .research-summary { display: grid; gap: 7px; min-width: 0; }
+.research-result { display: grid; gap: 5px; width: 100%; text-align: left; padding: 9px; color: inherit; background: var(--surface-2, #0b1220); border: 1px solid var(--border, #2d3748); border-radius: 9px; cursor: pointer; }
+.research-result.selected { border-color: #60a5fa; background: rgba(37, 99, 235, .12); }
+.research-result > div { display: flex; justify-content: space-between; gap: 8px; }
+.research-result strong { font-size: 12px; }
+.research-result small, .research-summary small { opacity: .7; font-size: 10px; text-transform: uppercase; }
+.research-result code, .research-summary code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .65; font-size: 10px; }
+.research-result span, .research-summary p, .research-summary > span { font-size: 11px; line-height: 1.45; opacity: .82; }
+.research-summary { align-content: start; padding: 10px; border: 1px solid var(--border, #2d3748); border-radius: 9px; background: var(--surface-2, #0b1220); }
+.research-summary strong { font-size: 13px; }
+.research-summary p { margin: 0; max-height: 220px; overflow: auto; white-space: pre-wrap; }
+.research-security { display: flex; gap: 6px; align-items: center; margin-top: 9px; font-size: 10px; opacity: .68; }
+@media (max-width: 760px) { .research-grid { grid-template-columns: 1fr; } }

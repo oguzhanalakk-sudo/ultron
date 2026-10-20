@@ -5866,6 +5866,24 @@ function registerIpc() {
     activity('success', 'Proje açıldı', projectRoot)
     return { name: path.basename(projectRoot), path: projectRoot }
   })
+  registerIpcHandler('research:search', async (_event, payload: { query?: string; limit?: number; language?: string }) => {
+    const query = String(payload?.query ?? '').trim()
+    if (query.length < 3) throw new Error('Araştırma sorgusu en az 3 karakter olmalı.')
+    const result = await runWebSearch(query, { limit: payload?.limit, language: payload?.language })
+    activity('tool', 'Web araştırma panelinde arama yapıldı', `${result.hits.length} sonuç · ${query.slice(0, 120)}`, { tool: 'WebResearchPanel', operation: 'research-search', target: query.slice(0, 220), result: 'success' })
+    return result
+  })
+  registerIpcHandler('research:fetch', async (_event, rawUrl: string) => {
+    const decision = validateFetchableUrl(String(rawUrl ?? ''))
+    if (!decision.ok) throw new Error(decision.reason)
+    const response = await webFetchResearchClient({ url: decision.url.toString(), timeoutMs: webResearchLimits.pageFetchTimeoutMs, maxBytes: webResearchLimits.pageFetchMaxBytes, headers: { 'User-Agent': 'UltronResearch/1.0', 'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.6' }, method: 'GET' })
+    if (response.status >= 400) throw new Error(`Sayfa alınamadı (HTTP ${response.status}).`)
+    const safety = markUntrustedWebText(htmlToReadableText(response.body))
+    if (!safety.text) throw new Error('Sayfa metne çevrilemedi.')
+    const result = { title: extractDocumentTitle(response.body) || decision.url.hostname, text: buildPageExcerpt(safety.text, [], 8_000), url: response.finalUrl ?? decision.url.toString() }
+    activity('tool', 'Web araştırma panelinde kaynak okundu', result.url.slice(0, 180), { tool: 'WebResearchPanel', operation: 'research-fetch', target: result.url.slice(0, 220), result: 'success' })
+    return result
+  })
   registerIpcHandler('project:tree', () => getFileTree())
   registerIpcHandler('project:read', (_event, relativePath: string) => readProjectFile(relativePath))
   registerIpcHandler('android:environment', () => detectAndroidEnvironment())
