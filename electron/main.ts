@@ -3568,6 +3568,26 @@ async function runConfiguredProviderSearch(query: string, entry: { provider: Con
   return hits
 }
 
+/** Anahtarsız arama sağlayıcıları: Stack Exchange, Hacker News, Wikipedia.
+ *  DuckDuckGo boş döndüğünde veya hata verdiğinde devreye girer. */
+async function runKeylessProviderSearch(query: string, language?: string): Promise<WebResearchHit[]> {
+  const languageCode = (language ?? 'tr').slice(0, 2)
+  const attempts: Array<{ id: string; url: string; parse: (body: string) => WebResearchHit[] }> = [
+    { id: 'stackexchange', url: stackExchangeSearchUrl(query), parse: (body) => parseStackExchangeResponse(body) },
+    { id: 'hackernews', url: hackerNewsSearchUrl(query), parse: (body) => parseHackerNewsResponse(body) },
+    { id: 'wikipedia', url: wikipediaSearchUrl(query, languageCode), parse: (body) => parseWikipediaResponse(body, languageCode) },
+  ]
+  for (const attempt of attempts) {
+    try {
+      const response = await webFetchResearchClient({ url: attempt.url, timeoutMs: webResearchLimits.pageFetchTimeoutMs, maxBytes: 1_500_000, headers: { 'User-Agent': 'UltronResearch/1.0', 'Accept': 'application/json' }, method: 'GET' })
+      if (response.status >= 400) continue
+      const hits = attempt.parse(response.body)
+      if (hits.length) return hits
+    } catch { /* sonraki sağlayıcıya geç */ }
+  }
+  return []
+}
+
 async function runWebSearch(query: string, options: { limit?: number; language?: string } = {}): Promise<{ hits: WebResearchHit[]; note: string | null }> {
   const limit = Math.min(Math.max(options.limit ?? webResearchLimits.maxHitsPerCall, 1), webResearchLimits.maxHitsPerCall)
   const cacheKey = `${query}|${options.language ?? ''}|${limit}`
@@ -3589,6 +3609,15 @@ async function runWebSearch(query: string, options: { limit?: number; language?:
       hits = await searchDuckDuckGo(query, options.language)
     } catch (error) {
       warnings.push(`duckduckgo yedeği: ${(error as Error).message}`)
+    }
+  }
+  if (!hits.length) {
+    // Anahtarsız güvenilir sağlayıcılar (teknik soru-cevap, tartışma, ansiklopedi).
+    try {
+      hits = await runKeylessProviderSearch(query, options.language)
+      if (hits.length) warnings.push('Anahtarsız sağlayıcılar kullanıldı.')
+    } catch (error) {
+      warnings.push(`anahtarsız sağlayıcılar: ${(error as Error).message}`)
     }
   }
   const deduped = dedupeWebHits(hits).slice(0, limit)
@@ -5016,7 +5045,7 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
           requiredWebRetry++
           activity('status', `Web kanıtı için gerçek web aracı çağrısı isteniyor (${requiredWebRetry}/2)`)
           chain.push({ role: 'system', content: requiredWebRetry === 1
-            ? 'ZORUNLU: Kullanıcı internetten gerçek bilgi istiyor. Web içeriğini bellekten UYDURMA; önce web_search (arama), fetch_web_page (sayfa okuma), web_research (çoklu kaynak karşılaştırma), web_follow_link (bağlantı takibi) veya web_download (dosya indirme) aracından birini GERÇEKTEN çağır. Erişim yoksa veya araç hata verirse bu sınırı açıkça bildir.'
+            ? 'ZORUNLU: Kullanıcı internetten gerçek bilgi istiyor. Web içeriğini bellekten UYDURMA; önce web_search (arama), fetch_web_page (sayfa okuma), web_research (çoklu kaynak karşılaştırma), web_follow_link (bağlantı takibi) veya web_download (dosya indirme) aracından birini GERÇEKTEN çağır. İstekte adres varsa sayfayı fetch_web_page ile oku (ön getirilen içerik sana verilmiş olabilir). Erişim yoksa veya araç hata verirse bu sınırı açıkça bildir.'
             : 'SON UYARI: Bir önceki turda da web aracı çağrısı yapılmadı. Bu turda YANITIN YALNIZCA bir web aracı çağrısı içermeli (web_search, web_research, fetch_web_page, web_follow_link veya web_download). Açıklama yazma.' })
           continue
         }

@@ -13,6 +13,8 @@ local.properties
 .ultron-desktop-test-session.json
 temp-*.log
 temp-*.txt
+.playwright-mcp/
+$tmp
 *.log
 
 *.tsbuildinfo
