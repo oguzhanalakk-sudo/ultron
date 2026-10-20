@@ -90,6 +90,7 @@ import { buildAdapterCommand, describeAdaptersForTool, findAdapter, listAdapters
 import { defaultPluginState, checkDependencies, checkToolConflicts, compareVersions, computePackageChecksum, isPluginAgentToolName, parsePluginAgentToolName, pluginAgentToolName, validateManifest, type EnabledPluginTools, type PluginManifest, type PluginStateEntry, type PluginStateFile } from './plugin-manager'
 import { readZipEntries } from './zip-lite'
 import { buildDesktopPayload, desktopResultFileName, DESKTOP_HOST_SCRIPT, parseDesktopResult, PROTECTED_PROCESS_NAMES, resolveTrustedApplicationTarget, type DesktopActionKind, type DesktopState } from './desktop-control'
+import { ValidationEngine, type ValidationPlan, type ValidationCategory } from './validation-engine'
 
 let mainWindow: BrowserWindow | null = null
 let projectRoot: string | null = null
@@ -1384,6 +1385,35 @@ async function pauseAgent() {
 async function runAndCollect(command: string, reason: string, forceApproval = false, category?: PermissionCategory, workingDirectory = currentProject(), timeoutMs = 15 * 60 * 1000) {
   const queued = await queueCommand(command, reason, { forceApproval, operationCategory: category, workingDirectory, timeoutMs })
   return queued.result
+}
+
+const validationCategories = new Set<ValidationCategory>(['typecheck', 'build', 'unit', 'integration', 'smoke', 'runtime', 'regression', 'security', 'environment'])
+const validationProjectTypes = new Set<ValidationPlan['projectType']>(['electron', 'web', 'python', 'generic'])
+
+function validateValidationPlan(input: unknown): ValidationPlan {
+  if (!input || typeof input !== 'object') throw new Error('Doğrulama planı nesne olmalı.')
+  const raw = input as Record<string, unknown>
+  const projectType = raw.projectType
+  if (typeof projectType !== 'string' || !validationProjectTypes.has(projectType as ValidationPlan['projectType'])) throw new Error('Doğrulama proje türü geçersiz.')
+  const readCategories = (value: unknown, name: string) => {
+    if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || !validationCategories.has(item as ValidationCategory))) throw new Error(`${name} geçersiz.`)
+    return value as ValidationCategory[]
+  }
+  if (!Array.isArray(raw.changedFiles) || raw.changedFiles.some((item) => typeof item !== 'string' || item.length > 500)) throw new Error('changedFiles geçersiz.')
+  return { projectType: projectType as ValidationPlan['projectType'], changedFiles: raw.changedFiles as string[], requiredChecks: readCategories(raw.requiredChecks, 'requiredChecks'), optionalChecks: readCategories(raw.optionalChecks, 'optionalChecks') }
+}
+
+function validationExecutor() {
+  return new ValidationEngine(async (command) => {
+    if (!projectRoot) return { code: null, stdout: '', stderr: 'Doğrulama için önce bir proje klasörü açın.' }
+    try {
+      const output = await runAndCollect(command, `Otomatik doğrulama: ${command}`, true, 'development', currentProject(), 30 * 60 * 1000)
+      const match = output.match(/Komut çıkış kodu:\s*(-?\d+)/i)
+      return { code: match ? Number(match[1]) : null, stdout: output, stderr: '' }
+    } catch (error) {
+      return { code: null, stdout: '', stderr: error instanceof Error ? error.message : String(error) }
+    }
+  })
 }
 
 async function collectWebFiles(nodes: TreeNode[], result: Record<string, string>, totalBytes: { value: number }) {
@@ -6126,6 +6156,15 @@ registerIpcHandler('files:scopes', async () => {
     return runAgent(validateChatMessages(messages), taskId)
   })
   registerIpcHandler('agent:cancel', () => cancelAgent())
+  registerIpcHandler('validation:analyze-failure', (_event, output: unknown) => ValidationEngine.analyzeFailure(typeof output === 'string' ? output : ''))
+  registerIpcHandler('validation:run', async (_event, payload: unknown) => {
+    const plan = validateValidationPlan(payload)
+    if (!projectRoot) throw new Error('Doğrulama için önce bir proje klasörü açın.')
+    const results = await validationExecutor().runValidationPlan(plan)
+    const failed = results.filter((result) => result.status === 'failed' || result.status === 'blocked').length
+    activity(failed ? 'error' : 'success', failed ? 'Doğrulama başarısız' : 'Doğrulama tamamlandı', `${results.length} kontrol · ${failed} sorun`, { tool: 'ValidationEngine', operation: 'validation-plan', result: failed ? 'failed' : 'success' })
+    return results
+  })
 registerIpcHandler('desktop:paused', () => desktopControlPaused)
 registerIpcHandler('desktop:invoke', async (_event, request: { action?: string; payload?: Record<string, unknown> }) => {
   const action = String(request?.action ?? '') as DesktopActionKind

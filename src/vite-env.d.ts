@@ -4,6 +4,7 @@ import type { AndroidDevice, AndroidEnvironment } from '../electron/shared'
 import type { MemoryEntry, MemoryKind, UserMemory, VoiceStatus } from '../electron/shared'
 import type { AndroidProjectAnalysis } from '../electron/android-build-tool'
 import type { WindowsProjectAnalysis } from '../electron/windows-build-tool'
+import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from '../electron/validation-engine'
 
 declare global { interface Window { __smokeEvents?: AppEvent[] } }
 declare global {
@@ -49,6 +50,8 @@ declare global {
       resumeTask(taskId: string, messages: { role: 'user' | 'assistant'; content: string }[]): Promise<void>
       cancelAgent(): Promise<{ ok: boolean; message: string }>
       pauseAgent(): Promise<{ ok: boolean; message: string }>
+      runValidation(plan: ValidationPlan): Promise<ValidationResult[]>
+      analyzeValidationFailure(output: string): Promise<ValidationFailureAnalysis>
       getDesktopPaused(): Promise<boolean>
       setDesktopPaused(paused: boolean): Promise<boolean>
       getDesktopState(): Promise<{ ok: boolean; paused: boolean; state?: unknown; error?: string }>

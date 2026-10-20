@@ -3,6 +3,7 @@ import type { AndroidDevice, AndroidEnvironment, AppEvent, AppConfig, AppSetting
 import type { WindowsProjectAnalysis } from './windows-build-tool'
 import type { SoftwareEntry } from './software-discovery'
 import type { PluginStateEntry } from './plugin-manager'
+import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from './validation-engine'
 
 type SoftwareCatalogEntry = SoftwareEntry
 type AdapterSummary = {
@@ -72,6 +73,8 @@ const api = {
   resumeTask: (taskId: string, messages: { role: 'user' | 'assistant'; content: string }[]) => ipcRenderer.invoke('agent:resume', taskId, messages),
   cancelAgent: () => ipcRenderer.invoke('agent:cancel'),
   pauseAgent: () => ipcRenderer.invoke('agent:pause'),
+  runValidation: (plan: ValidationPlan) => ipcRenderer.invoke('validation:run', plan) as Promise<ValidationResult[]>,
+  analyzeValidationFailure: (output: string) => ipcRenderer.invoke('validation:analyze-failure', output) as Promise<ValidationFailureAnalysis>,
   getDesktopPaused: () => ipcRenderer.invoke('desktop:paused') as Promise<boolean>,
   setDesktopPaused: (paused: boolean) => ipcRenderer.invoke('desktop:set-paused', paused) as Promise<boolean>,
   getDesktopState: () => ipcRenderer.invoke('desktop:state') as Promise<{ ok: boolean; paused: boolean; state?: unknown; error?: string }>,

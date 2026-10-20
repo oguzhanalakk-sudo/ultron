@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto'
-
 export type ValidationStatus = 'passed' | 'failed' | 'skipped' | 'blocked'
 
 export type ValidationCategory =
@@ -44,6 +42,10 @@ export type ValidationFailureAnalysis = {
 }
 
 export type ValidationCommandOutcome = { code: number | null; stdout: string; stderr: string }
+
+function validationId() {
+  return `validation-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
 
 const commandSets: Record<ValidationPlan['projectType'], Array<{ category: ValidationCategory; command: string }>> = {
   electron: [
@@ -92,7 +94,7 @@ export class ValidationEngine {
       const status: ValidationStatus = outcome.code === 0 ? 'passed' : outcome.code === null ? 'blocked' : 'failed'
       const issue = status === 'failed' || status === 'blocked' ? this.extractIssue(outcome.stdout, outcome.stderr) : undefined
       results.push({
-        id: randomUUID(), category: item.category, command: item.command, status,
+        id: validationId(), category: item.category, command: item.command, status,
         exitCode: outcome.code, durationMs,
         stdout: this.trim(outcome.stdout, 12_000), stderr: this.trim(outcome.stderr, 12_000),
         evidence: status === 'passed' ? ['komut başarılı olarak tamamlandı'] : [],
