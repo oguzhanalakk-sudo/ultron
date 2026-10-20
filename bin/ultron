@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+import { spawnSync } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const scriptPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../electron/project-generator.ts')
+const args = process.argv.slice(2)
+
+if (!args.length) {
+  console.error('Kullanım: ultron "React + Express dashboard"')
+  console.error('Örnek: ultron "my-app --stack react --template dashboard"')
+  process.exit(1)
+}
+
+const result = spawnSync(process.execPath, ['--experimental-strip-types', scriptPath, ...args], {
+  stdio: 'inherit',
+})
+
+process.exit(result.status ?? 0)
