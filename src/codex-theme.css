@@ -2039,4 +2039,119 @@ button:hover,
   border-color: #365641 !important;
 }
 
+/* Last-resort normalization for legacy selectors with higher specificity. */
+.app-shell * {
+  color: #eeeef0 !important;
+  border-color: #2f3135 !important;
+}
+
+.app-shell div,
+.app-shell section,
+.app-shell article,
+.app-shell header,
+.app-shell footer,
+.app-shell main,
+.app-shell aside,
+.app-shell nav,
+.app-shell form,
+.app-shell ul,
+.app-shell ol,
+.app-shell li,
+.app-shell pre {
+  background-color: #171819 !important;
+}
+
+.app-shell span,
+.app-shell label,
+.app-shell small,
+.app-shell strong,
+.app-shell em,
+.app-shell a,
+.app-shell svg,
+.app-shell path {
+  background-color: transparent !important;
+}
+
+.app-shell input,
+.app-shell textarea,
+.app-shell select {
+  background: #1d1e20 !important;
+  color: #eeeef0 !important;
+  border-color: #3b3d42 !important;
+}
+
+.app-shell button {
+  background-color: #1d1e20 !important;
+  color: #eeeef0 !important;
+  border-color: #3b3d42 !important;
+}
+
+.app-shell button:hover {
+  background-color: #292b2f !important;
+  color: #ffffff !important;
+}
+
+.app-shell .brand-mark,
+.app-shell .welcome-mark,
+.app-shell .assistant-mark,
+.app-shell .project-avatar,
+.app-shell .send-button,
+.app-shell .open-project-large,
+.app-shell .apply-button {
+  background: linear-gradient(145deg, #9a70ce, #6f528d) !important;
+  color: #20172c !important;
+}
+
+.app-shell .ready-chip,
+.app-shell .connection-status.connected,
+.app-shell .build-artifact,
+.app-shell .sidebar-security {
+  background: #1d2b21 !important;
+  color: #a8d8b3 !important;
+  border-color: #365641 !important;
+}
+
+.app-shell .settings-error,
+.app-shell .panel-error,
+.app-shell .android-inline-error,
+.app-shell .build-error-line,
+.app-shell .memory-danger-zone,
+.app-shell .task-verification-issue {
+  background: #3a2426 !important;
+  color: #f0aaa7 !important;
+  border-color: #704247 !important;
+}
+
+.app-shell .muted,
+.app-shell .muted-2,
+.app-shell .project-meta span,
+.app-shell .sidebar-section-title,
+.app-shell .panel-intro span,
+.app-shell .panel-blank p,
+.app-shell .proposal-size,
+.app-shell .proposal-card > p,
+.app-shell .approval-head span,
+.app-shell .approval-card p,
+.app-shell .message-time,
+.app-shell .welcome-copy,
+.app-shell .memory-entry-meta,
+.app-shell .memory-updated,
+.app-shell .permission-panel p,
+.app-shell .permissions-panel p,
+.app-shell .desktop-muted,
+.app-shell .desktop-automation-status {
+  color: #85878e !important;
+}
+
+.app-shell .markdown-body a,
+.app-shell .inline-code,
+.app-shell .phase-text,
+.app-shell .toolbar-button > svg,
+.app-shell .folder-icon,
+.app-shell .file-icon.code,
+.app-shell .accent,
+.app-shell .permission-active-label {
+  color: #b992ff !important;
+}
+
 
