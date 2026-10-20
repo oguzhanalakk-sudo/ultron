@@ -69,3 +69,7 @@
 .right-tabs-scroll::-webkit-scrollbar{display:none}
 .right-tabs .right-collapse{width:25px;height:25px;padding:0;display:grid;place-items:center;gap:0;border-radius:5px;flex-shrink:0;color:#85878e}
 .right-tabs .right-collapse:hover{background:#252629;color:#e3e1e7}
+.desktop-process-list { display: grid; gap: 5px; margin: 8px 0; max-height: 180px; overflow: auto; }
+.desktop-process-row { display: grid; grid-template-columns: minmax(90px, 1fr) auto minmax(90px, 1.5fr); gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--border-subtle, #273044); border-radius: 6px; font-size: 11px; }
+.desktop-process-row code { color: var(--text-primary, #e7edf7); }
+.desktop-process-row span, .desktop-process-row small { color: var(--text-muted, #8d99ae); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

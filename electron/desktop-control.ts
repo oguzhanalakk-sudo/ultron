@@ -28,6 +28,11 @@ export type DesktopActionKind =
   | 'ui_elements'
   | 'launch_app'
   | 'open_explorer'
+  | 'process_list'
+  | 'process_start'
+  | 'process_kill'
+  | 'app_logs'
+  | 'open_file_default'
 
 export type DesktopWindowInfo = {
   handle: string
@@ -67,7 +72,7 @@ export type DesktopActionRequest = {
 
 /** Fare/klavye işlemleri hedef pencereyi doğrulamayı gerektirir. */
 export const DESKTOP_INPUT_ACTIONS = new Set<DesktopActionKind>(['mouse_move', 'mouse_click', 'keyboard_type', 'keyboard_keys'])
-export const DESKTOP_READ_ACTIONS = new Set<DesktopActionKind>(['state', 'screenshot', 'window_list', 'ui_elements'])
+export const DESKTOP_READ_ACTIONS = new Set<DesktopActionKind>(['state', 'screenshot', 'window_list', 'ui_elements', 'process_list', 'app_logs'])
 
 /** Klavye kombinasyonu sözlüğü: ad → sanal tuş kodu. */
 export const VIRTUAL_KEYS: Record<string, number> = {
@@ -209,17 +214,25 @@ export function resolveAppTarget(input: unknown): string {
   return raw
 }
 
-/** Güvenli modda yalnız uygulama ADI kabul edilir. Keyfi dosya yolu, masaüstü kontrolü
- *  açıkken kullanılabilen desktop_launch_app aracına bırakılmıştır. */
+/** Güvenli modda yalnız uygulama ADI kabul edilir. Keyfi dosya yolu, masaüstü
+ *  açıkken kullanılabilen desktop_launch_app aracına bırakılmıştır.
+ *  Kabuk yürütücüleri (cmd/powershell vb.) keyfi komut çalıştırabildiği için
+ *  bu yolla başlatılamaz. */
+const SHELL_INTERPRETERS = new Set(['cmd.exe', 'powershell.exe', 'pwsh.exe', 'wscript.exe', 'cscript.exe', 'mshta.exe', 'rundll32.exe', 'regsvr32.exe', 'bash.exe', 'sh.exe', 'wsl.exe'])
+
 export function resolveTrustedApplicationTarget(input: unknown): string {
   const raw = String(input ?? '').trim()
   if (!raw) throw new Error('Uygulama adı belirtilmedi.')
   if (raw.length > 600) throw new Error('Uygulama adı çok uzun.')
   if (/[&|<>^%`"'\r\n]/.test(raw)) throw new Error('Uygulama adında güvenilmeyen karakter var.')
   if (/[\\/]/.test(raw) || raw.includes(':')) {
-    throw new Error('Bu modda yalnız uygulama adı verilebilir; tam dosya yolu için masaüstü kontrolünü etkinleştir.')
+    throw new Error(`"${raw}" güvenli uygulama başlatma listesinde değil: bu modda yalnız uygulama adı verilebilir.`)
   }
-  return resolveAppTarget(raw)
+  const target = resolveAppTarget(raw)
+  if (SHELL_INTERPRETERS.has(target.toLocaleLowerCase('en-US'))) {
+    throw new Error(`"${raw}" güvenli uygulama başlatma listesinde değil: kabuk yürütücüleri bu yolla başlatılamaz.`)
+  }
+  return target
 }
 
 export function buildDesktopPayload(request: DesktopActionRequest): Record<string, unknown> {
@@ -252,6 +265,31 @@ export function buildDesktopPayload(request: DesktopActionRequest): Record<strin
       if (/[&|<>^%`"'\r\n]/.test(target)) throw new Error('Hedef yolda güvenilmeyen karakter var.')
       if (request.action === 'launch_app') return { target: resolveAppTarget(target) }
       return { target }
+    }
+    case 'process_list':
+    case 'process_start':
+    case 'process_kill': {
+      const name = String(payload.name ?? payload.process ?? payload.target ?? '').trim()
+      const pid = payload.pid === undefined || payload.pid === null || payload.pid === '' ? null : Number(payload.pid)
+      if (name.length > 260) throw new Error('Süreç adı çok uzun.')
+      if (pid !== null && (!Number.isInteger(pid) || pid <= 0)) throw new Error('Süreç kimliği geçersiz.')
+      if (request.action === 'process_list' && !name && pid === null) return { name: '', pid: null }
+      if (request.action !== 'process_list' && !name && pid === null) throw new Error('Süreç adı veya PID belirtilmedi.')
+      if (/[\r\n;&|<>`]/.test(name)) throw new Error('Süreç adında güvenilmeyen karakter var.')
+      return { name, pid }
+    }
+    case 'app_logs': {
+      const file = String(payload.path ?? '').trim()
+      if (!file || file.length > 600) throw new Error('Log dosyası yolu geçersiz.')
+      if (/[\r\n;&|<>`]/.test(file)) throw new Error('Log yolunda güvenilmeyen karakter var.')
+      const tail = Math.min(Math.max(Number(payload.tail ?? 120) || 120, 1), 500)
+      return { path: file, tail }
+    }
+    case 'open_file_default': {
+      const file = String(payload.path ?? '').trim()
+      if (!file || file.length > 600) throw new Error('Açılacak dosya yolu geçersiz.')
+      if (/[\r\n;&|<>`]/.test(file)) throw new Error('Dosya yolunda güvenilmeyen karakter var.')
+      return { path: file }
     }
     case 'text_task': {
       // Deterministik akış: uygulamayı aç → odaklan → metni yaz → isteğe bağlı kaydet.
@@ -1091,6 +1129,53 @@ public class UltronDesktopNative {
       $result.focusedWindow = Get-FocusedWindow
       $result.launched = @{ pid = $process.Id; path = $target; window = $found; verified = ($null -ne $found) }
       if ($null -eq $found) { $result.note = 'Dosya Gezgini başlatıldı ancak yeni pencere doğrulanamadı.' }
+    }
+    'process_list' {
+      $name = if ($null -ne $data.name) { [string]$data.name } else { '' }
+      $pid = if ($null -ne $data.pid) { [int]$data.pid } else { 0 }
+      $items = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+        ($pid -le 0 -or $_.Id -eq $pid) -and ([string]::IsNullOrWhiteSpace($name) -or $_.ProcessName -like ('*' + $name.TrimEnd('.exe') + '*'))
+      } | Select-Object -First 200 Id,ProcessName,MainWindowTitle,Responding,CPU,StartTime)
+      $result.processes = @($items)
+      $result.count = $items.Count
+    }
+    'process_start' {
+      $target = [string]$data.name
+      if ([string]::IsNullOrWhiteSpace($target)) { Fail 'Başlatılacak süreç adı belirtilmedi.' }
+      $resolved = Resolve-AppTarget $target $false
+      if ($null -eq $resolved) { Fail ('Süreç bulunamadı: ' + $target) }
+      $process = Start-Process -FilePath $resolved.path -PassThru -ErrorAction Stop
+      Start-Sleep -Milliseconds 250
+      $result.started = @{ pid = $process.Id; process = $process.ProcessName; path = $resolved.path }
+      $result.processes = @(Get-Process -Id $process.Id -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,MainWindowTitle,Responding)
+    }
+    'process_kill' {
+      $pid = if ($null -ne $data.pid) { [int]$data.pid } else { 0 }
+      $name = if ($null -ne $data.name) { [string]$data.name } else { '' }
+      $targets = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { ($pid -gt 0 -and $_.Id -eq $pid) -or ($pid -le 0 -and $name -and $_.ProcessName -like ('*' + $name.TrimEnd('.exe') + '*')) })
+      if ($targets.Count -eq 0) { Fail 'Durdurulacak süreç bulunamadı.' }
+      foreach ($proc in $targets) {
+        if ($selfNames -contains $proc.ProcessName.ToLower()) { Fail 'Ultron veya Electron süreci durdurulamaz.' }
+      }
+      $stopped = @()
+      foreach ($proc in $targets) { Stop-Process -Id $proc.Id -ErrorAction Stop; $stopped += @{ pid = $proc.Id; process = $proc.ProcessName } }
+      $result.stopped = @($stopped)
+    }
+    'app_logs' {
+      $logPath = [string]$data.path
+      if (-not (Test-Path -LiteralPath $logPath -PathType Leaf)) { Fail ('Log dosyası bulunamadı: ' + $logPath) }
+      $tail = [int]$data.tail
+      $result.log = @(Get-Content -LiteralPath $logPath -Tail $tail -ErrorAction Stop)
+      $result.path = $logPath
+      $result.tail = $tail
+    }
+    'open_file_default' {
+      $filePath = [string]$data.path
+      if (-not (Test-Path -LiteralPath $filePath -PathType Leaf)) { Fail ('Dosya bulunamadı: ' + $filePath) }
+      $extension = [System.IO.Path]::GetExtension($filePath).ToLowerInvariant()
+      if (@('.exe','.bat','.cmd','.ps1','.msi','.lnk','.com','.js','.vbs') -contains $extension) { Fail 'Çalıştırılabilir dosyalar varsayılan uygulamayla açılmaz.' }
+      $opened = Start-Process -FilePath $filePath -PassThru -ErrorAction Stop
+      $result.opened = @{ path = $filePath; pid = $opened.Id; process = $opened.ProcessName }
     }
     default { Fail ('Bilinmeyen masaüstü eylemi: ' + $Action) }
   }

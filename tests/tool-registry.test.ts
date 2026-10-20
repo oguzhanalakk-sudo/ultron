@@ -97,11 +97,14 @@ test('yetenek kaydındaki her araç tam olarak bir yeteneğe bağlıdır', () =>
   assert.equal(new Set(capabilityMembers).size, capabilityMembers.length, 'Bir araç iki yeteneğe birden bağlanmamalı')
   const gated = new Set(capabilityMembers)
   const alwaysVisible = schemaNames().filter((name) => !gated.has(name))
+  // Araştırma yeteneği her zaman etkindir: web araçları sürekli görünürdür.
+  const alwaysActive = new Set(toolsByCapability.research ?? [])
+  const expected = schemaNames().filter((name) => !gated.has(name) || alwaysActive.has(name))
   const tools = schemaNames().map((name) => ({ function: { name } }))
   assert.deepEqual(
     selectToolsForTask(tools, 'Bu istek hiçbir özel alana dair bir şey içermiyor').map((tool) => tool.function.name).sort(),
-    alwaysVisible.sort(),
-    'Yetenek kapsamı dışındaki araçlar her istekte görünür olmalı',
+    expected.sort(),
+    'Yetenek kapsamı dışındaki ve her zaman etkin yeteneklerin araçları görünür olmalı',
   )
 })
 
@@ -127,9 +130,17 @@ test('masaüstü kontrolü kapalıyken masaüstü araçları modele hiç göster
 
 test('görev yetenekleri araç görünürlüğünü merkezi kayıttan belirler', () => {
   const tools = ['read_file', 'project_scaffold', 'list_project_templates', 'create_android_project', 'web_search'].map((name) => ({ function: { name } }))
-  assert.deepEqual(selectToolsForTask(tools, 'Yeni bir proje iskeleti oluştur ve şablonları göster').map((tool) => tool.function.name), ['read_file', 'project_scaffold', 'list_project_templates'])
-  assert.deepEqual(selectToolsForTask(tools, 'Android APK uygulaması geliştir').map((tool) => tool.function.name), ['read_file', 'create_android_project'])
+  // NOT: web_search her zaman görünür (araştırma yeteneği daima etkin).
+  assert.deepEqual(selectToolsForTask(tools, 'Yeni bir proje iskeleti oluştur ve şablonları göster').map((tool) => tool.function.name), ['read_file', 'project_scaffold', 'list_project_templates', 'web_search'])
+  assert.deepEqual(selectToolsForTask(tools, 'Android APK uygulaması geliştir').map((tool) => tool.function.name), ['read_file', 'create_android_project', 'web_search'])
   assert.ok(taskCapabilitiesForRequest('Güncel hata çözümünü internette araştır').has('research'))
+  // Web araştırma araçları artık anahtar kelimeye bağlı DEĞİLDİR: her istekte görünür
+  // kalır, böylece ajan "web erişimim yok" demeye çalışmaz.
+  assert.deepEqual(
+    selectToolsForTask(tools, 'Bir dosyadaki fonksiyonu incele').map((tool) => tool.function.name).sort(),
+    ['read_file', 'web_search'],
+    'Web araçları her istekte görünür olmalı',
+  )
 })
 
 test('hiçbir araç erişilemez kalmaz: her yetenek gerçek bir istekle açılabilir', () => {

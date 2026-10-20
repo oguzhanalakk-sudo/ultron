@@ -1040,17 +1040,20 @@ async function queueCommand(commandText: string, reason: string, options: { forc
 //  * Her eylem kısa süreli ayrı bir PowerShell sürecidir; iptal veya zaman aşımı
 //    otomasyonu durdurur.
 // ---------------------------------------------------------------------------
-type DesktopActionCategory = 'screen-capture' | 'input-control' | 'app-launch'
+type DesktopActionCategory = 'screen-capture' | 'input-control' | 'app-launch' | 'file-read' | 'system'
 
 const desktopCategoryFor = (action: DesktopActionKind): DesktopActionCategory => {
   if (action === 'mouse_move' || action === 'mouse_click' || action === 'keyboard_type' || action === 'keyboard_keys') return 'input-control'
   if (action === 'launch_app' || action === 'open_explorer') return 'app-launch'
+  if (action === 'process_start' || action === 'open_file_default') return 'app-launch'
+  if (action === 'process_list' || action === 'app_logs') return 'file-read'
+  if (action === 'process_kill') return 'system'
   return 'screen-capture'
 }
 
 const desktopRiskFor = (action: DesktopActionKind): 'development' | 'system' => {
   if (action === 'mouse_move' || action === 'mouse_click' || action === 'keyboard_type' || action === 'keyboard_keys') return 'system'
-  if (action === 'launch_app' || action === 'open_explorer' || action === 'window_close') return 'system'
+  if (action === 'launch_app' || action === 'open_explorer' || action === 'window_close' || action === 'process_start' || action === 'process_kill' || action === 'open_file_default') return 'system'
   return 'development'
 }
 
@@ -1070,6 +1073,11 @@ const desktopActionLabel: Record<DesktopActionKind, string> = {
   ui_elements: 'Arayüz öğelerini tespit et',
   launch_app: 'Uygulama başlat',
   open_explorer: 'Dosya Gezgini aç',
+  process_list: 'Süreçleri listele',
+  process_start: 'Süreç başlat',
+  process_kill: 'Süreç durdur',
+  app_logs: 'Uygulama loglarını oku',
+  open_file_default: 'Dosyayı varsayılan uygulamayla aç',
 }
 
 let desktopControlPaused = false
@@ -1136,7 +1144,13 @@ async function runDesktopTool(action: DesktopActionKind, rawPayload: Record<stri
   // Masaüstü kontrolü kullanıcı tarafından açılmadıysa onay istemeden net mesaj ver.
   const desktopAllowed = (await readWorkspace()).permissions.allowDesktopControl
   if (!desktopAllowed) throw new Error('Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden "Masaüstü kontrolünü etkinleştir" seçeneğini aç.')
-  const payload = buildDesktopPayload({ action, payload: rawPayload })
+  const normalizedInput = { ...rawPayload }
+  if ((action === 'app_logs' || action === 'open_file_default') && typeof normalizedInput.path === 'string') {
+    const requested = normalizedInput.path.trim()
+    if (requested.startsWith('@user/')) normalizedInput.path = resolveUserScopePath(requested)
+    else normalizedInput.path = await ensureInsideProject(await validateRelativePath(await toProjectRelative(requested)))
+  }
+  const payload = buildDesktopPayload({ action, payload: normalizedInput })
   const signature = desktopActionSignature(action, payload)
   const repeats = (desktopRepeatGuard.get(signature) ?? 0) + 1
   desktopRepeatGuard.set(signature, repeats)
@@ -1200,8 +1214,23 @@ async function prefetchWebPages(request: string, taskId: string | null): Promise
   const urls = [...String(request ?? '').matchAll(/https?:\/\/[^\s"'<>)\]}]+/gi)].map((match) => match[0]).slice(0, 3)
   if (!urls.length) return ''
   const blocks: string[] = []
+  const wantsDownload = /\b(?:indir|indirilen|download)\b/i.test(String(request ?? ''))
   for (const url of urls) {
     try {
+      // "İndir" isteği varsa indirme çerçeve seviyesinde gerçekten yapılır.
+      if (wantsDownload) {
+        try {
+          const fileName = (new URL(url).pathname.split('/').filter(Boolean).pop() ?? 'indirilen.html')
+          const saved = await runWebDownload(url, `indirilenler/${fileName}`)
+          await recordTaskEvent({ type: 'tool', name: 'web_download', status: 'completed', detail: `${saved.path} (${saved.bytes} bayt)` }, taskId)
+          activity('tool', 'Web dosyası indirildi', saved.path, { taskId: taskId ?? undefined, tool: 'WebResearchTool', operation: 'download', target: saved.url.slice(0, 220), result: 'success', changedPaths: [saved.path] })
+          blocks.push(`İNDİRİLEN DOSYA: ${saved.path} (${saved.bytes} bayt, ${saved.contentType}) — kaynak: ${saved.url}`)
+          continue
+        } catch (error) {
+          blocks.push(`${url}\nİndirilemedi: ${(error as Error).message}`)
+          continue
+        }
+      }
       const decision = validateFetchableUrl(url)
       if (!decision.ok) { blocks.push(`${url}\nErişilemedi: ${decision.reason}`); continue }
       const response = await webFetchResearchClient({ url: decision.url.toString(), timeoutMs: webResearchLimits.pageFetchTimeoutMs, maxBytes: webResearchLimits.pageFetchMaxBytes, headers: { 'User-Agent': 'UltronResearch/1.0', 'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.6', 'Accept-Language': 'tr,en;q=0.8' }, method: 'GET' })
@@ -3685,6 +3714,11 @@ const agentTools = [
   { type: 'function', function: { name: 'desktop_launch_app', description: 'Kullanıcının belirttiği masaüstü uygulamasını başlatır ve 25 saniye içinde penceresinin açılıp açılmadığını doğrular. Uygulama adı (örn. "not defteri", "notepad", "hesap makinesi") veya çalıştırılabilir dosya yolu verilebilir; ad verilirse PATH ve sistem klasörü aranır. Ultron kendi uygulamasını başlatmak için kullanılamaz.', parameters: { type: 'object', properties: { path: { type: 'string', minLength: 1, maxLength: 600, description: 'Çalıştırılabilir dosyanın tam yolu (örn. notepad.exe).' } }, required: ['path'] } } },
   { type: 'function', function: { name: 'open_application', description: 'Güvenli Windows uygulama listesinden Hesap Makinesi, Not Defteri, Dosya Gezgini, Paint, Denetim Paneli, Görev Yöneticisi veya Ekran Alıntısı Aracı uygulamasını gerçekten başlatır. Genel masaüstü kontrolü kapalı olsa bile yalnızca bu allowlist için kullanılabilir; yeni pencere doğrulanmadan başarılı dönmez.', parameters: { type: 'object', properties: { name: { type: 'string', enum: ['hesap makinesi', 'not defteri', 'dosya gezgini', 'paint', 'denetim paneli', 'görev yöneticisi', 'ekran görüntüsü aracı'] } }, required: ['name'] } } },
   { type: 'function', function: { name: 'desktop_open_explorer', description: 'Dosya Gezgini\'ni verilen klasörde açar ve açılan pencereyi doğrular. Klasör yoksa hata verir.', parameters: { type: 'object', properties: { path: { type: 'string', minLength: 1, maxLength: 600, description: 'Açılacak klasörün tam yolu.' } }, required: ['path'] } } },
+  { type: 'function', function: { name: 'desktop_process_list', description: 'Windows süreçlerini PID, ad, pencere başlığı ve yanıt durumu ile listeler. İsteğe bağlı ad veya PID ile süzebilir.', parameters: { type: 'object', properties: { name: { type: 'string', maxLength: 260 }, pid: { type: 'integer', minimum: 1 } } } } },
+  { type: 'function', function: { name: 'desktop_process_start', description: 'Güvenli uygulama çözümleme katmanıyla bir Windows süreci başlatır ve PID’sini doğrular. Kabuk yorumlayıcıları ve keyfî komutlar çalıştırılmaz.', parameters: { type: 'object', properties: { name: { type: 'string', minLength: 1, maxLength: 260 } }, required: ['name'] } } },
+  { type: 'function', function: { name: 'desktop_process_kill', description: 'Belirtilen Windows sürecini PID veya ad ile durdurur. Ultron/Electron korunur ve işlem onay gerektirir.', parameters: { type: 'object', properties: { name: { type: 'string', maxLength: 260 }, pid: { type: 'integer', minimum: 1 } } } } },
+  { type: 'function', function: { name: 'desktop_app_logs', description: 'Yetkili bir log dosyasının son satırlarını okur; içerik kullanıcıya ve ajana gerçek çıktı olarak döner.', parameters: { type: 'object', properties: { path: { type: 'string', minLength: 1, maxLength: 600 }, tail: { type: 'integer', minimum: 1, maximum: 500 } }, required: ['path'] } } },
+  { type: 'function', function: { name: 'desktop_open_file_default', description: 'Mevcut belgeyi Windows varsayılan uygulamasıyla açar. Çalıştırılabilir dosya uzantıları reddedilir ve başlatma sonucu döner.', parameters: { type: 'object', properties: { path: { type: 'string', minLength: 1, maxLength: 600 } }, required: ['path'] } } },
   { type: 'function', function: { name: 'request_scope', description: 'Kullanıcıdan bilgisayarındaki bir klasöre erişim yetkisi ister. Yol verilirse o klasör, verilmezse kullanıcı bir klasör seçer. Yetki verildiğinde o klasör @resource/<id> adresiyle dosya araçlarına açılır. Yazma izni isteniyorsa kullanıcı onay kartı görür.', parameters: { type: 'object', properties: { path: { type: 'string', maxLength: 600, description: 'Yetkilendirilecek klasörün tam yolu; boş bırakılırsa kullanıcı seçer.' }, access: { type: 'string', enum: ['read', 'read-write'], description: 'Erişim türü; varsayılan read.' }, reason: { type: 'string', maxLength: 300, description: 'Kullanıcıya gösterilecek kısa gerekçe.' } } } } },
   { type: 'function', function: { name: 'list_scopes', description: 'Erişebileceğin tüm kapsamları listeler: seçili proje kökü ve kullanıcının açıkça yetkilendirdiği ek klasörler. Ek klasörler @resource/<id> adresiyle kullanılır (read = salt okunur, read-write = yazılabilir). Bilgisayardaki bir klasörde çalışman gerekiyorsa önce bu aracı çağır ve doğru kapsamı seç.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'list_files', description: 'Seçili proje ve açıkça yetkilendirilmiş ek kaynak klasörlerinin dosya ağacını listeler. Ek kaynak yolları @resource/<id>/... biçimindedir.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Başlangıç klasörü; boş bırakırsan proje kökü ve yetkili kaynak kökleri.' } } } } },
@@ -4307,6 +4341,11 @@ async function runTool(name: string, rawArgs: string, readFiles: Set<string>, to
     case 'desktop_close_window': return await runDesktopTool('window_close', { title: args.title })
     case 'desktop_launch_app': return await runDesktopTool('launch_app', { path: args.path, allow_raw_path: true })
     case 'desktop_open_explorer': return await runDesktopTool('open_explorer', { path: args.path })
+    case 'desktop_process_list': return await runDesktopTool('process_list', { name: args.name, pid: args.pid })
+    case 'desktop_process_start': return await runDesktopTool('process_start', { name: args.name })
+    case 'desktop_process_kill': return await runDesktopTool('process_kill', { name: args.name, pid: args.pid })
+    case 'desktop_app_logs': return await runDesktopTool('app_logs', { path: args.path, tail: args.tail })
+    case 'desktop_open_file_default': return await runDesktopTool('open_file_default', { path: args.path })
     case 'check_capabilities': return JSON.stringify(await buildCapabilityReport(String(args.need ?? '')))
     case 'git_status': return runGit(['status', '--short', '--branch'])
     case 'git_diff': {
@@ -4986,8 +5025,12 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
         : ''
       chain[0] = { role: 'system', content: `${baseSystemContent}${planStatus}` }
       if (prefetchedWebContext) {
-        // Ön getirilen web içeriği modele gerçek kanıt olarak verilir (araç çalıştırılmıştır).
-        chain.push({ role: 'user', content: `Web sayfası içeriği (fetch_web_page ile ALINDI, aşağıda gerçek metin):\n\n${prefetchedWebContext}` })
+        // Ön getirilen web içeriği modele GERÇEK kanıt olarak verilir (araç çalıştırılmıştır).
+        // Sistem mesajında olması, modelin bunu görev kanıtı olarak kullanmasını sağlar.
+        chain[0] = {
+          role: 'system',
+          content: `${chain[0].content}\n\nWEB SAYFASI İÇERİĞİ (fetch_web_page aracıyla ALINDI, aşağıda GERÇEK metin; kullanıcının sorusunu bu içerikten cevapla, bellekten bilgi uydurma):\n${prefetchedWebContext}`,
+        }
       }
       const result = await streamCompletion(chain, controller.signal, activeTools)
       if (operationalError && !operationalError.tool) {
@@ -5049,7 +5092,8 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
             : 'SON UYARI: Bir önceki turda da web aracı çağrısı yapılmadı. Bu turda YANITIN YALNIZCA bir web aracı çağrısı içermeli (web_search, web_research, fetch_web_page, web_follow_link veya web_download). Açıklama yazma.' })
           continue
         }
-        if (requiresReadOperationForRequest && requiredReadRetry < 2 && !readFileToolUsed) {
+        // Web adresi içeren isteklerde read_file zorunluluğu uygulanmaz; doğru araç fetch_web_page'dır.
+        if (requiresReadOperationForRequest && !requestHasUrl && requiredReadRetry < 2 && !readFileToolUsed) {
           requiredReadRetry++
           activity('status', `Dosya okuma için gerçek read_file kanıtı isteniyor (${requiredReadRetry}/2)`)
           chain.push({ role: 'system', content: requiredReadRetry === 1
@@ -5057,7 +5101,7 @@ async function runAgent(messages: ChatMessage[], resumeTaskId?: string) {
             : 'SON UYARI: Bir önceki turda da yalnızca açıklama yazdın. Bu turda YANITIN YALNIZCA read_file araç çağrısı içermeli. Açıklama yazma; doğrudan aracı çağır.' })
           continue
         }
-        const modelMessage = requiredReadRetry > 0 && requiresReadOperationForRequest && !readFileToolUsed && !chain.slice(-3).some((entry) => Array.isArray(entry.tool_calls))
+        const modelMessage = requiredReadRetry > 0 && requiresReadOperationForRequest && !requestHasUrl && !readFileToolUsed && !chain.slice(-3).some((entry) => Array.isArray(entry.tool_calls))
           ? 'İstenen dosya içeriğini gerçek read_file çağrısı olmadan doğrulayamadım; model bellekten içerik üretti. Dosyanın proje yetkisi veya kaynak kapsamı içinde olduğundan emin olup tekrar deneyin.'
           : requiredToolRetry > 0 && requiresFileOperationForRequest && !chain.slice(-3).some((entry) => Array.isArray(entry.tool_calls))
             ? 'İstenen kod değişikliğini gerçek dosya aracıyla hazırlayamadım; model bu denemede araç çağrısı üretmedi. Modelin araç çağrısı desteğini ve proje izinlerini kontrol edip tekrar deneyin.'
@@ -6058,7 +6102,7 @@ registerIpcHandler('files:scopes', async () => {
 registerIpcHandler('desktop:paused', () => desktopControlPaused)
 registerIpcHandler('desktop:invoke', async (_event, request: { action?: string; payload?: Record<string, unknown> }) => {
   const action = String(request?.action ?? '') as DesktopActionKind
-  const allowed: DesktopActionKind[] = ['state', 'screenshot', 'preflight', 'text_task', 'click_element', 'ui_elements', 'mouse_move', 'mouse_click', 'keyboard_type', 'keyboard_keys', 'window_list', 'window_focus', 'window_close', 'launch_app', 'open_explorer']
+  const allowed: DesktopActionKind[] = ['state', 'screenshot', 'preflight', 'text_task', 'click_element', 'ui_elements', 'mouse_move', 'mouse_click', 'keyboard_type', 'keyboard_keys', 'window_list', 'window_focus', 'window_close', 'launch_app', 'open_explorer', 'process_list', 'process_start', 'process_kill', 'app_logs', 'open_file_default']
   if (!allowed.includes(action)) throw new Error('Bilinmeyen masaüstü eylemi.')
   try {
     const raw = await runDesktopTool(action, request?.payload ?? {})

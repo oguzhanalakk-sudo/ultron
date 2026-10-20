@@ -176,3 +176,23 @@ test('masaüstü betiği teşhis ve deterministik akış eylemlerini uygular', (
   assert.match(DESKTOP_HOST_SCRIPT, /TypeUnicode/)
   assert.match(DESKTOP_HOST_SCRIPT, /UIAutomationClient/)
 })
+
+test('süreç, log ve varsayılan uygulama eylemleri doğrulanır', () => {
+  assert.deepEqual(buildDesktopPayload({ action: 'process_list', payload: { name: 'notepad', pid: 12 } }), { name: 'notepad', pid: 12 })
+  assert.deepEqual(buildDesktopPayload({ action: 'process_list', payload: {} }), { name: '', pid: null })
+  assert.deepEqual(buildDesktopPayload({ action: 'process_start', payload: { name: 'notepad' } }), { name: 'notepad', pid: null })
+  assert.deepEqual(buildDesktopPayload({ action: 'process_kill', payload: { pid: 12 } }), { name: '', pid: 12 })
+  assert.deepEqual(buildDesktopPayload({ action: 'app_logs', payload: { path: 'logs/app.log', tail: 20 } }), { path: 'logs/app.log', tail: 20 })
+  assert.deepEqual(buildDesktopPayload({ action: 'open_file_default', payload: { path: 'README.md' } }), { path: 'README.md' })
+  assert.throws(() => buildDesktopPayload({ action: 'process_kill', payload: {} }), /Süreç adı veya PID/)
+  assert.throws(() => buildDesktopPayload({ action: 'app_logs', payload: { path: 'x&y.log' } }), /güvenilmeyen/)
+  assert.throws(() => buildDesktopPayload({ action: 'open_file_default', payload: { path: '' } }), /geçersiz/)
+})
+
+test('masaüstü betiği süreç ve varsayılan uygulama işlemlerini uygular', () => {
+  for (const action of ["'process_list'", "'process_start'", "'process_kill'", "'app_logs'", "'open_file_default'"]) assert.match(DESKTOP_HOST_SCRIPT, new RegExp(action.replace(/[']/g, "'")))
+  assert.match(DESKTOP_HOST_SCRIPT, /Get-Process/)
+  assert.match(DESKTOP_HOST_SCRIPT, /Stop-Process/)
+  assert.match(DESKTOP_HOST_SCRIPT, /Get-Content -LiteralPath/)
+  assert.match(DESKTOP_HOST_SCRIPT, /Çalıştırılabilir dosyalar varsayılan uygulamayla açılmaz/)
+})

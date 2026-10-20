@@ -1027,7 +1027,7 @@ type AppPluginItem = {
 }
 
 function DesktopPanel({ projectPath, paused, onTogglePause, setToast }: { projectPath: string | null; paused: boolean; onTogglePause: () => void; setToast: (message: string) => void }) {
-  const [state, setState] = useState<{ screen?: { width: number; height: number }; focusedWindow?: { title?: string; process?: string } | null; windows?: Array<{ title: string; process: string }>; windowCount?: number; cursor?: { x: number; y: number } } | null>(null)
+  const [state, setState] = useState<{ screen?: { width: number; height: number }; focusedWindow?: { title?: string; process?: string } | null; windows?: Array<{ title: string; process: string }>; processes?: Array<{ Id?: number; ProcessName?: string; MainWindowTitle?: string; Responding?: boolean }>; windowCount?: number; cursor?: { x: number; y: number } } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [note, setNote] = useState('')
@@ -1058,7 +1058,7 @@ function DesktopPanel({ projectPath, paused, onTogglePause, setToast }: { projec
       const result = await window.kodAtolyesi.invokeDesktop(action, payload)
       if (!result.ok) { setError(result.error ?? 'Eylem tamamlanamadı.'); return }
       setError('')
-      const parsed = result.result as { focusedWindow?: { title?: string }; windows?: Array<{ title: string }>; screenshotPath?: string } | undefined
+      const parsed = result.result as { focusedWindow?: { title?: string }; windows?: Array<{ title: string }>; processes?: Array<{ Id?: number; ProcessName?: string; MainWindowTitle?: string; Responding?: boolean }>; screenshotPath?: string } | undefined
       if (parsed?.screenshotPath) setScreenshot(parsed.screenshotPath)
       setState((prev) => ({ ...(prev ?? {}), ...(parsed ?? {}) }) as typeof state)
       setToast(`${action} tamamlandı.`)
@@ -1087,7 +1087,9 @@ function DesktopPanel({ projectPath, paused, onTogglePause, setToast }: { projec
       <button className="android-text-action" disabled={busy} onClick={() => void run('launch_app', { path: 'hesap makinesi' })}>Hesap Makinesi</button>
       <button className="android-text-action" disabled={busy || !projectPath} onClick={() => void run('open_explorer', { path: projectPath })}>Dosya Gezgini</button>
       <button className="android-text-action" disabled={busy} onClick={() => void run('window_list')}>Pencereler</button>
+      <button className="android-text-action" disabled={busy} onClick={() => void run('process_list')}>Süreçler</button>
     </div>
+    {state?.processes?.length ? <div className="desktop-process-list">{state.processes.slice(0, 12).map((proc) => <div className="desktop-process-row" key={`${proc.Id}-${proc.ProcessName}`}><code>{proc.ProcessName ?? '—'}</code><span>PID {proc.Id ?? '—'}</span><small>{proc.MainWindowTitle || (proc.Responding === false ? 'yanıt vermiyor' : 'arka plan')}</small></div>)}</div> : null}
     <div className="android-section-head"><strong>Metin yaz</strong></div>
     <input className="settings-input" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Yazılacak metin" disabled={busy} />
     <div className="desktop-action-row">
