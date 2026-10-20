@@ -1500,4 +1500,234 @@ input:focus-visible, textarea:focus-visible { outline: 2px solid #d8d8d3; outlin
 .windows-project-file { border-bottom-color: var(--line); }
 .windows-build-note { color: var(--muted) !important; }
 
+/* ---------------------------------------------------------------- */
+/* Final light-theme compatibility overrides                         */
+/* ---------------------------------------------------------------- */
+
+/* Some legacy panels are defined in styles.css/settings.css/local-ai.css
+   with dark literal colors. Keep this file last in the import order and
+   normalize those surfaces so every window follows the Codex light theme. */
+html,
+body,
+#root,
+.app-shell,
+.workspace,
+.main-column,
+.left-sidebar,
+.right-sidebar,
+.right-panel-content,
+.activity-panel {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+.topbar,
+.main-toolbar,
+.right-tabs,
+.right-footer,
+.sidebar-header,
+.panel-intro,
+.activity-intro,
+.composer-area {
+  background: var(--panel) !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
+}
+
+.project-card,
+.proposal-card,
+.panel-card,
+.panel-blank,
+.approval-card,
+.desktop-automation-card,
+.developer-tools-list,
+.research-result,
+.research-summary,
+.localai-panel,
+.localai-status-card,
+.localai-model,
+.memory-panel,
+.files-outcome,
+.files-preview-card,
+.capability-report,
+.software-testout,
+.plugin-card,
+.workspace-modal,
+.settings-modal,
+.file-modal {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+.tree-search,
+.composer,
+.diff-preview,
+.approval-command,
+.files-summary,
+.files-query,
+.files-scope,
+.software-list,
+.adapter-list,
+.plugin-tools,
+.terminal-output,
+.terminal-panel,
+pre,
+code {
+  background: var(--panel-2) !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+
+input,
+textarea,
+select,
+.settings-input,
+.settings-textarea,
+.workspace-textarea,
+.workspace-list-input,
+.composer textarea,
+.tree-search input,
+.files-query,
+.files-scope {
+  background: #ffffff !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+  caret-color: var(--accent) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.composer textarea::placeholder,
+.tree-search input::placeholder {
+  color: var(--muted) !important;
+}
+
+button,
+.icon-button,
+.toolbar-button,
+.right-tabs button,
+.right-footer button,
+.sidebar-tool,
+.tree-item,
+.panel-action,
+.panel-action.ghost,
+.android-text-action,
+.reject-button,
+.open-project-large,
+.send-button,
+.files-hit-actions button,
+.software-actions button,
+.plugin-actions button,
+.plugin-tool-row button {
+  color: var(--text) !important;
+}
+
+.icon-button:hover,
+.toolbar-button:hover,
+.right-tabs button:hover,
+.right-footer button:hover,
+.sidebar-tool:hover,
+.tree-item:hover,
+.panel-action:hover,
+.files-hit-actions button:hover,
+.software-actions button:hover,
+.plugin-actions button:hover {
+  background: #f0f0ed !important;
+  color: #111111 !important;
+}
+
+.message-topline,
+.markdown-body,
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.panel-intro strong,
+.panel-blank strong,
+.proposal-title,
+.proposal-title strong,
+.approval-head strong,
+.localai-status-head,
+.localai-model-head,
+.files-hit-top strong,
+.software-info strong,
+.plugin-head strong,
+.developer-tool-row,
+.desktop-automation-head,
+.research-result strong,
+.research-summary strong {
+  color: var(--text) !important;
+}
+
+.project-meta span,
+.sidebar-section-title,
+.tree-empty,
+.welcome-copy,
+.message-time,
+.markdown-body blockquote,
+.panel-intro span,
+.panel-blank p,
+.proposal-size,
+.proposal-card > p,
+.approval-head span,
+.approval-card p,
+.files-hit-top span,
+.files-hit code,
+.software-info small,
+.plugin-description,
+.plugin-note,
+.developer-tool-row span,
+.desktop-muted,
+.desktop-automation-status,
+.research-result small,
+.research-summary small {
+  color: var(--muted) !important;
+}
+
+.markdown-body a,
+.inline-code,
+.message-model,
+.context-pill,
+.research-result code,
+.research-summary code {
+  color: var(--accent) !important;
+}
+
+.overlay,
+.modal-overlay,
+.workspace-overlay {
+  background: rgba(31, 31, 31, 0.28) !important;
+}
+
+.settings-modal,
+.workspace-modal,
+.file-modal {
+  box-shadow: 0 18px 60px rgba(31, 31, 31, 0.18) !important;
+}
+
+.desktop-automation-card,
+.desktop-process-row,
+.desktop-automation-row,
+.developer-tool-row {
+  background: #ffffff !important;
+  border-color: var(--line) !important;
+}
+
+.desktop-process-row code,
+.desktop-automation-row code {
+  color: var(--text) !important;
+}
+
+.terminal-output,
+.terminal-output pre,
+.terminal-panel pre,
+.markdown-body pre {
+  background: #f4f4f1 !important;
+  color: #2b2b2b !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: light; }
+}
+
 
