@@ -9,7 +9,7 @@ import os from 'node:os'
 import { writeJsonAtomically } from './atomic-json'
 import { defaultPermissions, emptyMemory, emptyUserMemory, emptyUserProfile, type ActivityItem, type AndroidBuildArtifact, type AndroidBuildRecord, type AndroidDevice, type AndroidEnvironment, type AndroidEnvironmentCheck, type AppConfig, type AppEvent, type ApprovalDecision, type ApprovalGrantScope, type BuildRecord, type ChatMessage, type LocalAIStatus, type LocalAiStats, type LocalHardware, type LocalModelActionResult, type LocalModelEntry, type LocalModelInfo, type LocalPullProgress, type LoadedLocalModel, type MemoryEntry, type MemoryKind, type ModelStatus, type PermissionCategory, type PermissionGrant, type PermissionProfile, type ProjectMemory, type Proposal, type ResourceRoot, type TaskPlan, type TaskRecord, type TreeNode, type UserMemory, type UserProfile, type VoiceStatus, type VoiceToolCheck, type WindowsEnvironment, type WindowsToolCheck, type WindowsDesktopArtifact, type WindowsDesktopBuild, type WorkspaceState } from './shared'
 import { classifyCommand, isSafePowerShellQuery } from './permissions'
-import { canPerformAutomatically, canRememberCategory, createPermissionGrant, findResourceRoot, isValidApprovalDecision, sanitizePermissionGrants, sanitizeResourceRoots } from './permission-manager'
+import { canAccessExternalUrl, canPerformAutomatically, canRememberCategory, createPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, sanitizePermissionGrants, sanitizeResourceRoots } from './permission-manager'
 import { analyzeSourceSecurity } from './source-security'
 import { normalizeInventoryPorts, parseAuthorizedPrivateCidr, scanPrivateTcpInventory } from './network-inventory'
 import { planTaskRecord, TaskStore, type JournalTask } from './task-store'
@@ -5883,6 +5883,15 @@ function registerIpc() {
     const result = { title: extractDocumentTitle(response.body) || decision.url.hostname, text: buildPageExcerpt(safety.text, [], 8_000), url: response.finalUrl ?? decision.url.toString() }
     activity('tool', 'Web araştırma panelinde kaynak okundu', result.url.slice(0, 180), { tool: 'WebResearchPanel', operation: 'research-fetch', target: result.url.slice(0, 220), result: 'success' })
     return result
+  })
+  registerIpcHandler('research:permission-check', async (_event, rawUrl: string) => {
+    const workspace = await readWorkspace()
+    return canAccessExternalUrl(String(rawUrl ?? ''), workspace.permissions, currentProject(), workspace.task?.id)
+  })
+  registerIpcHandler('desktop:approval', async (_event, category: string, projectPath: string, taskId?: string) => {
+    const allowedCategories = new Set<PermissionCategory>(['system', 'system-script', 'screen-capture', 'input-control', 'app-launch'])
+    if (!allowedCategories.has(category as PermissionCategory)) throw new Error('Geçersiz masaüstü izin kategorisi.')
+    return requestDesktopAutomationApproval(category as PermissionCategory, projectPath || currentProject(), taskId)
   })
   registerIpcHandler('project:tree', () => getFileTree())
   registerIpcHandler('project:read', (_event, relativePath: string) => readProjectFile(relativePath))

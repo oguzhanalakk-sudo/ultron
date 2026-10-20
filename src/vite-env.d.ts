@@ -19,6 +19,8 @@ declare global {
       analyzeWebProject(): Promise<WebProjectAnalysis>
       researchSearch(query: string, limit?: number, language?: string): Promise<{ hits: Array<{ title: string; url: string; snippet: string; provider: string; publishedAt: string | null; rank: number }>; note: string | null }>
       researchFetch(url: string): Promise<{ title: string; text: string; url: string }>
+      researchPermissionCheck(url: string): Promise<{ allowed: boolean; reason?: string; grantId?: string }>
+      requestDesktopApproval(category: string, projectPath: string, taskId?: string): Promise<{ approved: boolean; reason?: string }>
       getWindowsEnvironment(): Promise<WindowsEnvironment>
       analyzeWindowsProject(projectPath?: string): Promise<{ projectPath: string; analysis: WindowsProjectAnalysis }>
       getStatus(): Promise<ModelStatus>
