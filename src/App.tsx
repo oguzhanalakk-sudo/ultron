@@ -14,6 +14,7 @@ import {
 import type { ActivityItem, AndroidDevice, AndroidEnvironment, AppConfig, AppEvent, ApprovalDecision, ApprovalGrantScope, ApprovalRequest, BuildRecord, LocalAIStatus, LocalPullProgress, MemoryKind, ModelStatus, PermissionCategory, PermissionGrant, PermissionProfile, ProjectInfo, ProjectMemory, Proposal, ResourceRoot, TaskPlan, TaskRecord, TreeNode, UserMemory, VoiceStatus, WorkspaceState, WebProjectAnalysis, WindowsEnvironment } from '../electron/shared'
 import type { AndroidProjectAnalysis } from '../electron/android-build-tool'
 import type { WindowsProjectAnalysis } from '../electron/windows-build-tool'
+import DesktopAutomationPanel from './DesktopAutomationPanel'
 
 type Message = { id: string; role: 'user' | 'assistant'; content: string }
 type SideTab = 'changes' | 'activity' | 'android' | 'web' | 'research' | 'windows' | 'localai' | 'memory' | 'files' | 'software' | 'plugins' | 'desktop'
@@ -1126,6 +1127,7 @@ function DesktopPanel({ projectPath, paused, onTogglePause, setToast }: { projec
       <button className="android-text-action" disabled={busy} onClick={() => void run('process_list')}>Süreçler</button>
     </div>
     {state?.processes?.length ? <div className="desktop-process-list">{state.processes.slice(0, 12).map((proc) => <div className="desktop-process-row" key={`${proc.Id}-${proc.ProcessName}`}><code>{proc.ProcessName ?? '—'}</code><span>PID {proc.Id ?? '—'}</span><small>{proc.MainWindowTitle || (proc.Responding === false ? 'yanıt vermiyor' : 'arka plan')}</small></div>)}</div> : null}
+    <DesktopAutomationPanel windows={(state?.windows ?? []).map((item) => ({ title: item.title, process: item.process }))} processes={state?.processes ?? []} status={busy ? 'Masaüstü durumu güncelleniyor…' : error ? '' : 'Hazır'} error="" onRefresh={() => void refresh()} busy={busy} />
     <div className="android-section-head"><strong>Metin yaz</strong></div>
     <input className="settings-input" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Yazılacak metin" disabled={busy} />
     <div className="desktop-action-row">

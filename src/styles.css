@@ -73,6 +73,18 @@
 .desktop-process-row { display: grid; grid-template-columns: minmax(90px, 1fr) auto minmax(90px, 1.5fr); gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--border-subtle, #273044); border-radius: 6px; font-size: 11px; }
 .desktop-process-row code { color: var(--text-primary, #e7edf7); }
 .desktop-process-row span, .desktop-process-row small { color: var(--text-muted, #8d99ae); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-automation-card { margin-top: 12px; padding: 12px; border: 1px solid var(--border-subtle, #273044); border-radius: 10px; background: color-mix(in srgb, var(--panel, #111827) 88%, #000 12%); }
+.desktop-automation-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.desktop-automation-head > div { display: grid; gap: 3px; }
+.desktop-automation-head small { color: var(--text-muted, #8d99ae); letter-spacing: 1.2px; font-size: 10px; }
+.desktop-automation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.desktop-automation-list { display: grid; gap: 5px; min-width: 0; }
+.desktop-automation-list > strong { font-size: 12px; }
+.desktop-automation-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--border-subtle, #273044); border-radius: 6px; font-size: 11px; min-width: 0; }
+.desktop-automation-row span, .desktop-automation-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-automation-row small, .desktop-muted, .desktop-automation-status { color: var(--text-muted, #8d99ae); }
+.desktop-automation-status { margin-top: 8px; font-size: 11px; }
+@media (max-width: 700px) { .desktop-automation-grid { grid-template-columns: 1fr; } }
 .research-panel { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border, #2d3748); }
 .research-search-row { display: flex; gap: 8px; align-items: center; }
 .research-search-row .settings-input { flex: 1; min-width: 0; }
