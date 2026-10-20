@@ -92,6 +92,7 @@ import { readZipEntries } from './zip-lite'
 import { buildDesktopPayload, desktopResultFileName, DESKTOP_HOST_SCRIPT, parseDesktopResult, PROTECTED_PROCESS_NAMES, resolveTrustedApplicationTarget, type DesktopActionKind, type DesktopState } from './desktop-control'
 import { ValidationEngine, type ValidationPlan, type ValidationCategory } from './validation-engine'
 import { detectToolAvailability, TOOL_DEFINITIONS, type ToolAvailability } from './tool-catalog'
+import { validateGitArguments } from './git-operations'
 
 let mainWindow: BrowserWindow | null = null
 let projectRoot: string | null = null
@@ -2310,6 +2311,8 @@ async function createWebProject(args: Record<string, unknown>, readFiles: Set<st
 
 async function runGit(args: string[]) {
   try {
+    const validation = validateGitArguments(args)
+    if (!validation.ok) throw new Error(validation.reason ?? 'Git komutu güvenlik denetiminden geçmedi.')
     const safeArgs = ['-c', 'core.fsmonitor=false', '--no-optional-locks', ...args]
     if (args[0] === 'diff') safeArgs.splice(4, 0, '--no-ext-diff', '--no-textconv')
     const result = await execFileAsync('git', safeArgs, { cwd: currentProject(), windowsHide: true, encoding: 'utf8', timeout: 15_000, maxBuffer: 2_000_000 })
