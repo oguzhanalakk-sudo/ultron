@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createWebFetchResearchClient, relayAbortSignal, webFetchResearchClient } from '../electron/web-research-fetch.ts'
-import { parseWebPageToStructured, searchDuckDuckGo } from '../electron/web-research.ts'
+import { isWebDownloadRequest, parseWebPageToStructured, searchDuckDuckGo } from '../electron/web-research.ts'
 
 const baseRequest = {
   url: 'https://example.com/page',
@@ -64,6 +64,24 @@ test('web fetch yanıt boyutu sınırını hem Content-Length hem okuma sırası
     },
   }), { headers: { 'content-type': 'text/plain' } }))
   await assert.rejects(streamedTooLarge({ ...baseRequest, maxBytes: 1_024 }), /exceeds the 1024-byte limit/u)
+})
+
+test('ikili web yanıtları UTF-8 dönüşümü olmadan tam baytları korur', async () => {
+  const expected = Uint8Array.from([0, 255, 137, 80, 78, 71, 13, 10, 26, 10, 128, 1])
+  const client = createWebFetchResearchClient(async () => new Response(expected, {
+    headers: { 'content-type': 'image/png' },
+  }))
+  const response = await client({ ...baseRequest, responseType: 'binary' })
+
+  assert.equal(response.contentType, 'image/png')
+  assert.equal(response.body, '')
+  assert.deepEqual(response.bodyBytes, expected)
+})
+
+test('web indirme isteği Türkçe ve İngilizce fiilleri algılar', () => {
+  assert.equal(isWebDownloadRequest('Şu dosyayı indir: https://example.com/file.png'), true)
+  assert.equal(isWebDownloadRequest('Please download this file'), true)
+  assert.equal(isWebDownloadRequest('Bu sayfayı özetle'), false)
 })
 
 test('dış iptal aktif HTTP isteğine aktarılır ve kontrollü iptal hatası döner', async () => {

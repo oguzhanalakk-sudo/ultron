@@ -4,6 +4,7 @@ import { mkdtemp, rm, stat, readFile, readdir } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { buildProjectFromSpec, listTemplates, type ProjectSpec } from '../electron/project-scaffold.ts'
+import { createProject } from '../electron/project-cli.ts'
 
 const spec: ProjectSpec = {
   name: 'safe-project', description: 'Scoped scaffold test', category: 'library',
@@ -73,6 +74,26 @@ test('şablon listesi kullanılabilirliği doğru bildirir', () => {
   assert.ok(templates.length > 0, 'En az bir şablon tanımlı olmalı')
   for (const template of templates) {
     assert.equal(typeof template.available, 'boolean', 'Her şablon için available alanı olmalı')
+  }
+})
+
+test('üretilen Electron projesi sandbox ve renderer izolasyonunu etkinleştirir', async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'ultron-electron-scaffold-'))
+  try {
+    const artifact = await createProject({
+      name: 'safe-electron',
+      stack: 'electron',
+      template: 'desktop',
+      workspaceRoot,
+      description: 'Electron security test',
+      prompt: 'Electron desktop app',
+    })
+    const main = await readFile(path.join(artifact.root, 'electron/main.ts'), 'utf8')
+    assert.match(main, /contextIsolation:\s*true/)
+    assert.match(main, /nodeIntegration:\s*false/)
+    assert.match(main, /sandbox:\s*true/)
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true })
   }
 })
 

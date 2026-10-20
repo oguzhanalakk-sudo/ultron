@@ -120,6 +120,7 @@ export function createWebFetchResearchClient(fetchImpl: typeof fetch = globalThi
         const reader = response.body?.getReader()
         if (!reader) return { status: response.status, contentType, finalUrl: finalSafe.url.toString(), body: '' }
         const decoder = new TextDecoder()
+        const byteChunks: Uint8Array[] = []
         let text = ''
         let received = 0
         try {
@@ -132,12 +133,22 @@ export function createWebFetchResearchClient(fetchImpl: typeof fetch = globalThi
               await reader.cancel().catch(() => undefined)
               throw new Error(`Response body exceeds the ${maxBytes}-byte limit.`)
             }
-            text += decoder.decode(value, { stream: true })
+            if (request.responseType === 'binary') byteChunks.push(value)
+            else text += decoder.decode(value, { stream: true })
           }
-          text += decoder.decode()
+          if (request.responseType !== 'binary') text += decoder.decode()
         } catch (error) {
           await reader.cancel().catch(() => undefined)
           throw error
+        }
+        if (request.responseType === 'binary') {
+          const bodyBytes = new Uint8Array(received)
+          let offset = 0
+          for (const chunk of byteChunks) {
+            bodyBytes.set(chunk, offset)
+            offset += chunk.byteLength
+          }
+          return { status: response.status, contentType, finalUrl: finalSafe.url.toString(), body: '', bodyBytes }
         }
         return { status: response.status, contentType, finalUrl: finalSafe.url.toString(), body: text }
       }
