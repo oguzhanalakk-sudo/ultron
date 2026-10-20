@@ -5,6 +5,7 @@ import type { MemoryEntry, MemoryKind, UserMemory, VoiceStatus } from '../electr
 import type { AndroidProjectAnalysis } from '../electron/android-build-tool'
 import type { WindowsProjectAnalysis } from '../electron/windows-build-tool'
 import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from '../electron/validation-engine'
+import type { ToolAvailability, ToolDefinition } from '../electron/tool-catalog'
 
 declare global { interface Window { __smokeEvents?: AppEvent[] } }
 declare global {
@@ -52,6 +53,8 @@ declare global {
       pauseAgent(): Promise<{ ok: boolean; message: string }>
       runValidation(plan: ValidationPlan): Promise<ValidationResult[]>
       analyzeValidationFailure(output: string): Promise<ValidationFailureAnalysis>
+      getToolCatalog(): Promise<ToolDefinition[]>
+      getToolAvailability(names?: string[]): Promise<ToolAvailability[]>
       getDesktopPaused(): Promise<boolean>
       setDesktopPaused(paused: boolean): Promise<boolean>
       getDesktopState(): Promise<{ ok: boolean; paused: boolean; state?: unknown; error?: string }>

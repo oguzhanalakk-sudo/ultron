@@ -4,6 +4,7 @@ import type { WindowsProjectAnalysis } from './windows-build-tool'
 import type { SoftwareEntry } from './software-discovery'
 import type { PluginStateEntry } from './plugin-manager'
 import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from './validation-engine'
+import type { ToolAvailability, ToolDefinition } from './tool-catalog'
 
 type SoftwareCatalogEntry = SoftwareEntry
 type AdapterSummary = {
@@ -75,6 +76,8 @@ const api = {
   pauseAgent: () => ipcRenderer.invoke('agent:pause'),
   runValidation: (plan: ValidationPlan) => ipcRenderer.invoke('validation:run', plan) as Promise<ValidationResult[]>,
   analyzeValidationFailure: (output: string) => ipcRenderer.invoke('validation:analyze-failure', output) as Promise<ValidationFailureAnalysis>,
+  getToolCatalog: () => ipcRenderer.invoke('tools:catalog') as Promise<ToolDefinition[]>,
+  getToolAvailability: (names?: string[]) => ipcRenderer.invoke('tools:availability', names ?? null) as Promise<ToolAvailability[]>,
   getDesktopPaused: () => ipcRenderer.invoke('desktop:paused') as Promise<boolean>,
   setDesktopPaused: (paused: boolean) => ipcRenderer.invoke('desktop:set-paused', paused) as Promise<boolean>,
   getDesktopState: () => ipcRenderer.invoke('desktop:state') as Promise<{ ok: boolean; paused: boolean; state?: unknown; error?: string }>,

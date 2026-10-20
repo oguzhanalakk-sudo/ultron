@@ -91,6 +91,7 @@ import { defaultPluginState, checkDependencies, checkToolConflicts, compareVersi
 import { readZipEntries } from './zip-lite'
 import { buildDesktopPayload, desktopResultFileName, DESKTOP_HOST_SCRIPT, parseDesktopResult, PROTECTED_PROCESS_NAMES, resolveTrustedApplicationTarget, type DesktopActionKind, type DesktopState } from './desktop-control'
 import { ValidationEngine, type ValidationPlan, type ValidationCategory } from './validation-engine'
+import { detectToolAvailability, TOOL_DEFINITIONS, type ToolAvailability } from './tool-catalog'
 
 let mainWindow: BrowserWindow | null = null
 let projectRoot: string | null = null
@@ -5992,6 +5993,20 @@ registerIpcHandler('files:scopes', async () => {
     return { ok: true }
   })
   registerIpcHandler('software:list', async () => ({ catalog: await getSoftwareCatalog() }))
+  registerIpcHandler('tools:catalog', () => Object.values(TOOL_DEFINITIONS))
+  registerIpcHandler('tools:availability', async (_event, names: unknown) => {
+    const requested = Array.isArray(names) ? names.filter((name): name is string => typeof name === 'string').slice(0, 64) : Object.keys(TOOL_DEFINITIONS)
+    const runner = async (command: string[]) => {
+      try {
+        const result = await execFileAsync(command[0], command.slice(1), { cwd: currentProject(), windowsHide: true, encoding: 'utf8', timeout: 8_000 })
+        return { ok: true, path: command[0], stdout: result.stdout, stderr: result.stderr }
+      } catch (error) {
+        const details = error as NodeJS.ErrnoException & { stdout?: string; stderr?: string }
+        return { ok: false, path: null, stdout: details.stdout ?? '', stderr: details.stderr ?? details.message ?? 'Araç bulunamadı.' }
+      }
+    }
+    return await Promise.all(requested.map((name) => detectToolAvailability(name, runner))) as ToolAvailability[]
+  })
   registerIpcHandler('software:refresh', async () => ({ catalog: await ensureSoftwareCatalog(true) }))
   registerIpcHandler('software:test', async (_event, entryName: unknown) => {
     const name = String(entryName ?? '').trim()
