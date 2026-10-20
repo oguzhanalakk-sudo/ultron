@@ -84,6 +84,9 @@
 .desktop-automation-row span, .desktop-automation-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .desktop-automation-row small, .desktop-muted, .desktop-automation-status { color: var(--text-muted, #8d99ae); }
 .desktop-automation-status { margin-top: 8px; font-size: 11px; }
+.developer-tools-list { display: grid; gap: 6px; margin-top: 12px; }
+.developer-tool-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--border-subtle, #273044); border-radius: 7px; font-size: 12px; }
+.developer-tool-row span { color: var(--text-muted, #8d99ae); text-align: right; }
 @media (max-width: 700px) { .desktop-automation-grid { grid-template-columns: 1fr; } }
 .research-panel { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border, #2d3748); }
 .research-search-row { display: flex; gap: 8px; align-items: center; }
