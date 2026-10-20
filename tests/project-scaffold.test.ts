@@ -49,8 +49,8 @@ test('şablon dosyaları eksikse boş dosya üretilmez, minimal iskelet ve uyar�
   const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'ultron-scaffold-'))
   try {
     const result = await buildProjectFromSpec({
-      name: 'web-durum', description: 'Şablon dosyası olmayan web şablonu', category: 'web',
-      techStack: { language: 'typescript', framework: 'nextjs' }, features: [],
+      name: 'web-durum', description: 'Şablon dosyası olmayan masaüstü şablonu', category: 'desktop', templateId: 'tauri-react',
+      techStack: { language: 'typescript', framework: 'tauri' }, features: [],
     }, { workspaceRoot })
     assert.equal(result.success, true)
     const projectRoot = path.join(workspaceRoot, 'web-durum')
@@ -86,6 +86,43 @@ test('yapı dosyası eksik şablona işaret ederse dosya atlanır ve uyarı üre
     assert.equal(result.success, true)
     assert.ok(result.filesCreated.includes('kaynak/ozel.ts') === false, 'Eksik şablona bağlı dosya oluşturulmamalı')
     assert.ok((result.warnings ?? []).some((warning) => warning.includes('yok/olmayan.hbs')), 'Eksik şablon dosyası uyarıda belirtilmeli')
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true })
+  }
+})
+
+test('yerleşik şablonlar Minimal Project yerine gerçek çok dosyalı proje üretir', async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'ultron-scaffold-'))
+  try {
+    for (const template of listTemplates().filter((item) => item.available)) {
+      const name = `proje-${template.id}`
+      const result = await buildProjectFromSpec({
+        name, description: 'Çok dosyalı üretim', category: template.category as ProjectSpec['category'], templateId: template.id,
+        techStack: { language: 'typescript', framework: 'x' }, features: [],
+      }, { workspaceRoot })
+      assert.equal(result.success, true, `${template.id}: ${result.error}`)
+      assert.notEqual(result.templateName, 'Minimal Project', template.id)
+      assert.ok(result.filesCreated.length >= 5, `${template.id} en az 5 dosya üretmeli`)
+      assert.equal(result.warnings.length, 0, `${template.id}: ${result.warnings.join('; ')}`)
+    }
+    assert.equal(listTemplates().find((item) => item.id === 'tauri-react')?.available, false)
+  } finally {
+    await rm(workspaceRoot, { recursive: true, force: true })
+  }
+})
+
+test('yerleşik şablon ikinci çalıştırmada mevcut dosyaları ezmez, atlar', async () => {
+  const workspaceRoot = await mkdtemp(path.join(os.tmpdir(), 'ultron-scaffold-'))
+  const request: ProjectSpec = { name: 'api', description: 'x', category: 'api', templateId: 'fastapi-python', techStack: { language: 'python', framework: 'fastapi' }, features: [] }
+  try {
+    const first = await buildProjectFromSpec(request, { workspaceRoot })
+    const target = path.join(workspaceRoot, 'api', 'app', 'main.py')
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(target, '# kullanıcı değişikliği\n')
+    const second = await buildProjectFromSpec(request, { workspaceRoot })
+    assert.equal(second.filesCreated.length, 0)
+    assert.equal(second.filesSkipped.length, first.filesCreated.length)
+    assert.equal(await readFile(target, 'utf8'), '# kullanıcı değişikliği\n')
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true })
   }

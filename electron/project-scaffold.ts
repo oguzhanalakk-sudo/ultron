@@ -3,6 +3,10 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { renderTemplateString } from './project-template-engine.ts'
+import { buildProjectPlan, hasPlanErrors } from './project-plan.ts'
+import { ancestorStaysInside, writeProjectPlan } from './project-writer.ts'
+import type { ProjectStack } from './project-template-registry.ts'
 
 export interface ProjectSpec {
   name: string
@@ -62,142 +66,44 @@ export interface ProjectTemplate {
   category: string
   techStack: ProjectSpec['techStack']
   files: FileSpec[]
+  /** Gömülü üretici yığını; varsa şablon diske bağımlı değildir. */
+  stack?: ProjectStack
 }
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = path.join(moduleDir, '..', 'templates', 'projects')
 
-// Built-in templates for common project types
+// Yerleşik şablonlar. `stack` olanlar gömülü TypeScript üreticileriyle (çok dosyalı,
+// diske bağımlı değil) üretilir; `files` içinde `.hbs` başvurusu olanlar yalnızca
+// `templates/projects` klasörü varsa kullanılabilir ve aksi halde "kullanılamaz" raporlanır.
 const BUILT_IN_TEMPLATES: Record<string, ProjectTemplate> = {
   'nextjs-react': {
     name: 'Next.js + React + TypeScript',
     category: 'web',
-    techStack: {
-      language: 'typescript',
-      framework: 'nextjs',
-      runtime: 'node',
-      styling: 'tailwind',
-      testing: 'vitest',
-      packageManager: 'pnpm'
-    },
-    files: [
-      { path: 'package.json', template: 'nextjs/package.json.hbs' },
-      { path: 'tsconfig.json', template: 'nextjs/tsconfig.json.hbs' },
-      { path: 'next.config.js', template: 'nextjs/next.config.js.hbs' },
-      { path: 'tailwind.config.ts', template: 'nextjs/tailwind.config.ts.hbs' },
-      { path: '.eslintrc.json', template: 'nextjs/.eslintrc.json.hbs' },
-      { path: '.prettierrc', template: 'nextjs/.prettierrc.hbs' },
-      { path: 'vitest.config.ts', template: 'nextjs/vitest.config.ts.hbs' },
-      { path: 'src/app/layout.tsx', template: 'nextjs/src/app/layout.tsx.hbs' },
-      { path: 'src/app/page.tsx', template: 'nextjs/src/app/page.tsx.hbs' },
-      { path: 'src/app/globals.css', template: 'nextjs/src/app/globals.css.hbs' },
-      { path: 'src/lib/utils.ts', template: 'nextjs/src/lib/utils.ts.hbs' },
-      { path: 'src/components/ui/button.tsx', template: 'nextjs/src/components/ui/button.tsx.hbs' },
-      { path: '.github/workflows/ci.yml', template: 'nextjs/.github/workflows/ci.yml.hbs' },
-      { path: 'Dockerfile', template: 'nextjs/Dockerfile.hbs' },
-      { path: 'README.md', template: 'nextjs/README.md.hbs' }
-    ]
+    stack: 'next',
+    techStack: { language: 'typescript', framework: 'nextjs', runtime: 'node', packageManager: 'npm' },
+    files: [],
   },
   'fastapi-python': {
     name: 'FastAPI + Python + SQLAlchemy',
     category: 'api',
-    techStack: {
-      language: 'python',
-      framework: 'fastapi',
-      runtime: 'python',
-      database: 'postgresql',
-      orm: 'sqlalchemy',
-      auth: 'jwt',
-      testing: 'pytest',
-      packageManager: 'uv'
-    },
-    files: [
-      { path: 'pyproject.toml', template: 'fastapi/pyproject.toml.hbs' },
-      { path: 'Dockerfile', template: 'fastapi/Dockerfile.hbs' },
-      { path: 'docker-compose.yml', template: 'fastapi/docker-compose.yml.hbs' },
-      { path: 'alembic.ini', template: 'fastapi/alembic.ini.hbs' },
-      { path: 'app/__init__.py', template: 'fastapi/app/__init__.py.hbs' },
-      { path: 'app/main.py', template: 'fastapi/app/main.py.hbs' },
-      { path: 'app/core/config.py', template: 'fastapi/app/core/config.py.hbs' },
-      { path: 'app/core/security.py', template: 'fastapi/app/core/security.py.hbs' },
-      { path: 'app/core/database.py', template: 'fastapi/app/core/database.py.hbs' },
-      { path: 'app/api/__init__.py', template: 'fastapi/app/api/__init__.py.hbs' },
-      { path: 'app/api/v1/__init__.py', template: 'fastapi/app/api/v1/__init__.py.hbs' },
-      { path: 'app/api/v1/auth.py', template: 'fastapi/app/api/v1/auth.py.hbs' },
-      { path: 'app/api/v1/users.py', template: 'fastapi/app/api/v1/users.py.hbs' },
-      { path: 'app/models/__init__.py', template: 'fastapi/app/models/__init__.py.hbs' },
-      { path: 'app/models/user.py', template: 'fastapi/app/models/user.py.hbs' },
-      { path: 'app/schemas/__init__.py', template: 'fastapi/app/schemas/__init__.py.hbs' },
-      { path: 'app/schemas/user.py', template: 'fastapi/app/schemas/user.py.hbs' },
-      { path: 'app/crud/__init__.py', template: 'fastapi/app/crud/__init__.py.hbs' },
-      { path: 'app/crud/user.py', template: 'fastapi/app/crud/user.py.hbs' },
-      { path: 'tests/__init__.py', template: 'fastapi/tests/__init__.py.hbs' },
-      { path: 'tests/test_auth.py', template: 'fastapi/tests/test_auth.py.hbs' },
-      { path: 'tests/test_users.py', template: 'fastapi/tests/test_users.py.hbs' },
-      { path: '.github/workflows/ci.yml', template: 'fastapi/.github/workflows/ci.yml.hbs' },
-      { path: 'README.md', template: 'fastapi/README.md.hbs' }
-    ]
+    stack: 'python-fastapi',
+    techStack: { language: 'python', framework: 'fastapi', runtime: 'python', database: 'sqlite', orm: 'sqlalchemy', testing: 'pytest', packageManager: 'pip' },
+    files: [],
   },
   'go-api': {
-    name: 'Go + Chi + SQLC',
+    name: 'Go + net/http',
     category: 'api',
-    techStack: {
-      language: 'go',
-      framework: 'chi',
-      runtime: 'go',
-      database: 'postgresql',
-      orm: 'sqlc',
-      auth: 'jwt',
-      testing: 'testify',
-      packageManager: 'go modules'
-    },
-    files: [
-      { path: 'go.mod', template: 'go/go.mod.hbs' },
-      { path: 'go.sum', template: 'go/go.sum.hbs' },
-      { path: 'Makefile', template: 'go/Makefile.hbs' },
-      { path: 'Dockerfile', template: 'go/Dockerfile.hbs' },
-      { path: 'docker-compose.yml', template: 'go/docker-compose.yml.hbs' },
-      { path: 'cmd/server/main.go', template: 'go/cmd/server/main.go.hbs' },
-      { path: 'internal/config/config.go', template: 'go/internal/config/config.go.hbs' },
-      { path: 'internal/database/database.go', template: 'go/internal/database/database.go.hbs' },
-      { path: 'internal/handler/handler.go', template: 'go/internal/handler/handler.go.hbs' },
-      { path: 'internal/middleware/auth.go', template: 'go/internal/middleware/auth.go.hbs' },
-      { path: 'internal/repository/user.go', template: 'go/internal/repository/user.go.hbs' },
-      { path: 'internal/service/user.go', template: 'go/internal/service/user.go.hbs' },
-      { path: 'migrations/001_create_users.sql', template: 'go/migrations/001_create_users.sql.hbs' },
-      { path: 'sqlc.yaml', template: 'go/sqlc.yaml.hbs' },
-      { path: '.github/workflows/ci.yml', template: 'go/.github/workflows/ci.yml.hbs' },
-      { path: 'README.md', template: 'go/README.md.hbs' }
-    ]
+    stack: 'go',
+    techStack: { language: 'go', framework: 'net/http', runtime: 'go', testing: 'go test', packageManager: 'go' },
+    files: [],
   },
   'rust-axum': {
-    name: 'Rust + Axum + SQLx',
+    name: 'Rust + Axum',
     category: 'api',
-    techStack: {
-      language: 'rust',
-      framework: 'axum',
-      runtime: 'rust',
-      database: 'postgresql',
-      orm: 'sqlx',
-      auth: 'jwt',
-      testing: 'built-in',
-      packageManager: 'cargo'
-    },
-    files: [
-      { path: 'Cargo.toml', template: 'rust/Cargo.toml.hbs' },
-      { path: 'Dockerfile', template: 'rust/Dockerfile.hbs' },
-      { path: 'docker-compose.yml', template: 'rust/docker-compose.yml.hbs' },
-      { path: 'src/main.rs', template: 'rust/src/main.rs.hbs' },
-      { path: 'src/config.rs', template: 'rust/src/config.rs.hbs' },
-      { path: 'src/db.rs', template: 'rust/src/db.rs.hbs' },
-      { path: 'src/handlers.rs', template: 'rust/src/handlers.rs.hbs' },
-      { path: 'src/middleware/auth.rs', template: 'rust/src/middleware/auth.rs.hbs' },
-      { path: 'src/models.rs', template: 'rust/src/models.rs.hbs' },
-      { path: 'src/routes.rs', template: 'rust/src/routes.rs.hbs' },
-      { path: 'migrations/20240101000000_create_users.sql', template: 'rust/migrations/20240101000000_create_users.sql.hbs' },
-      { path: '.github/workflows/ci.yml', template: 'rust/.github/workflows/ci.yml.hbs' },
-      { path: 'README.md', template: 'rust/README.md.hbs' }
-    ]
+    stack: 'rust',
+    techStack: { language: 'rust', framework: 'axum', runtime: 'rust', testing: 'cargo test', packageManager: 'cargo' },
+    files: [],
   },
   'tauri-react': {
     name: 'Tauri + React + TypeScript',
@@ -229,50 +135,17 @@ const BUILT_IN_TEMPLATES: Record<string, ProjectTemplate> = {
   'electron-react': {
     name: 'Electron + React + TypeScript',
     category: 'desktop',
-    techStack: {
-      language: 'typescript',
-      framework: 'electron',
-      runtime: 'node',
-      styling: 'tailwind',
-      testing: 'vitest',
-      packageManager: 'pnpm'
-    },
-    files: [
-      { path: 'package.json', template: 'electron/package.json.hbs' },
-      { path: 'tsconfig.json', template: 'electron/tsconfig.json.hbs' },
-      { path: 'vite.config.ts', template: 'electron/vite.config.ts.hbs' },
-      { path: 'tailwind.config.ts', template: 'electron/tailwind.config.ts.hbs' },
-      { path: 'electron/main.ts', template: 'electron/electron/main.ts.hbs' },
-      { path: 'electron/preload.ts', template: 'electron/electron/preload.ts.hbs' },
-      { path: 'src/App.tsx', template: 'electron/src/App.tsx.hbs' },
-      { path: 'src/main.tsx', template: 'electron/src/main.tsx.hbs' },
-      { path: 'src/App.css', template: 'electron/src/App.css.hbs' },
-      { path: '.github/workflows/ci.yml', template: 'electron/.github/workflows/ci.yml.hbs' },
-      { path: 'README.md', template: 'electron/README.md.hbs' }
-    ]
+    stack: 'electron',
+    techStack: { language: 'typescript', framework: 'electron', runtime: 'node', packageManager: 'npm' },
+    files: [],
   },
   'node-cli': {
-    name: 'Node.js CLI + TypeScript',
+    name: 'Node.js CLI (ESM)',
     category: 'cli',
-    techStack: {
-      language: 'typescript',
-      framework: 'commander',
-      runtime: 'node',
-      testing: 'vitest',
-      packageManager: 'pnpm'
-    },
-    files: [
-      { path: 'package.json', template: 'cli/package.json.hbs' },
-      { path: 'tsconfig.json', template: 'cli/tsconfig.json.hbs' },
-      { path: 'src/cli.ts', template: 'cli/src/cli.ts.hbs' },
-      { path: 'src/commands/__init__.ts', template: 'cli/src/commands/__init__.ts.hbs' },
-      { path: 'src/commands/init.ts', template: 'cli/src/commands/init.ts.hbs' },
-      { path: 'src/utils/__init__.ts', template: 'cli/src/utils/__init__.ts.hbs' },
-      { path: 'src/utils/fs.ts', template: 'cli/src/utils/fs.ts.hbs' },
-      { path: '.github/workflows/ci.yml', template: 'cli/.github/workflows/ci.yml.hbs' },
-      { path: 'README.md', template: 'cli/README.md.hbs' }
-    ]
-  }
+    stack: 'node',
+    techStack: { language: 'javascript', framework: 'node', runtime: 'node', testing: 'node:test', packageManager: 'npm' },
+    files: [],
+  },
 }
 
 function getTemplate(templateName: string): ProjectTemplate | undefined {
@@ -291,6 +164,7 @@ function listTemplates(): Array<{ id: string; name: string; category: string; av
 /** Bir şablonun diskteki dosyaları gerçekten var mı? Eksik şablon dosyası,
  *  boş dosya üretmek yerine şablonun kullanılamaz sayılmasına yol açar. */
 function templateFilesAvailable(template: ProjectTemplate): boolean {
+  if (template.stack) return true
   return template.files.every((file) => {
     if (!file.template) return true
     return existsSync(path.join(TEMPLATES_DIR, file.template))
@@ -313,9 +187,7 @@ async function renderTemplate(templatePath: string, data: Record<string, unknown
     const reason = (error as NodeJS.ErrnoException)?.code === 'ENOENT' ? 'bulunamadı' : 'okunamadı'
     throw new Error(`Şablon dosyası ${reason}: ${templatePath}`)
   }
-  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-    return String(data[key] ?? '')
-  })
+  return renderTemplateString(template, data)
 }
 
 async function ensureDir(dirPath: string): Promise<void> {
@@ -331,6 +203,10 @@ async function writeFileIfNotExists(filePath: string, content: string): Promise<
     await fs.writeFile(filePath, content, 'utf-8')
     return true
   }
+}
+
+function slugify(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'app'
 }
 
 function safeRelativePath(value: string, label: string): string {
@@ -349,9 +225,10 @@ export async function buildProjectFromSpec(spec: ProjectSpec, options: { workspa
   const filesSkipped: string[] = []
   const warnings: string[] = []
   const nextSteps: string[] = []
+  let commands: { install: string; build: string; test?: string; run: string } | undefined
 
   try {
-    // Determine template
+    // Şablonu belirle
     let template: ProjectTemplate | undefined
 
     if (spec.templateId) {
@@ -360,19 +237,14 @@ export async function buildProjectFromSpec(spec: ProjectSpec, options: { workspa
     }
 
     if (!template && spec.techStack.framework) {
-      const templateKey = `${spec.techStack.language}-${spec.techStack.framework}`
-        .replace(/\s+/g, '-')
-        .toLowerCase()
-      template = getTemplate(templateKey)
+      const language = spec.techStack.language.toLowerCase()
+      const framework = spec.techStack.framework.toLowerCase().replace(/\s+/g, '-')
+      template = Object.values(BUILT_IN_TEMPLATES).find((candidate) =>
+        templateFilesAvailable(candidate) && candidate.techStack.language === language && candidate.techStack.framework.toLowerCase() === framework)
     }
 
     if (!template && spec.category) {
-      for (const t of Object.values(BUILT_IN_TEMPLATES)) {
-        if (t.category === spec.category) {
-          template = t
-          break
-        }
-      }
+      template = Object.values(BUILT_IN_TEMPLATES).find((candidate) => candidate.category === spec.category && templateFilesAvailable(candidate))
     }
 
     // Seçilen şablonun dosyaları diskte yoksa boş dosya üretmek yerine minimal
@@ -384,6 +256,7 @@ export async function buildProjectFromSpec(spec: ProjectSpec, options: { workspa
     }
 
     if (!template) {
+      if (warnings.length === 0) warnings.push(`"${spec.category}" / "${spec.techStack.framework || spec.techStack.language}" için yerleşik şablon bulunamadı; minimal iskelet oluşturuldu.`)
       template = {
         name: 'Minimal Project',
         category: spec.category,
@@ -404,7 +277,7 @@ export async function buildProjectFromSpec(spec: ProjectSpec, options: { workspa
       ...mergedTechStack,
       features: spec.features,
       year: new Date().getFullYear(),
-      uuid: () => randomUUID()
+      uuid: randomUUID()
     }
 
     // Tüm kullanıcı denetimli yolları yazmadan önce doğrula. Böylece geçersiz bir
@@ -412,67 +285,79 @@ export async function buildProjectFromSpec(spec: ProjectSpec, options: { workspa
     for (const fileSpec of spec.structure?.files ?? []) safeRelativePath(fileSpec.path, 'Dosya yolu')
     for (const directory of spec.structure?.directories ?? []) safeRelativePath(directory, 'Klasör yolu')
 
-    await ensureDir(projectRoot)
-
-    for (const fileSpec of template.files) {
-      const fullPath = path.join(projectRoot, safeRelativePath(fileSpec.path, 'Şablon dosya yolu'))
+    // Yapı dosyalarının içeriğini hazırla (eksik şablona işaret edenler atlanır).
+    const structureFiles: Array<{ path: string; purpose: string; content: string }> = []
+    for (const fileSpec of spec.structure?.files ?? []) {
       let content = fileSpec.content ?? ''
-
       if (fileSpec.template) {
         const templateFullPath = path.join(TEMPLATES_DIR, fileSpec.template)
-        content = await renderTemplate(templateFullPath, {
-          ...templateData,
-          ...fileSpec.templateData
-        })
+        if (!existsSync(templateFullPath)) {
+          warnings.push(`Şablon dosyası bulunamadı, dosya atlandı: ${fileSpec.template}`)
+          filesSkipped.push(fileSpec.path)
+          continue
+        }
+        content = await renderTemplate(templateFullPath, { ...templateData, ...fileSpec.templateData })
       }
-
-      const created = await writeFileIfNotExists(fullPath, content)
-      if (created) {
-        filesCreated.push(fileSpec.path)
-      } else {
-        filesSkipped.push(fileSpec.path)
-      }
+      structureFiles.push({ path: safeRelativePath(fileSpec.path, 'Dosya yolu'), purpose: 'Kullanıcı tanımlı dosya', content })
     }
 
-    if (spec.structure?.files) {
-      for (const fileSpec of spec.structure.files) {
-        const fullPath = path.join(projectRoot, safeRelativePath(fileSpec.path, 'Dosya yolu'))
+    if (template.stack) {
+      // Plan (diske yazmaz) -> statik denetim -> yazma (üzerine yazmaz).
+      const generatedPlan = buildProjectPlan({ name: slugify(spec.name), description: spec.description, stack: template.stack })
+      const taken = new Set(generatedPlan.files.map((file) => file.path.toLowerCase()))
+      const extraFiles = structureFiles.filter((file) => {
+        if (!taken.has(file.path.toLowerCase())) return true
+        filesSkipped.push(file.path)
+        warnings.push(`"${file.path}" şablon tarafından zaten üretiliyor; mevcut dosya korundu, yapı girdisi atlandı.`)
+        return false
+      })
+      const plan = buildProjectPlan({ name: slugify(spec.name), description: spec.description, stack: template.stack, extraFiles })
+      warnings.push(...plan.warnings, ...plan.issues.filter((issue) => issue.severity === 'warning').map((issue) => issue.message))
+      if (hasPlanErrors(plan.issues)) {
+        const details = plan.issues.filter((issue) => issue.severity === 'error').map((issue) => `${issue.code}: ${issue.message}`).join('; ')
+        throw new Error(`Proje planı tutarlılık denetiminden geçemedi; hiçbir dosya yazılmadı. ${details}`)
+      }
+      const write = await writeProjectPlan(plan, { root: projectRoot })
+      filesCreated.push(...write.created)
+      filesSkipped.push(...write.skipped.map((item) => item.path))
+      if (!write.ok) throw new Error(`${write.error ?? 'Yazma başarısız.'} Oluşturulan: ${write.created.length}, denenmeyen: ${write.notAttempted.length}.`)
+      commands = plan.commands
+    } else {
+      await ensureDir(projectRoot)
+      const legacy: Array<{ path: string; content: string }> = []
+      for (const fileSpec of template.files) {
         let content = fileSpec.content ?? ''
-
         if (fileSpec.template) {
-          // Yapı dosyası eksik şablona işaret ediyorsa boş dosya yazmak yerine atlanır.
-          const templateFullPath = path.join(TEMPLATES_DIR, fileSpec.template)
-          if (!existsSync(templateFullPath)) {
-            warnings.push(`Şablon dosyası bulunamadı, dosya atlandı: ${fileSpec.template}`)
-            filesSkipped.push(fileSpec.path)
-            continue
-          }
-          content = await renderTemplate(templateFullPath, {
-            ...templateData,
-            ...fileSpec.templateData
-          })
+          content = await renderTemplate(path.join(TEMPLATES_DIR, fileSpec.template), { ...templateData, ...fileSpec.templateData })
         }
-
-        const created = await writeFileIfNotExists(fullPath, content)
-        if (created) {
-          filesCreated.push(fileSpec.path)
-        } else {
-          filesSkipped.push(fileSpec.path)
-        }
+        legacy.push({ path: safeRelativePath(fileSpec.path, 'Şablon dosya yolu'), content })
+      }
+      for (const file of [...legacy, ...structureFiles]) {
+        const created = await writeFileIfNotExists(path.join(projectRoot, file.path), file.content)
+        if (created) filesCreated.push(file.path)
+        else filesSkipped.push(file.path)
       }
     }
 
     if (spec.structure?.directories) {
+      const realRoot = await fs.realpath(projectRoot)
       for (const dir of spec.structure.directories) {
-        await ensureDir(path.join(projectRoot, safeRelativePath(dir, 'Klasör yolu')))
+        const target = path.join(realRoot, safeRelativePath(dir, 'Klasör yolu'))
+        if (!(await ancestorStaysInside(realRoot, target))) throw new Error(`Klasör yolu proje kapsamı dışına çıkıyor: ${dir}`)
+        await ensureDir(target)
       }
     }
 
     if (filesCreated.length > 0) {
       nextSteps.push(`cd ${spec.name}`)
-      nextSteps.push('Install dependencies (e.g., pnpm install / cargo build / uv sync)')
-      nextSteps.push('Run development server')
-      nextSteps.push('Run tests')
+      if (commands) {
+        nextSteps.push(commands.install)
+        nextSteps.push(commands.build)
+        if (commands.test) nextSteps.push(commands.test)
+        nextSteps.push(commands.run)
+      } else {
+        nextSteps.push('Bağımlılıkları kurun ve geliştirme/test komutlarını projeye göre çalıştırın.')
+      }
     }
 
     return {
