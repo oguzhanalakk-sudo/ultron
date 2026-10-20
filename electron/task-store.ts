@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type { AgentErrorAnalysis, AgentStage, VerificationFailure, VerificationReceipt } from './shared'
-import { normalizeAgentDecision, type DecisionState, type ExecutionEvidence, type PlanStep } from './ai-core.ts'
+import { normalizeAgentDecision, type DecisionState, type ExecutionEvidence, type PlanStep, type ReflectionRecord } from './ai-core.ts'
 import { writeJsonAtomically } from './atomic-json.ts'
 import { acceptanceCommandKey, isChangeVerification, isVerificationTool } from './agent-verification.ts'
 
@@ -21,6 +21,7 @@ export type JournalTask = {
   completedStepIds?: string[]
   /** Locally suggested steps are informational until the model commits a real task plan. */
   planIsAdvisory?: boolean
+  planVersion?: number
   pendingSteps: string[]
   usedTools: string[]
   events: JournalEvent[]
@@ -42,6 +43,7 @@ export type JournalTask = {
 const MAX_TASKS = 80
 const MAX_EVENTS = 120
 const MAX_TEXT = 4_000
+const TASK_CACHE_TTL_MS = 500
 const clean = (value: unknown, max = MAX_TEXT) => redact(String(value ?? '').slice(0, max))
 function redact(value: string) {
   return value
@@ -61,6 +63,15 @@ const cleanCompletedStepIds = (value: unknown) => [...new Set(cleanList(value, 4
 function cleanDecision(value: unknown): DecisionState | undefined {
   const decision = normalizeAgentDecision(value)
   if (!decision) return undefined
+  const reflection: ReflectionRecord | undefined = decision.reflection
+    ? {
+        failure: clean(decision.reflection.failure, 500),
+        lesson: clean(decision.reflection.lesson, 500),
+        guardrail: clean(decision.reflection.guardrail, 500),
+        nextAction: clean(decision.reflection.nextAction, 500),
+         shouldReplan: decision.reflection.shouldReplan === true,
+      }
+    : undefined
   return {
     ...decision,
     intent: {
@@ -77,9 +88,17 @@ function cleanDecision(value: unknown): DecisionState | undefined {
       validation: step.validation.map((item) => clean(item, 300)),
     })),
     evidence: decision.evidence.map((item: ExecutionEvidence) => ({ source: clean(item.source, 120), ok: item.ok, detail: clean(item.detail, 1_000) })),
+    memory: decision.memory.slice(0, 24).map((item) => clean(item, 220)),
+    reflection,
     uncertainty: decision.uncertainty.map((item) => clean(item, 300)),
     nextAction: clean(decision.nextAction, 500),
+    riskScore: Number.isFinite(decision.riskScore) ? Math.max(0, Math.min(100, Math.round(decision.riskScore))) : 0,
+    planVersion: Number.isFinite(decision.planVersion) ? Math.max(1, Math.min(1_000_000, Math.floor(decision.planVersion))) : 1,
   }
+}
+function cleanPlanVersion(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  return Math.max(1, Math.min(1_000_000, Math.floor(value)))
 }
 const cleanSummary = (value: unknown, fallback = '') => {
   const summary = typeof value === 'string' ? value.trim() : ''
@@ -121,6 +140,9 @@ export class TaskStore {
   private readonly file: string
   private writeQueue: Promise<void> = Promise.resolve()
   private mutationQueue: Promise<void> = Promise.resolve()
+  private cache: JournalTask[] | null = null
+  private cacheDirty = false
+  private cacheTimestamp = 0
   readonly projectPath: string
 
   constructor(projectPath: string) {
@@ -128,12 +150,16 @@ export class TaskStore {
     this.file = path.join(projectPath, '.codex-local', 'tasks.json')
   }
 
-  async list() {
-    await this.writeQueue
+  private async loadFromDisk(): Promise<JournalTask[]> {
     try {
       const value: unknown = JSON.parse(await fs.readFile(this.file, 'utf8'))
-      if (!Array.isArray(value)) return []
-      return value.filter((item): item is JournalTask => validTask(item, this.projectPath)).slice(-MAX_TASKS).reverse().map((task) => ({
+      if (!Array.isArray(value)) {
+        this.cache = []
+        this.cacheDirty = false
+        this.cacheTimestamp = Date.now()
+        return []
+      }
+      const tasks = value.filter((item): item is JournalTask => validTask(item, this.projectPath)).slice(-MAX_TASKS).reverse().map((task) => ({
         ...task,
         request: clean(task.request), title: clean(task.title, 180), objective: clean(task.objective),
         summary: cleanSummary(task.summary, clean(task.request, 600)),
@@ -142,6 +168,7 @@ export class TaskStore {
         acceptanceTests: cleanAcceptanceTests(task.acceptanceTests),
         completedStepIds: cleanCompletedStepIds(task.completedStepIds),
         planIsAdvisory: task.planIsAdvisory === true,
+        planVersion: cleanPlanVersion(task.planVersion) ?? cleanDecision(task.aiDecision)?.planVersion,
         pendingSteps: Array.isArray(task.pendingSteps) ? task.pendingSteps.slice(0, 40).map((item) => clean(item, 300)) : [],
         usedTools: Array.isArray(task.usedTools) ? task.usedTools.slice(-80).map((item) => clean(item, 100)) : [],
         events: Array.isArray(task.events) ? task.events.slice(-MAX_EVENTS).filter((event) => event && typeof event.name === 'string' && ['tool', 'approval', 'result', 'error'].includes(event.type))
@@ -161,7 +188,23 @@ export class TaskStore {
           ? { ...task.errorAnalysis, message: clean(task.errorAnalysis.message, 1_000), nextAction: clean(task.errorAnalysis.nextAction, 1_000), tool: task.errorAnalysis.tool ? clean(task.errorAnalysis.tool, 100) : undefined }
           : undefined,
       }))
-    } catch { return [] }
+      this.cache = tasks
+      this.cacheDirty = false
+      this.cacheTimestamp = Date.now()
+      return structuredClone(tasks)
+    } catch {
+      this.cache = []
+      this.cacheDirty = false
+      this.cacheTimestamp = Date.now()
+      return []
+    }
+  }
+
+  async list() {
+    await this.writeQueue
+    const cacheFresh = this.cache !== null && Date.now() - this.cacheTimestamp < TASK_CACHE_TTL_MS
+    if (cacheFresh && !this.cacheDirty) return structuredClone(this.cache!)
+    return this.loadFromDisk()
   }
 
   async get(id: string) {
@@ -176,7 +219,7 @@ export class TaskStore {
       const task: JournalTask = {
         id: randomUUID(), projectPath: this.projectPath, request: clean(request), title,
         objective: clean(request), summary, plan: [], completedSteps: [], acceptanceTests: [], completedStepIds: [], pendingSteps: [], usedTools: [], events: [], errors: [],
-        status: 'running', stage: 'analyzing', toolCalls: 0, correctionAttempts: 0, verificationRequired: false, createdAt: now, updatedAt: now,
+        status: 'running', stage: 'analyzing', toolCalls: 0, correctionAttempts: 0, verificationRequired: false, planVersion: 1, createdAt: now, updatedAt: now,
       }
       await this.upsert(task)
       return task
@@ -187,8 +230,13 @@ export class TaskStore {
     return this.serialize(async () => {
       const task = (await this.list()).find((entry) => entry.id === id)
       if (!task) throw new Error('Sürdürülecek görev bulunamadı veya başka bir projeye ait.')
-      const hasPendingWork = (!task.planIsAdvisory && task.pendingSteps.length > 0) || (!task.planIsAdvisory && task.plan.length > 0 && task.status !== 'completed')
-      if (!['interrupted', 'paused', 'blocked', 'needs_review', 'failed', 'cancelled'].includes(task.status) && !hasPendingWork) throw new Error('Yalnızca yarım kalmış veya plan adımı bulunan görevler sürdürülebilir; doğrulama bekleyen, blokeli ya da başarısız görevler de sürdürülebilir.')
+      const hasPendingWork =
+        (!task.planIsAdvisory && task.pendingSteps.length > 0) ||
+        (!task.planIsAdvisory && task.plan.length > 0 && task.status !== 'completed')
+
+      if (!['interrupted', 'paused', 'blocked', 'needs_review', 'failed', 'cancelled'].includes(task.status) && !hasPendingWork) {
+        throw new Error('Yalnızca yarım kalmış veya plan adımı bulunan görevler sürdürülebilir.')
+      }
       return this.updateUnsafe(id, { status: 'running', stage: 'analyzing', currentTool: '', errors: [], events: [...task.events, { at: new Date().toISOString(), type: 'result', name: 'task-resumed', detail: 'Görev sürdürüldü.' }] })
     })
   }
@@ -201,6 +249,8 @@ export class TaskStore {
     const tasks = await this.list()
     const current = tasks.find((task) => task.id === id)
     if (!current) throw new Error('Görev kaydı bulunamadı.')
+    const aiDecision = Object.hasOwn(patch, 'aiDecision') ? cleanDecision(patch.aiDecision) : cleanDecision(current.aiDecision)
+    const planVersion = cleanPlanVersion(patch.planVersion) ?? aiDecision?.planVersion ?? cleanPlanVersion(current.planVersion) ?? 1
     const next: JournalTask = {
       ...current, ...patch, id: current.id, projectPath: this.projectPath,
       request: clean(patch.request ?? current.request), title: clean(patch.title ?? current.title, 180),
@@ -211,6 +261,7 @@ export class TaskStore {
       acceptanceTests: cleanAcceptanceTests(patch.acceptanceTests ?? current.acceptanceTests),
       completedStepIds: cleanCompletedStepIds(patch.completedStepIds ?? current.completedStepIds),
       planIsAdvisory: (patch.planIsAdvisory ?? current.planIsAdvisory) === true,
+      planVersion,
       pendingSteps: (patch.pendingSteps ?? current.pendingSteps).slice(0, 40).map((item) => clean(item, 300)),
       usedTools: [...new Set((patch.usedTools ?? current.usedTools).slice(-80).map((item) => clean(item, 100)))],
       events: (patch.events ?? current.events).slice(-MAX_EVENTS).map((event) => ({ ...event, at: clean(event.at, 40), type: event.type, name: clean(event.name, 120), status: event.status ? clean(event.status, 80) : undefined, detail: event.detail ? clean(event.detail, 1_000) : undefined })),
@@ -224,7 +275,7 @@ export class TaskStore {
       verificationFailures: cleanFailures(patch.verificationFailures ?? current.verificationFailures),
       verificationResults: cleanReceipts(patch.verificationResults ?? current.verificationResults),
       verificationRequired: (patch.verificationRequired ?? current.verificationRequired) === true,
-      aiDecision: Object.hasOwn(patch, 'aiDecision') ? cleanDecision(patch.aiDecision) : cleanDecision(current.aiDecision),
+      aiDecision,
     }
     await this.upsert(next, tasks)
     return next
@@ -253,10 +304,14 @@ export class TaskStore {
         if (failed.length || task.errorAnalysis) {
           status = 'failed'
           detail = failed.length ? `${failed.length} doğrulama hatası çözülmeden görev tamamlanamaz.` : 'Açık araç veya yürütme hatası çözülmeden görev tamamlanamaz.'
-        } else if (stale.length || (!task.planIsAdvisory && task.pendingSteps.length) || missingAcceptanceTests.length || missingChangeVerification) {
+        } else if (
+          stale.length ||
+          (!task.planIsAdvisory && task.pendingSteps.length) ||
+          missingAcceptanceTests.length ||
+          missingChangeVerification
+        ) {
           status = 'needs_review'
-          const pendingPlanSteps = task.planIsAdvisory ? 0 : task.pendingSteps.length
-          detail = `${pendingPlanSteps} açık plan adımı, ${stale.length} eski doğrulama ve ${missingAcceptanceTests.length} çalıştırılmamış kabul kontrolü nedeniyle görev doğrulama bekliyor.`
+          detail = `${!task.planIsAdvisory ? task.pendingSteps.length : 0} açık plan adımı, ${stale.length} eski doğrulama ve ${missingAcceptanceTests.length} çalıştırılmamış kabul kontrolü nedeniyle görev doğrulama bekliyor.`
         }
       }
       return this.updateUnsafe(id, {
@@ -279,8 +334,13 @@ export class TaskStore {
     const updated = [...tasks.filter((item) => item.id !== task.id), task].slice(-MAX_TASKS)
     const write = this.writeQueue.then(async () => {
       await writeJsonAtomically(this.file, updated)
+      this.cache = structuredClone(updated).reverse()
+      this.cacheDirty = false
+      this.cacheTimestamp = Date.now()
     })
-    this.writeQueue = write.catch(() => undefined)
+    this.writeQueue = write.catch(() => {
+      this.cacheDirty = true
+    })
     await write
   }
 

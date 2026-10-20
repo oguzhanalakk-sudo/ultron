@@ -92,6 +92,13 @@
 .research-panel { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border, #2d3748); }
 .research-search-row { display: flex; gap: 8px; align-items: center; }
 .research-search-row .settings-input { flex: 1; min-width: 0; }
+.research-provider-config { display: grid; gap: 6px; margin: 8px 0 10px; padding: 10px; border: 1px solid var(--border, #2d3748); border-radius: 9px; background: var(--surface-2, #0b1220); }
+.research-provider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11px; }
+.research-provider-head span, .research-provider-help { opacity: .68; font-size: 10px; line-height: 1.45; }
+.research-provider-row { display: flex; gap: 7px; align-items: center; }
+.research-provider-row .settings-input { min-width: 0; flex: 1; }
+.research-provider-message, .research-provider-note { color: var(--text-muted, #aab4c4); font-size: 10px; line-height: 1.45; }
+.research-provider-note { display: flex; gap: 6px; align-items: flex-start; margin-top: 7px; }
 .research-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 10px; margin-top: 10px; }
 .research-results, .research-summary { display: grid; gap: 7px; min-width: 0; }
 .research-result { display: grid; gap: 5px; width: 100%; text-align: left; padding: 9px; color: inherit; background: var(--surface-2, #0b1220); border: 1px solid var(--border, #2d3748); border-radius: 9px; cursor: pointer; }

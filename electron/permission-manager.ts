@@ -18,6 +18,31 @@ export type PermissionContext = {
 const categories = new Set<PermissionCategory>(['development', 'package', 'system', 'system-script', 'network-scan', 'destructive', 'security-audit', 'file-rename', 'file-delete', 'screen-capture', 'input-control', 'app-launch', 'file-read', 'file-create', 'file-edit'])
 const scopes = new Set<ApprovalGrantScope>(['operation', 'task', 'project', 'category'])
 const pathKey = (value: string) => path.resolve(value).toLocaleLowerCase('en-US')
+
+export type RiskTier = 'low' | 'medium' | 'high' | 'critical'
+
+export function classifyRiskFromUrl(url: string): RiskTier {
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      const hostname = parsed.hostname.toLocaleLowerCase('en-US').replace(/^\[|\]$/g, '').replace(/\.$/, '')
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname.endsWith('.local')) return 'medium'
+      return 'low'
+    }
+    return 'high'
+  } catch {
+    return 'high'
+  }
+}
+
+export function classifyRiskFromPath(pathValue: string): RiskTier {
+  const normalized = String(pathValue ?? '').toLocaleLowerCase('en-US')
+  if (!normalized) return 'low'
+  if (normalized.includes('system32') || normalized.includes('program files') || normalized.includes('windows')) return 'high'
+  if (normalized.includes('documents') || normalized.includes('desktop') || normalized.includes('downloads')) return 'medium'
+  return 'low'
+}
+
 export function isBroadAccessEnabled(profile: PermissionProfile): boolean {
   return profile.allowBroadAccess === true && typeof profile.broadAccessConfirmedAt === 'string' && Number.isFinite(Date.parse(profile.broadAccessConfirmedAt))
 }
@@ -209,16 +234,20 @@ export function canAccessExternalUrl(
   projectPath: string,
   taskId?: string,
 ): { allowed: boolean; reason?: string; grantId?: string } {
-  if (isBroadAccessEnabled(profile)) {
-    const safety = validateExternalUrl(url)
-    return safety.allowed ? { allowed: true, reason: 'Açık erişim profili etkin; URL güvenlik filtresi yine uygulandı.' } : { allowed: false, reason: safety.reason }
-  }
-  void projectPath
-  void taskId
+  const risk = classifyRiskFromUrl(url)
   const safety = validateExternalUrl(url)
   if (!safety.allowed) return { allowed: false, reason: safety.reason }
 
-  if (profile.mode === 'advanced' || profile.mode === 'personal') return { allowed: true }
+  if (isBroadAccessEnabled(profile)) {
+    return { allowed: true, reason: `Geniş erişim profili etkin; URL güvenlik filtresi uygulandı. Risk seviyesi: ${risk}.` }
+  }
+  void projectPath
+  void taskId
+
+  if (profile.mode === 'advanced' || profile.mode === 'personal') {
+    if (risk === 'high' || risk === 'critical') return { allowed: false, reason: 'Yüksek riskli dış ağ erişimi için kullanıcı onayı gerekir.' }
+    return { allowed: true, reason: `Profil izin verdi. Risk seviyesi: ${risk}.` }
+  }
   return { allowed: false, reason: 'Dış ağ erişimi için izin gerekiyor. Kullanıcıdan onay alınmalı.' }
 }
 
@@ -229,9 +258,9 @@ export function canAccessExternalUrl(
 export function canLaunchApplication(profile: PermissionProfile, projectPath?: string, taskId?: string): { allowed: boolean; reason?: string } {
   void projectPath
   void taskId
-  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Geniş erişim modu açık; uygulama başlatma etkin.' }
+  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Geniş erişim modu açık; güvenli uygulama listesi geçerlidir.' }
   if (profile.mode === 'controlled') return { allowed: false, reason: 'Uygulama başlatma için kullanıcı onayı gerekir.' }
-  return { allowed: true }
+  return { allowed: true, reason: 'Uygulama başlatma için profil izin verdi.' }
 }
 
 /**
@@ -241,7 +270,7 @@ export function canLaunchApplication(profile: PermissionProfile, projectPath?: s
 export function canReadOrWriteAnyPath(profile: PermissionProfile, projectPath?: string, taskId?: string): { allowed: boolean; reason?: string } {
   void projectPath
   void taskId
-  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Geniş erişim modu açık; dosya erişimi etkin.' }
+  if (isBroadAccessEnabled(profile)) return { allowed: true, reason: 'Geniş erişim modu açık; hedef yol ve kaynak kapsamı kontrolleri devam eder.' }
   return { allowed: false, reason: 'Dosya erişimi kısıtlı; izin gerekir.' }
 }
 

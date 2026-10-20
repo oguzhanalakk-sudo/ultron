@@ -1,4 +1,4 @@
-export type ProjectStack = 'react' | 'vite' | 'node' | 'express' | 'python-fastapi' | 'electron' | 'next' | 'fullstack'
+export type ProjectStack = 'react' | 'vite' | 'node' | 'express' | 'python-fastapi' | 'electron' | 'next' | 'fullstack' | 'go' | 'rust'
 export type ProjectTemplate = 'web-app' | 'api' | 'desktop' | 'dashboard' | 'fullstack'
 
 export type ProjectSpec = {
@@ -51,6 +51,18 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     entryFiles: ['package.json', 'server.js'],
     envExample: 'PORT=3000\nNODE_ENV=development',
   },
+  node: {
+    stack: 'node',
+    template: 'api',
+    framework: 'Node.js',
+    description: 'Node.js command-line project.',
+    packageManager: 'npm',
+    installCommand: 'npm install',
+    buildCommand: 'npm run build',
+    runCommand: 'npm start',
+    entryFiles: ['package.json', 'server.js'],
+    envExample: 'NODE_ENV=development',
+  },
   'python-fastapi': {
     stack: 'python-fastapi',
     template: 'api',
@@ -99,14 +111,44 @@ export const PROJECT_TEMPLATES: Record<ProjectStack, ProjectSpec> = {
     entryFiles: ['package.json', 'server/index.js', 'client/src/main.tsx'],
     envExample: 'PORT=3000\nJWT_SECRET=change-me',
   },
+  go: {
+    stack: 'go',
+    template: 'api',
+    framework: 'Go + Chi',
+    description: 'Go HTTP API project.',
+    packageManager: 'none',
+    installCommand: 'go mod download',
+    buildCommand: 'go test ./...',
+    runCommand: 'go run ./cmd/server',
+    entryFiles: ['go.mod', 'cmd/server/main.go'],
+    envExample: 'PORT=8080',
+  },
+  rust: {
+    stack: 'rust',
+    template: 'api',
+    framework: 'Rust + Axum',
+    description: 'Rust HTTP API project.',
+    packageManager: 'none',
+    installCommand: 'cargo fetch',
+    buildCommand: 'cargo check',
+    runCommand: 'cargo run',
+    entryFiles: ['Cargo.toml', 'src/main.rs'],
+    envExample: 'PORT=8000',
+  },
 }
 
 export function inferStackFromPrompt(prompt: string): ProjectStack {
   const lower = prompt.toLowerCase()
+  const wantsClient = /\b(react|vite|frontend|dashboard|web app)\b/.test(lower)
+  const wantsServer = /\b(express|api|backend|server|fastapi)\b/.test(lower)
+  if (wantsClient && wantsServer) return 'fullstack'
+  if (lower.includes('golang') || /\bgo api\b/.test(lower)) return 'go'
+  if (lower.includes('rust') || lower.includes('axum')) return 'rust'
   if (lower.includes('next')) return 'next'
   if (lower.includes('electron') || lower.includes('desktop')) return 'electron'
   if (lower.includes('fastapi') || lower.includes('python')) return 'python-fastapi'
-  if (lower.includes('express') || lower.includes('api') || lower.includes('backend')) return 'express'
+  if (lower.includes('express')) return 'express'
+  if (lower.includes('api') || lower.includes('backend') || lower.includes('server')) return 'node'
   if (lower.includes('react') || lower.includes('dashboard') || lower.includes('frontend')) return 'react'
   if (lower.includes('vite')) return 'vite'
   return 'vite'
@@ -114,9 +156,9 @@ export function inferStackFromPrompt(prompt: string): ProjectStack {
 
 export function inferTemplateFromPrompt(prompt: string): ProjectTemplate {
   const lower = prompt.toLowerCase()
+  if (lower.includes('fullstack') || lower.includes('frontend') && lower.includes('backend')) return 'fullstack'
   if (lower.includes('dashboard')) return 'dashboard'
   if (lower.includes('desktop') || lower.includes('electron')) return 'desktop'
-  if (lower.includes('fullstack') || lower.includes('frontend') && lower.includes('backend')) return 'fullstack'
   if (lower.includes('api') || lower.includes('server')) return 'api'
   return 'web-app'
 }

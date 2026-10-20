@@ -7,6 +7,7 @@ import type { WindowsProjectAnalysis } from '../electron/windows-build-tool'
 import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from '../electron/validation-engine'
 import type { ToolAvailability, ToolDefinition } from '../electron/tool-catalog'
 import type { ToolInstallPlan } from '../electron/tool-install'
+import type { WebParsedPage } from '../electron/web-research'
 
 declare global { interface Window { __smokeEvents?: AppEvent[] } }
 declare global {
@@ -21,7 +22,10 @@ declare global {
       analyzeAndroidProject(): Promise<AndroidProjectAnalysis>
       analyzeWebProject(): Promise<WebProjectAnalysis>
       researchSearch(query: string, limit?: number, language?: string): Promise<{ hits: Array<{ title: string; url: string; snippet: string; provider: string; publishedAt: string | null; rank: number }>; note: string | null }>
-      researchFetch(url: string): Promise<{ title: string; text: string; url: string }>
+      getResearchProviderStatus(): Promise<{ provider: string; configured: boolean; source: 'env' | 'secure-file' | null; environmentVariable: string; reason?: string }>
+      saveResearchProviderKey(key: string): Promise<{ configured: boolean; source: 'env' | 'secure-file' | null; environmentVariable: string }>
+      clearResearchProviderKey(): Promise<{ configured: boolean; source: 'env' | 'secure-file' | null; environmentVariable: string }>
+      researchFetch(url: string): Promise<WebParsedPage>
       researchPermissionCheck(url: string): Promise<{ allowed: boolean; reason?: string; grantId?: string }>
       openUrlInBrowser(url: string): Promise<boolean>
       requestDesktopApproval(category: string, projectPath: string, taskId?: string): Promise<{ approved: boolean; reason?: string }>

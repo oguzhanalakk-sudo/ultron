@@ -6,6 +6,7 @@ import type { PluginStateEntry } from './plugin-manager'
 import type { ValidationFailureAnalysis, ValidationPlan, ValidationResult } from './validation-engine'
 import type { ToolAvailability, ToolDefinition } from './tool-catalog'
 import type { ToolInstallPlan } from './tool-install'
+import type { WebParsedPage } from './web-research'
 
 type SoftwareCatalogEntry = SoftwareEntry
 type AdapterSummary = {
@@ -44,7 +45,10 @@ const api = {
   analyzeAndroidProject: () => ipcRenderer.invoke('android:analyze'),
   analyzeWebProject: () => ipcRenderer.invoke('web:analyze') as Promise<WebProjectAnalysis>,
   researchSearch: (query: string, limit?: number, language?: string) => ipcRenderer.invoke('research:search', { query, limit, language }) as Promise<{ hits: Array<{ title: string; url: string; snippet: string; provider: string; publishedAt: string | null; rank: number }>; note: string | null }>,
-  researchFetch: (url: string) => ipcRenderer.invoke('research:fetch', url) as Promise<{ title: string; text: string; url: string }>,
+  getResearchProviderStatus: () => ipcRenderer.invoke('research:provider-status') as Promise<{ provider: string; configured: boolean; source: 'env' | 'secure-file' | null; environmentVariable: string; reason?: string }>,
+  saveResearchProviderKey: (key: string) => ipcRenderer.invoke('research:provider-save-key', key) as Promise<{ configured: boolean; source: 'env' | 'secure-file' | null; environmentVariable: string }>,
+  clearResearchProviderKey: () => ipcRenderer.invoke('research:provider-clear-key') as Promise<{ configured: boolean; source: 'env' | 'secure-file' | null; environmentVariable: string }>,
+  researchFetch: (url: string) => ipcRenderer.invoke('research:fetch', url) as Promise<WebParsedPage>,
   researchPermissionCheck: (url: string) => ipcRenderer.invoke('research:permission-check', url) as Promise<{ allowed: boolean; reason?: string; grantId?: string }>,
   openUrlInBrowser: (url: string) => ipcRenderer.invoke('external:open-url', url) as Promise<boolean>,
   requestDesktopApproval: (category: string, projectPath: string, taskId?: string) => ipcRenderer.invoke('desktop:approval', category, projectPath, taskId) as Promise<{ approved: boolean; reason?: string }>,

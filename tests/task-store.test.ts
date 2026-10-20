@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { AIEngine } from '../electron/ai-core.ts'
 import { planTaskRecord, TaskStore } from '../electron/task-store.ts'
 import { acceptanceCommandKey } from '../electron/agent-verification.ts'
 import type { VerificationReceipt } from '../electron/shared.ts'
@@ -11,6 +12,26 @@ async function withProject(run: (project: string) => Promise<void>) {
   const project = await mkdtemp(path.join(os.tmpdir(), 'kod-atolyesi-task-'))
   try { await run(project) } finally { await rm(project, { recursive: true, force: true }) }
 }
+
+test('ajan karar hafızası, hata yansıması, risk ve plan sürümü güvenli biçimde kalıcıdır', async () => withProject(async (project) => {
+  const store = new TaskStore(project)
+  const task = await store.create('Dosyayı incele ve test et')
+  const engine = new AIEngine()
+  const initial = engine.buildDecisionState('Dosyayı incele ve test et', { knownFacts: ['test komutu npm test'] })
+  const failed = engine.recordEvidence(initial, { source: 'run_tests', ok: false, detail: 'permission denied while running tests' })
+  const decision = { ...failed, memory: [...failed.memory, 'api_key=do-not-persist'], riskScore: 150, planVersion: 0 }
+
+  await store.update(task.id, { aiDecision: decision, planVersion: decision.planVersion })
+  const reopened = await new TaskStore(project).get(task.id)
+
+  assert.deepEqual(reopened?.aiDecision?.memory.slice(0, initial.memory.length), initial.memory)
+  assert.doesNotMatch(reopened?.aiDecision?.memory.join(' ') ?? '', /do-not-persist/)
+  assert.equal(reopened?.aiDecision?.reflection?.failure, 'permission denied while running tests')
+  assert.equal(reopened?.aiDecision?.reflection?.nextAction, 'İzin sınırını ve hedef klasörü doğrulayıp onaylı kapsamı kullan.')
+  assert.equal(reopened?.aiDecision?.riskScore, 100, 'risk puanı 0-100 aralığında tutulmalı')
+  assert.equal(reopened?.aiDecision?.planVersion, 1, 'plan sürümü en az 1 olmalı')
+  assert.equal(reopened?.planVersion, 1, 'görev plan sürümü karar ile tutarlı saklanmalı')
+}))
 
 test('görev, plan, araçlar, onaylar ve sonuçlar diske yazılır ve uygulama yeniden açıldığında okunur', async () => withProject(async (project) => {
   const store = new TaskStore(project)

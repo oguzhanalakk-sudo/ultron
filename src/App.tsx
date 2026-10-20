@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { diffLines } from 'diff'
@@ -15,6 +15,7 @@ import type { ActivityItem, AndroidDevice, AndroidEnvironment, AppConfig, AppEve
 import { broadAccessPermissions } from '../electron/shared'
 import type { AndroidProjectAnalysis } from '../electron/android-build-tool'
 import type { WindowsProjectAnalysis } from '../electron/windows-build-tool'
+import type { WebParsedPage } from '../electron/web-research'
 import DesktopAutomationPanel from './DesktopAutomationPanel'
 import DeveloperToolsPanel from './DeveloperToolsPanel'
 import { openUrlInBrowser } from './open-url'
@@ -38,7 +39,20 @@ const SIDE_TABS: Array<{ id: SideTab; label: string; icon: typeof Activity }> = 
   { id: 'tools', label: 'Araçlar', icon: Hammer },
 ]
 const RIGHT_PANEL_STORAGE_KEY = 'ultron.rightPanelCollapsed'
+const RIGHT_PANEL_WIDTH_STORAGE_KEY = 'ultron.rightPanelWidth'
+const RIGHT_PANEL_MIN_WIDTH = 250
+const RIGHT_PANEL_MAX_WIDTH = 560
+const MAIN_COLUMN_MIN_WIDTH = 360
 type SettingsForm = { provider: AppConfig['provider']; baseUrl: string; model: string; profileName: string; profileInstructions: string; autoLearn: boolean; apiKey: string; apiKeyConfigured: boolean; clearApiKey: boolean }
+
+function maxRightPanelWidth() {
+  const leftWidth = document.querySelector<HTMLElement>('.left-sidebar')?.getBoundingClientRect().width ?? 252
+  return Math.max(RIGHT_PANEL_MIN_WIDTH, Math.min(RIGHT_PANEL_MAX_WIDTH, window.innerWidth - leftWidth - MAIN_COLUMN_MIN_WIDTH - 4))
+}
+
+function clampRightPanelWidth(width: number) {
+  return Math.max(RIGHT_PANEL_MIN_WIDTH, Math.min(maxRightPanelWidth(), Math.round(width)))
+}
 
 const timeNow = () => new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
 const formatBytes = (text: string) => new Blob([text]).size < 1024 ? `${new Blob([text]).size} B` : `${(new Blob([text]).size / 1024).toFixed(1)} KB`
@@ -156,7 +170,7 @@ function WebWorkspacePanel({ analysis, projectOpen, loading, error, onAnalyze }:
 }
 
 type ResearchHit = { title: string; url: string; snippet: string; provider: string; publishedAt: string | null; rank: number }
-type ResearchSummary = { title: string; text: string; url: string }
+type ResearchSummary = WebParsedPage
 
 function ResearchPanel() {
   const [query, setQuery] = useState('React 19 useEffect SSR hatası')
@@ -165,11 +179,23 @@ function ResearchPanel() {
   const [selected, setSelected] = useState<ResearchHit | null>(null)
   const [summary, setSummary] = useState<ResearchSummary | null>(null)
   const [error, setError] = useState('')
+  const [searchNote, setSearchNote] = useState('')
+  const [providerStatus, setProviderStatus] = useState<{ provider: string; configured: boolean; source: 'env' | 'secure-file' | null; environmentVariable: string; reason?: string } | null>(null)
+  const [providerKey, setProviderKey] = useState('')
+  const [providerBusy, setProviderBusy] = useState(false)
+  const [providerMessage, setProviderMessage] = useState('')
+  const [providerError, setProviderError] = useState('')
+  useEffect(() => {
+    void window.kodAtolyesi.getResearchProviderStatus().then(setProviderStatus).catch((cause) => {
+      setProviderError(cause instanceof Error ? cause.message : 'Arama sağlayıcısı durumu okunamadı.')
+    })
+  }, [])
   const search = useCallback(async () => {
     if (query.trim().length < 3 || loading) return
-    setLoading(true); setError('')
+    setLoading(true); setError(''); setSearchNote('')
     try {
       const response = await window.kodAtolyesi.researchSearch(query.trim(), 8, 'tr')
+      setSearchNote(response.note ?? '')
       setResults(response.hits); setSelected(response.hits[0] ?? null)
       if (response.hits[0]) await selectSource(response.hits[0])
       else setSummary(null)
@@ -178,14 +204,62 @@ function ResearchPanel() {
   }, [loading, query])
   const selectSource = useCallback(async (item: ResearchHit) => {
     setSelected(item)
-    try { const page = await window.kodAtolyesi.researchFetch(item.url); setSummary({ title: page.title || item.title, text: page.text || item.snippet, url: page.url || item.url }) }
+    try { setSummary(await window.kodAtolyesi.researchFetch(item.url)) }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Kaynak okunamadı.') }
   }, [])
+  const openRelatedPage = useCallback(async (url: string) => {
+    setError('')
+    try { setSummary(await window.kodAtolyesi.researchFetch(url)) }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Bağlantı okunamadı.') }
+  }, [])
+  const saveProviderKey = async () => {
+    if (!providerKey.trim() || providerBusy) return
+    setProviderBusy(true); setProviderError(''); setProviderMessage('')
+    try {
+      const status = await window.kodAtolyesi.saveResearchProviderKey(providerKey)
+      setProviderStatus((current) => ({ provider: current?.provider ?? 'Brave Search API', ...status }))
+      setProviderKey('')
+      setProviderMessage(status.source === 'env' ? 'Anahtar şifrelenerek kaydedildi; ortam değişkeni etkin olduğu için o kullanılacak.' : 'Brave Search anahtarı işletim sisteminin güvenli depolamasıyla şifrelenerek kaydedildi.')
+    } catch (cause) { setProviderError(cause instanceof Error ? cause.message : 'API anahtarı kaydedilemedi.') }
+    finally { setProviderBusy(false) }
+  }
+  const clearProviderKey = async () => {
+    if (providerBusy) return
+    setProviderBusy(true); setProviderError(''); setProviderMessage('')
+    try {
+      const status = await window.kodAtolyesi.clearResearchProviderKey()
+      setProviderStatus((current) => ({ provider: current?.provider ?? 'Brave Search API', ...status }))
+      setProviderMessage(status.source === 'env' ? 'Şifreli dosya anahtarı silindi. Ortam değişkeni ayarlı olduğu için Brave etkin kalıyor.' : 'Kayıtlı Brave anahtarı silindi.')
+    } catch (cause) { setProviderError(cause instanceof Error ? cause.message : 'API anahtarı silinemedi.') }
+    finally { setProviderBusy(false) }
+  }
   return <div className="research-panel">
-    <div className="android-section-head"><strong>Güvenli web araştırması</strong><span>{loading ? 'Araştırılıyor…' : results.length ? `${results.length} sonuç` : 'Hazır'}</span></div>
+    <div className="android-section-head"><strong>Güvenli web araştırması</strong><span>{loading ? 'Araştırılıyor…' : results.length ? `${results.length} sonuç` : providerStatus?.configured ? 'Brave Search hazır' : 'Anahtarsız yedek hazır'}</span></div>
+    <div className="research-provider-config">
+      <div className="research-provider-head"><strong>Arama sağlayıcısı</strong><span>{providerStatus?.configured ? `Brave Search etkin · ${providerStatus.source === 'env' ? 'ortam değişkeni' : 'şifreli yerel kayıt'}` : 'Brave API anahtarı ayarlı değil'}</span></div>
+      <div className="research-provider-row"><input className="settings-input" type="password" autoComplete="new-password" value={providerKey} onChange={(event) => setProviderKey(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void saveProviderKey() }} placeholder="Brave Search API anahtarı" aria-label="Brave Search API anahtarı" /><button className="panel-action" disabled={providerBusy || providerKey.trim().length < 8} onClick={() => void saveProviderKey()}>{providerBusy ? 'Kaydediliyor…' : 'Anahtarı kaydet'}</button>{providerStatus?.source === 'secure-file' && <button className="android-text-action" disabled={providerBusy} onClick={() => void clearProviderKey()}>Sil</button>}</div>
+      <small className="research-provider-help">Anahtar yalnızca Electron ana sürecinde kullanılır ve Windows güvenli depolamasıyla şifrelenir; {providerStatus?.environmentVariable ?? 'ULTRON_BRAVE_SEARCH_API_KEY'} ortam değişkeni kayıtlı anahtara önceliklidir. Anahtar arayüze geri gönderilmez.</small>
+      <small className="research-provider-help">Brave Search API ücretlidir; resmi sayfada Search planı $5/1.000 istek ve aylık $5 kredi olarak listeleniyor. Sorgular Brave'e iletilir ve gizlilik belgesine göre en fazla 90 gün tutulabilir; parolaları veya gizli bilgileri aramayın. Sonuçlar yerel arama önbelleğinde saklanmaz.</small>
+      {providerStatus?.reason && <div className="research-provider-note"><AlertCircle size={12} />{providerStatus.reason}</div>}{providerMessage && <div className="research-provider-message">{providerMessage}</div>}{providerError && <div className="panel-error"><AlertCircle size={13} />{providerError}</div>}
+    </div>
     <div className="research-search-row"><input className="settings-input" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void search() }} placeholder="Web araştırma sorgusu" /><button className="panel-action" disabled={loading || query.trim().length < 3} onClick={() => void search()}>{loading ? <LoaderCircle size={13} className="spin" /> : <Search size={13} />} Araştır</button></div>
     {error && <div className="panel-error"><AlertCircle size={13} />{error}</div>}
-    <div className="research-grid"><div className="research-results">{results.map((item) => <button className={`research-result${selected?.url === item.url ? ' selected' : ''}`} key={`${item.url}-${item.rank}`} onClick={() => void selectSource(item)}><div><strong>{item.title}</strong><small>{item.provider}</small></div><code>{item.url}</code><span>{item.snippet || 'Özet yok.'}</span></button>)}{!results.length && !error && <div className="panel-blank small">Güncel kaynakları aramak için sorgu girin.</div>}</div><div className="research-summary"><small>SEÇİLİ KAYNAK</small>{summary ? <><strong>{summary.title}</strong><code>{summary.url}</code><p>{summary.text}</p></> : <span>Bir sonuç seçerek güvenli sayfa özetini okuyun.</span>}</div></div>
+    {searchNote && <div className="research-provider-note"><AlertCircle size={12} />{searchNote}</div>}
+    <div className="research-grid">
+      <div className="research-results">{results.map((item) => <button className={`research-result${selected?.url === item.url ? ' selected' : ''}`} key={`${item.url}-${item.rank}`} onClick={() => void selectSource(item)}><div><strong>{item.title}</strong><small>{item.provider}</small></div><code>{item.url}</code><span>{item.snippet || 'Özet yok.'}</span></button>)}{!results.length && !error && <div className="panel-blank small">Güncel kaynakları aramak için sorgu girin.</div>}</div>
+      <div className="research-summary">
+        <small>SEÇİLİ KAYNAK</small>
+        {summary ? <>
+          <strong>{summary.title}</strong>
+          <code>{summary.finalUrl || summary.url}</code>
+          <div className="research-page-meta">{summary.publishedAt && <span>Yayın: {summary.publishedAt}</span>}{summary.updatedAt && <span>Güncelleme: {summary.updatedAt}</span>}<span>HTTP {summary.status} · {new Date(summary.fetchedAt).toLocaleString('tr-TR')}</span></div>
+          <p>{summary.excerpt || summary.mainText || 'Sayfada okunabilir metin bulunamadı.'}</p>
+          {summary.headings.length > 0 && <div className="research-page-section"><small>BAŞLIKLAR</small><ul>{summary.headings.slice(0, 8).map((heading, index) => <li key={`${heading.level}-${index}`} className={`heading-level-${heading.level}`}>{heading.text}</li>)}</ul></div>}
+          {summary.links.length > 0 && <div className="research-page-section"><small>İLGİLİ BAĞLANTILAR</small><div className="research-page-links">{summary.links.slice(0, 6).map((link) => <button type="button" key={link.url} title={link.url} onClick={() => void openRelatedPage(link.url)}>{link.text || link.url}</button>)}</div></div>}
+          {(summary.warnings.length > 0 || summary.safetyFlags.length > 0) && <div className="research-page-warnings">{summary.warnings.map((warning) => <span key={warning}>{warning}</span>)}{summary.safetyFlags.map((flag) => <span key={flag.id}>{flag.label}</span>)}</div>}
+        </> : <span>Bir sonuç seçerek güvenli sayfa özetini okuyun.</span>}
+      </div>
+    </div>
     <div className="research-security"><ShieldCheck size={12} /> Yalnızca güvenli http/https kaynakları okunur; localhost ve özel ağ adresleri reddedilir.</div>
   </div>
 }
@@ -420,12 +494,20 @@ function App() {
   const [rightCollapsed, setRightCollapsed] = useState(() => {
     try { return window.localStorage.getItem(RIGHT_PANEL_STORAGE_KEY) === '1' } catch { return false }
   })
+  const [rightWidth, setRightWidth] = useState(() => {
+    try {
+      const saved = Number(window.localStorage.getItem(RIGHT_PANEL_WIDTH_STORAGE_KEY))
+      return Number.isFinite(saved) && saved >= RIGHT_PANEL_MIN_WIDTH ? Math.min(RIGHT_PANEL_MAX_WIDTH, saved) : 332
+    } catch { return 332 }
+  })
+  const rightPanelResizeRef = useRef<{ pointerId: number; startX: number; startWidth: number } | null>(null)
   const [terminalOpen, setTerminalOpen] = useState(false)
   const [terminalCommand, setTerminalCommand] = useState('')
   const [terminalContent, setTerminalContent] = useState('')
   const [runningCommandId, setRunningCommandId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const profileAreaRef = useRef<HTMLDivElement>(null)
   const [fileView, setFileView] = useState<{ path: string; content: string } | null>(null)
   const [toast, setToast] = useState('')
   const [desktopPaused, setDesktopPaused] = useState(false)
@@ -434,6 +516,54 @@ function App() {
   const [settings, setSettings] = useState<SettingsForm>({ provider: 'ollama', baseUrl: 'http://127.0.0.1:11434/v1', model: 'qwen3:8b', profileName: '', profileInstructions: '', autoLearn: false, apiKey: '', apiKeyConfigured: false, clearApiKey: false })
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (!profileOpen) return
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (event.target instanceof Node && !profileAreaRef.current?.contains(event.target)) {
+        setProfileOpen(false)
+      }
+    }
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setProfileOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [profileOpen])
+
+  const beginRightPanelResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+    event.preventDefault()
+    rightPanelResizeRef.current = { pointerId: event.pointerId, startX: event.clientX, startWidth: rightWidth }
+    event.currentTarget.setPointerCapture(event.pointerId)
+    document.body.classList.add('resizing-right-panel')
+  }
+  const moveRightPanelResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = rightPanelResizeRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    setRightWidth(clampRightPanelWidth(drag.startWidth + drag.startX - event.clientX))
+  }
+  const endRightPanelResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = rightPanelResizeRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    rightPanelResizeRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    document.body.classList.remove('resizing-right-panel')
+  }
+  const handleRightPanelResizeKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'ArrowLeft') setRightWidth((width) => clampRightPanelWidth(width + 16))
+    else if (event.key === 'ArrowRight') setRightWidth((width) => clampRightPanelWidth(width - 16))
+    else if (event.key === 'Home') setRightWidth(RIGHT_PANEL_MIN_WIDTH)
+    else if (event.key === 'End') setRightWidth(maxRightPanelWidth())
+    else return
+    event.preventDefault()
+  }
 
   const loadWorkspace = useCallback(async () => {
     setWorkspaceReady(false)
@@ -571,6 +701,15 @@ function App() {
   useEffect(() => {
     try { window.localStorage.setItem(RIGHT_PANEL_STORAGE_KEY, rightCollapsed ? '1' : '0') } catch { /* depolama kapalıysa yalnız bu oturum geçerli */ }
   }, [rightCollapsed])
+  useEffect(() => {
+    try { window.localStorage.setItem(RIGHT_PANEL_WIDTH_STORAGE_KEY, String(rightWidth)) } catch { /* depolama kapalıysa yalnız bu oturum geçerli */ }
+  }, [rightWidth])
+  useEffect(() => {
+    const keepPanelInsideWindow = () => setRightWidth((width) => clampRightPanelWidth(width))
+    window.addEventListener('resize', keepPanelInsideWindow)
+    keepPanelInsideWindow()
+    return () => window.removeEventListener('resize', keepPanelInsideWindow)
+  }, [])
   useEffect(() => {
     if (!project || !workspaceReady) return
     const timer = window.setTimeout(() => { void window.kodAtolyesi.saveWorkspace({ messages: messages.map(({ role, content }) => ({ role, content })) }).catch((error) => setToast((error as Error).message)) }, 450)
@@ -739,7 +878,8 @@ function App() {
     <div className="welcome-trust"><ShieldCheck size={14} /> Dosyalar seçtiğin proje klasöründe kalır <i /> Değişiklikler onayından sonra uygulanır</div>
   </div>
 
-  return <div className={rightCollapsed ? 'app-shell right-panel-collapsed' : 'app-shell'}>
+  const effectiveRightWidth = !rightOpen ? 0 : rightCollapsed ? 46 : rightWidth
+  return <div className={`app-shell${rightOpen && rightCollapsed ? ' right-panel-collapsed' : ''}${!rightOpen ? ' right-panel-hidden' : ''}`} style={{ '--ultron-right-width': `${effectiveRightWidth}px` } as CSSProperties}>
     <div className="workspace">
       <aside className="left-sidebar">
         <div className="sidebar-brand">
@@ -776,9 +916,8 @@ function App() {
           <div className="file-tree">{visibleTree.length ? visibleTree.map((node) => <TreeItem key={node.path} node={node} depth={0} onOpen={(path) => void openFile(path)} />) : <div className="tree-empty">{searchTerm ? 'Eşleşme bulunamadı' : 'Gösterilecek dosya yok'}</div>}</div>
           <div className="sidebar-spacer" />
         </> : <div className="sidebar-empty"><FolderOpen size={22} /><p>Bir proje açınca görevler ve dosyalar burada görünür.</p><button onClick={() => void openProject()}>Klasör seç</button></div>}
-        <div className="profile-area">
+        <div className="profile-area" ref={profileAreaRef}>
           {profileOpen && <>
-            <div className="profile-menu-backdrop" onClick={() => setProfileOpen(false)} />
             <div className="profile-menu" role="menu">
               <div className="profile-menu-head">
                 <span className="profile-avatar">{settings.profileName.trim().charAt(0).toLocaleUpperCase('tr-TR') || 'U'}</span>
@@ -811,7 +950,7 @@ function App() {
             <button className="icon-button top-icon" title="Terminal" onClick={() => setTerminalOpen(!terminalOpen)}><SquareTerminal size={16} /></button>
             <button className={`icon-button top-icon${desktopPaused ? ' desktop-paused' : ''}`} title={desktopPaused ? 'Masaüstü otomasyonu durduruldu — devam ettir' : 'Masaüstü otomasyonunu durdur'} onClick={() => void toggleDesktopPaused()}>{desktopPaused ? <ShieldCheck size={16} /> : <Monitor size={16} />}</button>
             <button className="icon-button top-icon" title="Ayarlar" onClick={() => setSettingsOpen(true)}><Settings2 size={16} /></button>
-            <button className="icon-button tiny" title={rightOpen ? (rightCollapsed ? 'Yan paneli genişlet' : 'Yan paneli kapat') : 'Yan paneli aç'} onClick={() => { if (!rightOpen) { setRightOpen(true); return } if (rightCollapsed) { setRightCollapsed(false); return } setRightOpen(false) }}>{rightOpen && !rightCollapsed ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
+            <button className="icon-button tiny" title={rightOpen ? (rightCollapsed ? 'Yan paneli genişlet' : 'Yan paneli kapat') : 'Yan paneli aç'} aria-label={rightOpen && !rightCollapsed ? 'Yan paneli kapat' : 'Yan paneli genişlet'} aria-expanded={rightOpen && !rightCollapsed} onClick={() => { if (!rightOpen) { setRightOpen(true); setRightCollapsed(false); return } if (rightCollapsed) { setRightCollapsed(false); return } setRightOpen(false) }}>{rightOpen && !rightCollapsed ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}</button>
           </div>
         </div>
         <div className="conversation-scroll" ref={scrollRef}>
@@ -826,7 +965,9 @@ function App() {
         </div><div className="composer-footnote"><span className="local-indicator"><Circle size={6} fill="currentColor" /> Yerel · {project?.name ?? 'Proje seçilmedi'}</span><span>Yapay zekâ hatalı kod üretebilir · değişiklikleri uygulamadan önce incele</span></div></div>
       </main>
 
-      {rightOpen && <aside className={rightCollapsed ? 'right-sidebar collapsed' : 'right-sidebar'}>{rightCollapsed
+      {rightOpen && <aside className={rightCollapsed ? 'right-sidebar collapsed' : 'right-sidebar'}>
+        {!rightCollapsed && <div className="right-panel-resizer" role="separator" aria-orientation="vertical" aria-label="Yan panel genişliği" aria-valuemin={RIGHT_PANEL_MIN_WIDTH} aria-valuemax={maxRightPanelWidth()} aria-valuenow={rightWidth} aria-valuetext={`${rightWidth} piksel`} tabIndex={0} title="Sürükleyerek genişliği ayarla; ok tuşlarıyla da değiştirebilirsin" onPointerDown={beginRightPanelResize} onPointerMove={moveRightPanelResize} onPointerUp={endRightPanelResize} onPointerCancel={endRightPanelResize} onKeyDown={handleRightPanelResizeKey} />}
+        {rightCollapsed
         ? <div className="right-rail">
           <button className="icon-button tiny rail-expand" title="Yan paneli genişlet" onClick={() => setRightCollapsed(false)}><PanelRightOpen size={15} /></button>
           {SIDE_TABS.map((tab) => { const Icon = tab.icon; const badge = sideTabBadge(tab.id); return <button key={tab.id} className={`rail-tab${rightTab === tab.id ? ' active' : ''}`} title={tab.label} aria-label={tab.label} onClick={() => { selectSideTab(tab.id); setRightCollapsed(false) }}><Icon size={15} />{badge !== null && <span className="rail-badge">{badge}</span>}</button> })}

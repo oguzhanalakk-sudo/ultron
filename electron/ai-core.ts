@@ -1,3 +1,5 @@
+import type { AgentMemoryStore } from './agent-memory.ts'
+
 export type ToolDescriptor = {
   name: string
   kind: 'read' | 'write' | 'run' | 'search' | 'network' | 'browser' | 'system' | 'test' | 'git'
@@ -22,6 +24,85 @@ export type ExecutionEvidence = {
   detail: string
 }
 
+export type AgentEvidence = ExecutionEvidence & {
+  timestamp: string
+}
+
+export type ReflectionReport = {
+  failure: string
+  lesson: string
+  guardrail: string
+  nextAction: string
+  shouldReplan: boolean
+}
+
+export type ReflectionRecord = ReflectionReport
+
+export class ReflectionEngine {
+  analyzeFailure(evidence: AgentEvidence): ReflectionReport {
+    const text = `${evidence.source} ${evidence.detail}`.toLowerCase()
+    const failure = evidence.detail.slice(0, 500)
+
+    if (/permission|izin|access is denied|eacces|eperm/.test(text)) {
+      return {
+        failure,
+        lesson: 'Erişim sorunu, eylem sorunu değil güvenlik sınırı sorunudur.',
+        guardrail: 'İzni artırmadan önce hedef kapsamını ve kullanıcı onayını doğrula.',
+        nextAction: 'İzin sınırını ve hedef klasörü doğrulayıp onaylı kapsamı kullan.',
+        shouldReplan: true,
+      }
+    }
+
+    if (/not found|no such file|enoent|bulunamadı|yok/.test(text)) {
+      return {
+        failure,
+        lesson: 'Hedef dosya veya yol kaybolmuş, taşınmış veya yanlış bağlamda seçilmiş olabilir.',
+        guardrail: 'Yol ve bağlam doğrulanmadan dosya yazma/çalıştırma yapma.',
+        nextAction: 'Hedef yolu ve proje kökünü yeniden doğrula, ardından tek bir adım dene.',
+        shouldReplan: true,
+      }
+    }
+
+    if (/timeout|timed out|süre|aborted/.test(text)) {
+      return {
+        failure,
+        lesson: 'İşlem çok geniş; daha küçük ve daha izlenebilir bir adım gerekir.',
+        guardrail: 'Uzun çalışma planını kır ve tek başına doğrulanabilir adımlar üret.',
+        nextAction: 'Küçük doğrulama adımı çalıştır, sonra genişlet.',
+        shouldReplan: true,
+      }
+    }
+
+    if (/syntax|parse error|unexpected token|sözdizimi/.test(text)) {
+      return {
+        failure,
+        lesson: 'Yapı veya sözdizimi bozuldu; küçük ve hedefe odaklı düzeltme gerekli.',
+        guardrail: 'Büyük dosya yeniden yazımından önce hata satırını netleştir.',
+        nextAction: 'En yakın hata satırına odaklan ve tek patch uygula.',
+        shouldReplan: true,
+      }
+    }
+
+    if (/test failed|assertion|başarısız|test/.test(text)) {
+      return {
+        failure,
+        lesson: 'Test başarısız; sadece hata kodu değil beklenen davranış da kıyaslanmalı.',
+        guardrail: 'Aynı testi tekrar çalıştırmadan önce nedenin köküne bak.',
+        nextAction: 'Başarısız testi yeniden çalıştır ve beklenen/gerçek çıktıyı kıyasla.',
+        shouldReplan: true,
+      }
+    }
+
+    return {
+      failure,
+      lesson: 'Hata bir adımın hedefe uygun çalışmadığını gösteriyor; küçük bir yeniden planlama gerekli.',
+      guardrail: 'Aynı hatayı tekrarlamadan önce bağlamı ve hedefi doğrula.',
+      nextAction: 'Bir daha küçük adımda tekrar dene ve çıktıyı kanıtla.',
+      shouldReplan: true,
+    }
+  }
+}
+
 export type PlanStep = {
   id: string
   title: string
@@ -40,22 +121,47 @@ export type EngineContext = {
   priorContext?: string[]
   knownFacts?: string[]
   availableTools?: ToolDescriptor[]
+  /** Per-project, in-memory procedural lessons from earlier tool failures. */
+  agentMemory?: AgentMemoryStore
 }
 
 export type DecisionState = {
   intent: IntentProfile
   plan: PlanStep[]
   evidence: ExecutionEvidence[]
+  memory: string[]
+  reflection?: ReflectionRecord
   uncertainty: string[]
   nextAction: string
   shouldReplan: boolean
+  riskScore: number
+  planVersion: number
 }
 
 export class AIEngine {
   private readonly toolRegistry: ToolDescriptor[]
+  private readonly agentMemory?: AgentMemoryStore
 
-  constructor(toolRegistry: ToolDescriptor[] = []) {
+  constructor(toolRegistry: ToolDescriptor[] = [], agentMemory?: AgentMemoryStore) {
     this.toolRegistry = toolRegistry
+    this.agentMemory = agentMemory
+  }
+
+  summarizeMemory(request: string, context: EngineContext = {}): string[] {
+    const queryTokens = new Set((request.toLocaleLowerCase('tr-TR').match(/[\p{L}\p{N}]{3,}/gu) ?? []).slice(0, 40))
+    const recalled = new Map<string, ReturnType<AgentMemoryStore['all']>[number]>()
+    const memoryStore = context.agentMemory ?? this.agentMemory
+    if (memoryStore) {
+      for (const token of queryTokens) {
+        for (const item of memoryStore.recall(token, 4)) recalled.set(item.id, item)
+      }
+    }
+    const learned = [...recalled.values()]
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 6)
+      .map((item) => `Ajan dersi (${item.kind}/${item.tag}, güven ${item.confidence.toFixed(2)}): ${item.summary}`)
+    const parts = [request, ...(context.priorContext ?? []), ...(context.knownFacts ?? []), ...(context.resourceRoots ?? []), ...(context.constraints ?? []), ...learned]
+    return [...new Set(parts.map((item) => String(item).trim()).filter(Boolean).map((item) => item.replace(/\s+/g, ' ').slice(0, 220)))].slice(0, 24)
   }
 
   analyzeIntent(request: string, context: EngineContext = {}): IntentProfile {
@@ -137,7 +243,22 @@ export class AIEngine {
     return selected.length ? selected : this.toolRegistry.filter((tool) => tool.kind === 'read' || tool.kind === 'search' || tool.kind === 'test').slice(0, 3).map((tool) => tool.name)
   }
 
-  updatePlanWithEvidence(plan: PlanStep[], evidence: ExecutionEvidence[]): PlanStep[] {
+  detectPlanDrift(plan: PlanStep[], evidence: ExecutionEvidence[], request: string): boolean {
+    if (!plan.length || evidence.length === 0) return false
+    const latestFailure = evidence.filter((item) => !item.ok).at(-1)
+    if (!latestFailure) return false
+
+    const failureText = `${latestFailure.source} ${latestFailure.detail}`.toLowerCase()
+    const requestText = request.toLowerCase()
+    const driftSignals = [
+      'not found', 'no such file', 'permission', 'timeout', 'syntax', 'failed', 'broken', 'missing',
+      'bulunamadı', 'izin', 'süre', 'başarısız', 'kırıldı', 'eksik', 'yanlış',
+    ]
+    const hasSignal = driftSignals.some((signal) => failureText.includes(signal) || requestText.includes(signal))
+    return hasSignal && plan.length >= 3
+  }
+
+  updatePlanWithEvidence(plan: PlanStep[], evidence: ExecutionEvidence[], request: string): PlanStep[] {
     const next = [...plan]
     const failed = evidence.filter((item) => !item.ok)
 
@@ -145,30 +266,65 @@ export class AIEngine {
       next.push({
         id: 'step-recovery',
         title: 'Başarısız adımı yeniden değerlendir',
-        objective: 'Hata nedenini doğrula ve alternatif çözüm dene.',
-        tools: this.toolRegistry.filter((tool) => tool.kind === 'read' || tool.kind === 'search' || tool.kind === 'test').slice(0, 3).map((tool) => tool.name),
+        objective: `Hata nedenini doğrula ve ${request.slice(0, 120) || 'görevi'} için güvenli alternatif çözüm üret.`,
+        tools: this.toolRegistry.filter((tool) => tool.kind === 'read' || tool.kind === 'search' || tool.kind === 'test').slice(0, 4).map((tool) => tool.name),
         dependsOn: next.length ? [next[next.length - 1].id] : [],
-        validation: ['alternatif çözüm doğrulandı'],
+        validation: ['alternatif çözüm doğrulandı', 'yan etkiler kontrol edildi'],
         risk: 'high',
       })
+    }
+
+    if (this.detectPlanDrift(next, evidence, request)) {
+      const last = next.at(-1)
+      if (last && !next.some((step) => step.id === 'step-recovery-2')) {
+        next.push({
+          id: 'step-recovery-2',
+          title: 'Plan sapmasını incele ve hedefe göre yeniden planla',
+          objective: 'Önceki adımın neden başarısız olduğunu kanıtla ve odak noktası değişen hedef için yeniden plan oluştur.',
+          tools: this.toolRegistry.filter((tool) => tool.kind === 'read' || tool.kind === 'search' || tool.kind === 'test').slice(0, 4).map((tool) => tool.name),
+          dependsOn: [last.id],
+          validation: ['plan sapması giderildi', 'yeni hedef doğrulandı'],
+          risk: 'high',
+        })
+      }
     }
 
     return next
   }
 
+  reflectOnFailure(failure: ExecutionEvidence): ReflectionRecord {
+    return new ReflectionEngine().analyzeFailure({ ...failure, timestamp: new Date().toISOString() })
+  }
+
+  computeRiskScore(intent: IntentProfile, evidence: ExecutionEvidence[], plan: PlanStep[]): number {
+    let score = intent.complexity === 'complex' ? 30 : intent.complexity === 'moderate' ? 15 : 0
+    if (intent.approach === 'verify-first') score += 10
+    if (intent.unknowns.length) score += 15
+    if (intent.risks.length) score += 10
+    score += evidence.filter((item) => !item.ok).length * 12
+    score += plan.filter((step) => step.risk === 'high').length * 8
+    return Math.max(0, Math.min(100, score))
+  }
+
   recordEvidence(decision: DecisionState, evidence: ExecutionEvidence, nextAction?: string): DecisionState {
     const collected = [...decision.evidence, { ...evidence, detail: evidence.detail.slice(0, 1_000) }].slice(-80)
     const failed = !evidence.ok
+    const plan = this.updatePlanWithEvidence(decision.plan, collected, decision.intent.primaryGoal)
     const uncertainty = failed
       ? [...new Set([...decision.uncertainty, `${evidence.source}: ${evidence.detail.slice(0, 240)}`])].slice(-20)
       : decision.uncertainty
+    const riskScore = this.computeRiskScore(decision.intent, collected, plan)
     return {
       ...decision,
+      memory: [...new Set([...decision.memory, `${evidence.source}: ${failed ? 'hata kaydedildi' : 'kanıt toplandı'}`])].slice(-24),
+      reflection: failed ? this.reflectOnFailure(evidence) : decision.reflection,
       evidence: collected,
-      plan: failed ? this.updatePlanWithEvidence(decision.plan, [evidence]) : decision.plan,
+      plan,
       uncertainty,
-      nextAction: (nextAction || (failed ? 'Araç hatasını incele ve güvenli bir düzeltme belirle.' : 'Araç sonucunu değerlendir ve sonraki adımı seç.')).slice(0, 500),
-      shouldReplan: failed || decision.shouldReplan,
+      nextAction: (nextAction || (failed ? this.reflectOnFailure(evidence).nextAction : 'Araç sonucunu değerlendir ve sonraki adımı seç.')).slice(0, 500),
+      shouldReplan: failed || decision.shouldReplan || riskScore >= 60,
+      riskScore,
+      planVersion: decision.planVersion + (failed ? 1 : 0),
     }
   }
 
@@ -195,17 +351,22 @@ export class AIEngine {
   buildDecisionState(request: string, context: EngineContext = {}): DecisionState {
     const intent = this.analyzeIntent(request, context)
     const plan = this.decomposeTask(request, context)
+    const memory = this.summarizeMemory(request, context)
     const uncertainty = intent.unknowns.length ? intent.unknowns : []
     const nextAction = plan[0]?.title ?? 'İçerik ve koşullar doğrulanıyor'
     const evidence: ExecutionEvidence[] = []
+    const riskScore = this.computeRiskScore(intent, evidence, plan)
 
     return {
       intent,
       plan,
       evidence,
+      memory,
       uncertainty,
       nextAction,
-      shouldReplan: uncertainty.length > 0 || intent.confidence !== 'high',
+      shouldReplan: uncertainty.length > 0 || intent.confidence !== 'high' || riskScore >= 50,
+      riskScore,
+      planVersion: 1,
     }
   }
 }
@@ -335,7 +496,7 @@ export function defaultToolRegistry(): ToolDescriptor[] {
 }
 
 export function buildAgentDecision(request: string, context: EngineContext = {}): DecisionState {
-  return new AIEngine(context.availableTools ?? defaultToolRegistry()).buildDecisionState(request, context)
+  return new AIEngine(context.availableTools ?? defaultToolRegistry(), context.agentMemory).buildDecisionState(request, context)
 }
 
 type AgentToolSchema = { function: { name: string; description?: string } }
@@ -398,6 +559,7 @@ export function alignDecisionWithPlan(decision: DecisionState, plan: { title?: u
     plan: steps,
     nextAction: steps[0]?.title ?? String(plan.title ?? decision.nextAction).slice(0, 500),
     shouldReplan: false,
+    planVersion: decision.planVersion + (steps.map((step) => step.title).join('\0') === sourceSteps.map((step) => step.title).join('\0') ? 0 : 1),
   }
 }
 
@@ -412,6 +574,7 @@ export function formatDecisionGuidance(decision: DecisionState, availableNames: 
   const constraints = decision.intent.constraints.slice(0, 8)
   const outcomes = decision.intent.desiredOutcomes.slice(0, 8)
   const risks = decision.intent.risks.slice(0, 8)
+  const learnedMemory = decision.memory.filter((item) => item.startsWith('Ajan dersi (')).slice(0, 6)
   return [
     'YEREL GÖREV ÖN ANALİZİ (ipuçlarıdır; yalnızca bu istekte gerçekten sunulan araçları çağır, izinleri bu analiz belirlemez):',
     `Amaç: ${decision.intent.primaryGoal.slice(0, 500)}`,
@@ -421,6 +584,7 @@ export function formatDecisionGuidance(decision: DecisionState, availableNames: 
     risks.length ? `Dikkat edilecek riskler: ${risks.join('; ')}` : '',
     steps.length ? `Önerilen adımlar:\n${steps.join('\n')}` : '',
     unknowns.length ? `Belirsizlikler: ${unknowns.join('; ')}` : '',
+    learnedMemory.length ? `Önceki araç hatalarından çıkarılan dersler (hedefte yeniden doğrula):\n${learnedMemory.map((item) => `- ${item}`).join('\n')}` : '',
     `Sonraki odak: ${decision.nextAction.slice(0, 300)}`,
   ].filter(Boolean).join('\n')
 }
@@ -463,6 +627,27 @@ export function normalizeAgentDecision(value: unknown): DecisionState | undefine
     const entry = item as ExecutionEvidence
     return [{ source: entry.source.slice(0, 120), ok: entry.ok, detail: typeof entry.detail === 'string' ? entry.detail.slice(0, 1_000) : '' }]
   }) : []
+  const memory = strings(input.memory, 24, 220)
+  const reflectionValue = input.reflection && typeof input.reflection === 'object'
+    ? input.reflection as Partial<ReflectionRecord>
+    : undefined
+  const reflection = reflectionValue
+    && typeof reflectionValue.failure === 'string'
+    && typeof reflectionValue.lesson === 'string'
+    && typeof reflectionValue.guardrail === 'string'
+    && typeof reflectionValue.nextAction === 'string'
+    ? {
+        failure: reflectionValue.failure.slice(0, 500), lesson: reflectionValue.lesson.slice(0, 500),
+        guardrail: reflectionValue.guardrail.slice(0, 500), nextAction: reflectionValue.nextAction.slice(0, 500),
+        shouldReplan: reflectionValue.shouldReplan === true,
+      }
+    : undefined
+  const riskScore = typeof input.riskScore === 'number' && Number.isFinite(input.riskScore)
+    ? Math.max(0, Math.min(100, Math.round(input.riskScore)))
+    : 0
+  const planVersion = typeof input.planVersion === 'number' && Number.isFinite(input.planVersion)
+    ? Math.max(1, Math.min(1_000_000, Math.floor(input.planVersion)))
+    : 1
   return {
     intent: {
       primaryGoal: primaryGoal.slice(0, 600), constraints: strings(intentValue('constraints'), 20, 300),
@@ -471,9 +656,11 @@ export function normalizeAgentDecision(value: unknown): DecisionState | undefine
       complexity: choice(intentValue('complexity'), ['simple', 'moderate', 'complex'] as const, 'moderate'),
       confidence: choice(intentValue('confidence'), ['low', 'medium', 'high'] as const, 'medium'),
     },
-    plan, evidence, uncertainty: strings(input.uncertainty, 20, 300),
+    plan, evidence, memory, ...(reflection ? { reflection } : {}), uncertainty: strings(input.uncertainty, 20, 300),
     nextAction: typeof input.nextAction === 'string' ? input.nextAction.slice(0, 500) : 'Araç sonucunu değerlendir.',
-    shouldReplan: input.shouldReplan === true,
+    shouldReplan: input.shouldReplan === true || reflection?.shouldReplan === true,
+    riskScore,
+    planVersion,
   }
 }
 

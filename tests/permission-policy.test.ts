@@ -6,12 +6,24 @@ import {
   canLaunchApplication,
   canReadOrWriteAnyPath,
   canUseDesktopAutomation,
+  classifyRiskFromPath,
+  classifyRiskFromUrl,
 } from '../electron/permission-manager.ts'
 
 const controlled: PermissionProfile = { ...defaultPermissions, mode: 'controlled' }
 const advanced: PermissionProfile = { ...defaultPermissions, mode: 'advanced' }
 const personal: PermissionProfile = { ...defaultPermissions, mode: 'personal' }
 const broad = broadAccessPermissions
+
+test('URL ve Windows yol risk sınıflandırması geçerli girdileri doğru etiketler', () => {
+  assert.equal(classifyRiskFromUrl('https://example.com/path'), 'low')
+  assert.equal(classifyRiskFromUrl('http://localhost:3000'), 'medium')
+  assert.equal(classifyRiskFromUrl('http://[::1]:3000'), 'medium')
+  assert.equal(classifyRiskFromUrl('not a url'), 'high')
+  assert.equal(classifyRiskFromPath('C:\\Windows\\System32\\drivers'), 'high')
+  assert.equal(classifyRiskFromPath('C:\\Users\\Ada\\Documents\\notes.txt'), 'medium')
+  assert.equal(classifyRiskFromPath('C:\\work\\ultron\\src\\main.ts'), 'low')
+})
 
 test('geniş erişim dış ağ, uygulama, dosya ve masaüstü kapılarını açar', () => {
   assert.equal(canAccessExternalUrl('https://example.com', broad, 'C:/proje').allowed, true)

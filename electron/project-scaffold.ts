@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 export interface ProjectSpec {
   name: string
   description: string
+  templateId?: string
   category: 'web' | 'api' | 'cli' | 'desktop' | 'mobile' | 'library' | 'monorepo'
   techStack: {
     language: string
@@ -353,7 +354,12 @@ export async function buildProjectFromSpec(spec: ProjectSpec, options: { workspa
     // Determine template
     let template: ProjectTemplate | undefined
 
-    if (spec.techStack.framework) {
+    if (spec.templateId) {
+      template = getTemplate(spec.templateId)
+      if (!template) throw new Error(`Bilinmeyen proje şablonu: ${spec.templateId}`)
+    }
+
+    if (!template && spec.techStack.framework) {
       const templateKey = `${spec.techStack.language}-${spec.techStack.framework}`
         .replace(/\s+/g, '-')
         .toLowerCase()
