@@ -940,6 +940,10 @@ function WorkspaceModal({ workspace, projectPath, onClose, onSaved }: { workspac
     else if (mode === 'advanced') setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: false, allowSystemChanges: false, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false })
     else setPermissions({ mode, editMode: 'automatic', commandMode: 'automatic', allowPackageInstalls: true, allowSystemChanges: true, allowDesktopControl: permissions.allowDesktopControl, allowUnrestrictedAccess: false })
   }
+  function toggleUnrestrictedAccess(enabled: boolean) {
+    if (enabled && !window.confirm('Açık erişim modu proje dışı kapsamları değerlendirmeye izin verir. Tehlikeli işlemler yine onay ister. Etkinleştirilsin mi?')) return
+    setPermissions({ ...permissions, allowUnrestrictedAccess: enabled })
+  }
   function changeGrantScope(id: string, scope: PermissionGrant['scope']) {
     setPermissionGrants((items) => items.map((grant) => grant.id !== id ? grant : {
       ...grant,
@@ -977,7 +981,7 @@ function WorkspaceModal({ workspace, projectPath, onClose, onSaved }: { workspac
         <label className="permission-check"><input type="checkbox" checked={permissions.allowPackageInstalls} onChange={(event) => setPermissions({ ...permissions, allowPackageInstalls: event.target.checked })} /><span><b>Paket kurulumlarını otomatik çalıştır</b><small>npm/pip/Gradle bağımlılık indirmeleri</small></span></label>
         <label className="permission-check"><input type="checkbox" checked={permissions.allowSystemChanges} onChange={(event) => setPermissions({ ...permissions, allowSystemChanges: event.target.checked })} /><span><b>Sistem araçlarını otomatik çalıştır</b><small>Yönetici yetkisi kendiliğinden yükseltilmez</small></span></label>
         <label className="permission-check"><input type="checkbox" checked={permissions.allowDesktopControl} onChange={(event) => setPermissions({ ...permissions, allowDesktopControl: event.target.checked })} /><span><b>Masaüstü kontrolünü etkinleştir</b><small>Ajanın fare, klavye ve ekranı kullanmasına izin ver (kapalıyken bu araçlar ajana hiç gösterilmez)</small></span></label>
-        <label className="permission-check"><input type="checkbox" checked={permissions.allowUnrestrictedAccess} onChange={(event) => setPermissions({ ...permissions, allowUnrestrictedAccess: event.target.checked })} /><span><b>Sınırsız erişim modunu etkinleştir</b><small>Yalnızca açıkça etkinleştirildiğinde kapsam dışı işlemler değerlendirilebilir; riskli işlemler yine onay ister.</small></span></label>
+        <label className="permission-check"><input type="checkbox" checked={permissions.allowUnrestrictedAccess} onChange={(event) => toggleUnrestrictedAccess(event.target.checked)} /><span><b>Sınırsız erişim modunu etkinleştir</b><small>Yalnızca açıkça etkinleştirildiğinde kapsam dışı işlemler değerlendirilebilir; riskli işlemler yine onay ister.</small></span></label>
         <p className="workspace-security-note"><ShieldCheck size={13} /> Tam erişim profilinde işlemler onay kartı olmadan Windows hesabının mevcut erişimleriyle çalışır. Dosya geri alma yedekleri ve işlem günlüğü kullanılmaya devam eder.</p>
       </section>
       <section className="workspace-section"><h3><ShieldCheck size={14} /> Kaydedilmiş izinler</h3><p className="profile-description">Görev ve proje izinleri bu projede, kategori izinleri tüm projelerde saklanır. Tam erişim profilinde bu izin kayıtlarına gerek kalmadan işlemler otomatik çalışır.</p>
