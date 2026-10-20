@@ -1,10 +1,27 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { canPerformAutomatically, createPermissionGrant, findPermissionGrant, findResourceRoot, isValidApprovalDecision, sanitizePermissionGrants, sanitizeResourceRoots } from '../electron/permission-manager.ts'
+import { canAccessExternalUrl, canPerformAutomatically, canUseDesktopAutomation, createPermissionGrant, findPermissionGrant, findResourceRoot, isValidApprovalDecision, requestDesktopAutomationApproval, requestExternalUrlApproval, sanitizePermissionGrants, sanitizeResourceRoots } from '../electron/permission-manager.ts'
 import type { PermissionProfile } from '../electron/shared.ts'
 
 const projectPath = 'C:\\work\\demo'
 const controlled: PermissionProfile = { mode: 'controlled', editMode: 'review', commandMode: 'confirm', allowPackageInstalls: false, allowSystemChanges: false }
+
+test('dış URL politikası güvenli adresi profil ve merkezi onay akışına göre sınırlar', () => {
+  assert.equal(canAccessExternalUrl('https://example.com', controlled, projectPath).allowed, false)
+  assert.equal(canAccessExternalUrl('http://127.0.0.1:3000', controlled, projectPath).allowed, false)
+  const personal = { ...controlled, mode: 'personal' as const }
+  assert.equal(canAccessExternalUrl('https://example.com', personal, projectPath).allowed, true)
+  assert.equal(requestExternalUrlApproval('https://example.com', projectPath).approved, false)
+  assert.equal(requestExternalUrlApproval('file:///C:/secret.txt', projectPath).approved, false)
+})
+
+test('masaüstü otomasyonu profil kapısını ve merkezi kullanıcı onayını atlayamaz', () => {
+  assert.equal(canUseDesktopAutomation(controlled, 'app-launch', projectPath).allowed, false)
+  const enabled = { ...controlled, allowDesktopControl: true }
+  assert.equal(canUseDesktopAutomation(enabled, 'app-launch', projectPath).allowed, true)
+  assert.equal(canUseDesktopAutomation(enabled, 'system', projectPath).allowed, true)
+  assert.equal(requestDesktopAutomationApproval('app-launch', projectPath).approved, false)
+})
 
 test('onay kararları boolean ve kapsam/kaydetme alanları arasında tutarlı olmalı', () => {
   assert.equal(isValidApprovalDecision({ approved: true, scope: 'operation', remember: false }), true)

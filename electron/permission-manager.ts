@@ -2,6 +2,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { ApprovalDecision, ApprovalGrantScope, PermissionCategory, PermissionGrant, PermissionProfile, ResourceRoot } from './shared.ts'
 import { canRunAutomatically, type CommandRisk } from './permissions.ts'
+import { validateExternalUrl } from './web-research.ts'
 
 export type PermissionContext = {
   profile: PermissionProfile
@@ -156,4 +157,68 @@ export function grantScopeMatches(grant: PermissionGrant, context: Pick<Permissi
   if (grant.scope === 'category' && grant.projectPath === '*') return true
   if (pathKey(grant.projectPath) !== pathKey(context.projectPath)) return false
   return grant.scope === 'project' || grant.scope === 'category' || (grant.scope === 'task' && Boolean(context.taskId) && grant.taskId === context.taskId)
+}
+
+/**
+ * Dış URL erişimi için senkron politika kapısıdır. Gerçek kullanıcı onayı
+ * `main.ts` içindeki merkezi askApproval akışıyla verilir; bu yardımcı kendi
+ * kendine izin/grant üretmez.
+ */
+export function canAccessExternalUrl(
+  url: string,
+  profile: PermissionProfile,
+  projectPath: string,
+  taskId?: string,
+): { allowed: boolean; reason?: string; grantId?: string } {
+  void projectPath
+  void taskId
+  const safety = validateExternalUrl(url)
+  if (!safety.allowed) return { allowed: false, reason: safety.reason }
+
+  if (profile.mode === 'advanced' || profile.mode === 'personal') return { allowed: true }
+  return { allowed: false, reason: 'Dış ağ erişimi için izin gerekiyor. Kullanıcıdan onay alınmalı.' }
+}
+
+/**
+ * Approval UI göstermeyen katman dış ağ erişimini onaylayamaz. Çağıran taraf
+ * bu sonucu merkezi askApproval akışına yönlendirmelidir.
+ */
+export function requestExternalUrlApproval(
+  url: string,
+  projectPath: string,
+  taskId?: string,
+): { approved: boolean; reason?: string } {
+  void projectPath
+  void taskId
+  const safety = validateExternalUrl(url)
+  if (!safety.allowed) return { approved: false, reason: safety.reason }
+  return { approved: false, reason: 'Dış ağ erişimi için UI üzerinden kullanıcı onayı gerekiyor.' }
+}
+
+/** Masaüstü otomasyonu için profil kapısı; grant veya modal onayı üretmez. */
+export function canUseDesktopAutomation(
+  profile: PermissionProfile,
+  category: PermissionCategory,
+  projectPath: string,
+  taskId?: string,
+): { allowed: boolean; reason?: string } {
+  void projectPath
+  void taskId
+  if (profile.allowDesktopControl) return { allowed: true }
+  if (category === 'system' || category === 'system-script' || category === 'screen-capture' || category === 'input-control' || category === 'app-launch') {
+    return { allowed: false, reason: 'Masaüstü kontrolü ve ekran yakalama için açık onay gerekir.' }
+  }
+  return { allowed: false, reason: 'Masaüstü otomasyonu profil tarafından etkinleştirilmemiş.' }
+}
+
+/** Gerçek onay için merkezi UI akışını kullan; burada otomatik onay verme. */
+export function requestDesktopAutomationApproval(
+  category: PermissionCategory,
+  projectPath: string,
+  taskId?: string,
+): { approved: boolean; reason?: string } {
+  void category
+  void projectPath
+  void taskId
+  return { approved: false, reason: 'Masaüstü otomasyonu için UI üzerinden kullanıcı onayı gerekiyor.' }
 }
