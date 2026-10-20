@@ -1,0 +1,62 @@
+
+> ultron@1.1.0 test:smoke
+> powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-ui-smoke.ps1
+
+
+> ultron@1.1.0 build
+> tsc --noEmit -p tsconfig.node.json && electron-vite build
+
+[36mvite v8.3.4 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+✓ 41 modules transformed.
+rendering chunks...
+out/main/main.js  697.54 kB
+
+[32m✓ built in 214ms[39m
+[36mvite v8.3.4 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+✓ 2 modules transformed.
+rendering chunks...
+out/preload/preload.cjs  5.63 kB
+
+[32m✓ built in 15ms[39m
+[36mvite v8.3.4 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 2193 modules transformed.
+rendering chunks...
+out/renderer/index.html                     0.43 kB
+out/renderer/assets/index-BDWf9vAV.css     65.67 kB
+out/renderer/assets/index-80_RQRJ4.js   1,398.47 kB
+
+[32m✓ built in 348ms[39m
+
+> ultron@1.1.0 test:smoke:ui
+> node tests/ui-smoke.mjs
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Yerel Qwen görevi tamamlanmalı: {"id":"5c7a05e5-ea46-490f-aec4-10c277d5be83","projectPath":"C:\\Users\\user\\Desktop\\codexx\\tests\\.codex-smoke-df55602c56e24bfc8191c0d67da41f22\\demo","request":"Yerel Qwen gerçek araç düzenleme smoke görevi mvfco8ro-n1v6dm: index.js dosyasındaki combine fonksiyonunu çıkarma yerine toplama yapacak şekilde düzelt. Önce read_file ile dosyayı oku, sonra propose_file_edit ile sadece diff taslağı hazırla; diskteki dosyayı değiştirme ve terminal komutu çalıştırma.","title":"index.js dosyasındaki combine fonksiyonunu toplama işlemine dönüştürme","objective":"index.js dosyasındaki combine fonksiyonunu çıkarma yerine toplama yapacak şekilde düzeltmek için dosyayı oku ve diff taslağını hazırlamak","plan":["index.js dosyasını read_file ile oku","combine fonksiyonunu toplama işlemine dönüştürmek için diff taslağını hazırla","diff taslağını kullanıcıya sun ve onay al"],"completedSteps":[],"acceptanceTests":[],"completedStepIds":[],"pendingSteps":["index.js dosyasını read_file ile oku","combine fonksiyonunu toplama işlemine dönüştürmek için diff taslağını hazırla","diff taslağını kullanıcıya sun ve onay al"],"usedTools":["read_file","propose_file_edit"],"events":[{"at":"2026-10-19T14:29:01.846Z","type":"result","name":"stage-analyzing"},{"at":"2026-10-19T14:29:01.885Z","type":"result","name":"task-started","detail":"Yeni görev kaydı oluşturuldu."},{"at":"2026-10-19T14:29:01.931Z","type":"result","name":"context-budget","detail":"27 araç şeması · 19344 karakter sohbet bütçesi · 16384 token pencere"},{"at":"2026-10-19T14:29:10.843Z","type":"result","name":"stage-analyzing"},{"at":"2026-10-19T14:29:18.210Z","type":"result","name":"stage-evaluating"},{"at":"2026-10-19T14:29:18.239Z","type":"result","name":"stage-executing","status":"tool:read_file"},{"at":"2026-10-19T14:29:18.255Z","type":"tool","name":"read_file","status":"started","detail":"Araç parametreleri doğrulanıyor."},{"at":"2026-10-19T14:29:18.291Z","type":"tool","name":"read_file","status":"completed","detail":"export function combine(a, b) {\n  return a - b\n}\n"},{"at":"2026-10-19T14:29:18.369Z","type":"result","name":"stage-evaluating"},{"at":"2026-10-19T14:29:25.922Z","type":"result","name":"stage-evaluating"},{"at":"2026-10-19T14:29:25.951Z","type":"result","name":"stage-executing","status":"tool:propose_file_edit"},{"at":"2026-10-19T14:29:25.976Z","type":"tool","name":"propose_file_edit","status":"started","detail":"Araç parametreleri doğrulanıyor."},{"at":"2026-10-19T14:29:26.025Z","type":"tool","name":"propose_file_edit","status":"completed","detail":"{\"id\":\"cc603ceb-8c9b-4683-971e-788074e4034f\",\"path\":\"index.js\",\"description\":\"Yapay zekâ tarafından önerilen değişiklik\",\"oldContent\":\"export function combine(a, b) {\\n  return a - b\\n}\\n\",\"newContent\":\"export function combine(a, b) {\\n  return a + b\\n}\\n\",\"existed\":true,\"createdAt\":\"2026-10-19T14:29:26.024Z\"}"},{"at":"2026-10-19T14:29:26.099Z","type":"result","name":"stage-evaluating"},{"at":"2026-10-19T14:29:33.448Z","type":"result","name":"stage-evaluating"},{"at":"2026-10-19T14:29:42.254Z","type":"result","name":"stage-evaluating"},{"at":"2026-10-19T14:29:49.825Z","type":"error","name":"task-failed","detail":"Görev başarısız: Model yanıtı üst üste 3 turda araç çağrısı içermedi; 3 plan adımı açık. Gerçek dosya ve test işi korunuyor; görev doğrulama bekliyor olarak sonlandırılıyor."}],"errors":["Görev başarısız: Model yanıtı üst üste 3 turda araç çağrısı içermedi; 3 plan adımı açık. Gerçek dosya ve test işi korunuyor; görev doğrulama bekliyor olarak sonlandırılıyor."],"status":"failed","stage":"failed","toolCalls":2,"correctionAttempts":0,"verificationRequired":false,"createdAt":"2026-10-19T14:29:01.713Z","updatedAt":"2026-10-19T14:29:49.826Z","verificationFailures":[],"verificationResults":[],"errorAnalysis":{"category":"unknown","message":"Model yanıtı üst üste 3 turda araç çağrısı içermedi; 3 plan adımı açık. Gerçek dosya ve test işi korunuyor; görev doğrulama bekliyor olarak sonlandırılıyor.","stage":"evaluating","retryable":true,"nextAction":"İlgili kaynakları ve son araç çıktısını incele; nedeni doğrulamadan aynı işlemi tekrarlama."}}
++ actual - expected
+
++ 'failed'
+- 'completed'
+
+    at file:///C:/Users/user/Desktop/codexx/tests/ui-smoke.mjs:175:12 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'failed',
+  expected: 'completed',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1
+UI smoke test failed with exit code 1.
+At C:\Users\user\Desktop\codexx\tests\run-ui-smoke.ps1:60 char:30
++ ... DE -ne 0) { throw "UI smoke test failed with exit code $LASTEXITCODE. ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (UI smoke test failed with exit code 1.:String) [], RuntimeException
+    + FullyQualifiedErrorId : UI smoke test failed with exit code 1.
+ 

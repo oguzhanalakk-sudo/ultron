@@ -1,0 +1,9 @@
+[project]
+name = "kodatolyesi-windows-taskboard"
+version = "0.1.0"
+description = "Tkinter and SQLite Windows desktop sample"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.unittest]
+start-directory = "tests"

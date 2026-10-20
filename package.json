@@ -1,0 +1,111 @@
+{
+  "name": "ultron",
+  "version": "1.1.4",
+  "description": "Ultron yerel yapay zekâ kodlama çalışma alanı",
+  "main": "./out/main/main.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:renderer": "vite --config vite.renderer.config.ts --host 127.0.0.1",
+    "build": "tsc --noEmit -p tsconfig.node.json && electron-vite build",
+    "start": "electron-vite preview",
+    "dist": "npm run build && electron-builder --win nsis portable",
+    "dist:portable": "npm run build && electron-builder --win portable",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test:permissions": "node --experimental-strip-types --test tests/permissions.test.ts tests/permission-manager.test.ts tests/source-security.test.ts tests/sensitive-files.test.ts tests/renderer-security.test.ts tests/network-inventory.test.ts tests/tool-validation.test.ts tests/tool-registry.test.ts tests/project-scaffold.test.ts tests/desktop-control.test.ts tests/task-store.test.ts tests/agent-orchestrator.test.ts tests/agent-verification.test.ts tests/project-fingerprint.test.ts tests/agent-intent.test.ts tests/agent-editing.test.ts tests/language-knowledge.test.ts tests/command-environment.test.ts tests/android-build-tool.test.ts tests/web-build-tool.test.ts tests/windows-build-tool.test.ts tests/model-provider.test.ts tests/openai-provider.test.ts tests/provider-secrets.test.ts tests/git-workflow.test.ts tests/github-client.test.ts tests/local-ai.test.ts tests/offline-inventory.test.ts tests/atomic-json.test.ts tests/memory-store.test.ts tests/conversation.test.ts tests/chat-history.test.ts tests/zip-lite.test.ts tests/json-store.test.ts tests/file-search.test.ts tests/local-file-actions.test.ts tests/solution-memory.test.ts tests/web-research.test.ts tests/software-discovery.test.ts tests/app-adapters.test.ts tests/plugin-manager.test.ts tests/plugin-host.test.ts",
+    "test:smoke:ui": "node tests/ui-smoke.mjs",
+    "test:smoke": "powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-ui-smoke.ps1",
+    "test:packaged": "powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-packaged-smoke.ps1",
+    "test:installed": "powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-installed-smoke.ps1",
+    "test:smoke:installed:ui": "node tests/installed-chat-check.mjs",
+    "test:smoke:installed:persist": "node tests/installed-persist-check.mjs",
+    "test:smoke:installed:features": "node tests/installed-newfeatures-check.mjs",
+    "test:perf": "powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-perf-measure.ps1",
+    "test:perf:ui": "node --experimental-strip-types tests/perf-measure.mjs",
+    "setup:electron": "node node_modules/electron/install.js",
+    "postinstall": "npm run setup:electron"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "build": {
+    "appId": "ai.ultron.desktop",
+    "productName": "Ultron",
+    "compression": "normal",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/plugin-host.cjs",
+        "to": "plugin-host.cjs"
+      },
+      {
+        "from": "electron/assets/gradle-wrapper.jar",
+        "to": "gradle-wrapper.jar"
+      },
+      {
+        "from": "electron/assets/GRADLE-LICENSE.txt",
+        "to": "GRADLE-LICENSE.txt"
+      },
+      {
+        "from": "samples/web-taskboard",
+        "to": "web-template",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/data/**"
+        ]
+      },
+      {
+        "from": "samples/windows-taskboard",
+        "to": "windows-template",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc",
+          "!**/data/**"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "diff": "^9.0.0",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.17.0",
+    "electron-vite": "^6.0.0",
+    "lucide-react": "^1.59.0",
+    "playwright-core": "^1.64.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "@electron/get": "5.1.0"
+  }
+}

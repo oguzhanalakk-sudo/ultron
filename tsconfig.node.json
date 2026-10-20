@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "composite": true, "skipLibCheck": true, "module": "ESNext",
+    "moduleResolution": "Bundler", "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true, "noEmit": true, "strict": true,
+    "types": ["node"]
+  },
+  "include": ["electron/**/*.ts", "electron.vite.config.ts", "vite.renderer.config.ts"]
+}

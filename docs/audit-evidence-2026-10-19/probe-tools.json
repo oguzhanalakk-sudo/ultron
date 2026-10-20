@@ -1,0 +1,982 @@
+{
+  "startedAt": "2026-10-19T17:27:53.369Z",
+  "project": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+  "debugPort": 18814,
+  "probes": [
+    {
+      "name": "settings-dead-provider",
+      "ok": true,
+      "durationMs": 112,
+      "result": "{\"provider\":\"ollama\",\"baseUrl\":\"http://127.0.0.1:9/v1\",\"model\":\"qwen3:8b\"}",
+      "events": []
+    },
+    {
+      "name": "localai-status-dead-provider",
+      "ok": true,
+      "durationMs": 1238,
+      "result": "{\"connected\":false,\"provider\":\"ollama\",\"baseUrl\":\"http://127.0.0.1:9/v1\",\"version\":null,\"selectedModel\":\"qwen3:8b\",\"models\":[],\"loadedModels\":[],\"hardware\":{\"os\":\"Windows_NT 10.0.26200\",\"architecture\":\"x64\",\"cpu\":\"13th Gen Intel(R) Core(TM) i7-13620H\",\"cpuCores\":16,\"memoryTotalBytes\":16802754560,\"memoryFreeBytes\":1860030464,\"gpu\":\"NVIDIA GeForce RTX 4060 Laptop GPU\",\"gpuMemoryBytes\":8585740288,\"diskFreeBytes\":627349680128,\"diskTotalBytes\":1022934118400,\"detectedAt\":\"2026-10-19T17:27:55.954Z\"},\"recommendations\":[{\"name\":\"qwen2.5-coder:7b\",\"reason\":\"Kod üretiminde güçlü, 7B sınıfı yerel kodlama modeli.\",\"sizeHint\":\"~4.7 GB indirme\"},{\"name\":\"qwen3:8b\",\"reason\":\"Genel akıl yürütme ve Türkçe görevlerde dengeli 8B model.\",\"sizeHint\":\"~5.2 GB indirme\"},{\"name\":\"qwen2.5-coder:7b-instruct-q4_K_M\",\"reason\":\"4 bit sürüm; 6 GB VRAM ile GPU üzerinde çalışabilir.\",\"sizeHint\":\"~4.4 GB indirme\"},{\"name\":\"llama3.2:3b\",\"reason\":\"Daha az bellekle hızlı yanıt veren küçük genel model.\",\"sizeHint\":\"~2.0 GB indirme\"},{\"name\":\"qwen2.5-coder:3b\",\"reason\":\"Düşük VRAM ve RAM için kod odaklı küçük model.\",\"sizeHint\":\"~1.9 GB indirme\"}],\"stats\":{\"requests\":0,\"failedRequests\":0,\"lastDurationMs\":null,\"lastTokensPerSecond\":null,\"lastEvaluatedTokens\":null,\"lastPromptTokens\":null,\"lastMeasuredAt\":null,\"totalEvaluatedTokens\":0},\"diskUsageBytes\":0,\"note\":\"Yerel Ollama yanıt vermiyor. Ollama uygulaması açık olmalı ve model dosyaları Ollama kataloğunda bulunmalı. Hiçbir bulut servisi kullanılmaz.\"}",
+      "events": []
+    },
+    {
+      "name": "model-status-dead-provider",
+      "ok": true,
+      "durationMs": 8,
+      "result": "{\"connected\":false,\"models\":[],\"selectedModel\":\"qwen3:8b\",\"provider\":\"ollama\",\"baseUrl\":\"http://127.0.0.1:9/v1\",\"note\":\"Yerel Ollama yanıt vermiyor. Ollama açık olmalı ve model yüklü olmalı.\"}",
+      "events": []
+    },
+    {
+      "name": "workspace-set-automatic",
+      "ok": true,
+      "durationMs": 171,
+      "result": "{\"permissions\":{\"mode\":\"controlled\",\"editMode\":\"automatic\",\"commandMode\":\"confirm\",\"allowPackageInstalls\":false,\"allowSystemChanges\":false},\"permissionGrants\":[],\"resourceRoots\":[],\"memory\":{\"summary\":\"\",\"architecture\":\"\",\"technologies\":[],\"commands\":[],\"preferences\":[],\"knownIssues\":[],\"updatedAt\":null},\"task\":null,\"messages\":[],\"lastBuild\":null}",
+      "events": [
+        {
+          "type": "workspace",
+          "workspace": {
+            "permissions": {
+              "mode": "controlled",
+              "editMode": "automatic",
+              "commandMode": "confirm",
+              "allowPackageInstalls": false,
+              "allowSystemChanges": false
+            },
+            "permissionGrants": [],
+            "resourceRoots": [],
+            "memory": {
+              "summary": "",
+              "architecture": "",
+              "technologies": [],
+              "commands": [],
+              "preferences": [],
+              "knownIssues": [],
+              "updatedAt": null
+            },
+            "task": null,
+            "messages": [],
+            "lastBuild": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "fastpath-create-offline",
+      "ok": true,
+      "durationMs": 140,
+      "result": "{\"reply\":\"**deneme-hizli.txt oluşturuldu ve doğrulandı.**\\n\\nİçerik: Merhaba Ultron\\nKapsam: Proje kökü\\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)\",\"file\":\"Merhaba Ultron\"}",
+      "events": [
+        {
+          "type": "files-changed",
+          "paths": [
+            "deneme-hizli.txt"
+          ]
+        },
+        {
+          "type": "activity",
+          "item": {
+            "id": "124f430b-5d86-4ba9-acf0-f6257c187461",
+            "kind": "success",
+            "title": "Yerel metin dosyası oluşturuldu",
+            "detail": "deneme-hizli.txt",
+            "time": "20:27",
+            "tool": "LocalTextFile",
+            "operation": "file-create",
+            "target": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\deneme-hizli.txt",
+            "result": "success"
+          }
+        },
+        {
+          "type": "workspace",
+          "workspace": {
+            "permissions": {
+              "mode": "controlled",
+              "editMode": "automatic",
+              "commandMode": "confirm",
+              "allowPackageInstalls": false,
+              "allowSystemChanges": false
+            },
+            "permissionGrants": [],
+            "resourceRoots": [],
+            "memory": {
+              "summary": "",
+              "architecture": "",
+              "technologies": [],
+              "commands": [],
+              "preferences": [],
+              "knownIssues": [],
+              "updatedAt": null
+            },
+            "task": null,
+            "messages": [
+              {
+                "role": "user",
+                "content": "deneme-hizli.txt dosyasını oluştur; içeriği: Merhaba Ultron"
+              },
+              {
+                "role": "assistant",
+                "content": "**deneme-hizli.txt oluşturuldu ve doğrulandı.**\n\nİçerik: Merhaba Ultron\nKapsam: Proje kökü\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)"
+              }
+            ],
+            "lastBuild": null
+          }
+        },
+        {
+          "type": "delta",
+          "text": "**deneme-hizli.txt oluşturuldu ve doğrulandı.**\n\nİçerik: Merhaba Ultron\nKapsam: Proje kökü\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)"
+        },
+        {
+          "type": "done",
+          "message": "",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "name": "fastpath-read-offline",
+      "ok": true,
+      "durationMs": 62,
+      "result": "{\"reply\":\"**merhaba.txt içeriği**\\n\\nMerhaba dünya\\n\\n\\nKapsam: Proje kökü\"}",
+      "events": [
+        {
+          "type": "activity",
+          "item": {
+            "id": "aa387f82-752e-46da-908e-20689dac7022",
+            "kind": "success",
+            "title": "Yerel metin dosyası okundu",
+            "detail": "merhaba.txt",
+            "time": "20:27",
+            "tool": "LocalTextFile",
+            "operation": "file-read",
+            "target": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\merhaba.txt",
+            "result": "success"
+          }
+        },
+        {
+          "type": "workspace",
+          "workspace": {
+            "permissions": {
+              "mode": "controlled",
+              "editMode": "automatic",
+              "commandMode": "confirm",
+              "allowPackageInstalls": false,
+              "allowSystemChanges": false
+            },
+            "permissionGrants": [],
+            "resourceRoots": [],
+            "memory": {
+              "summary": "",
+              "architecture": "",
+              "technologies": [],
+              "commands": [],
+              "preferences": [],
+              "knownIssues": [],
+              "updatedAt": null
+            },
+            "task": null,
+            "messages": [
+              {
+                "role": "user",
+                "content": "merhaba.txt dosyasını oku"
+              },
+              {
+                "role": "assistant",
+                "content": "**merhaba.txt içeriği**\n\nMerhaba dünya\n\n\nKapsam: Proje kökü"
+              }
+            ],
+            "lastBuild": null
+          }
+        },
+        {
+          "type": "delta",
+          "text": "**merhaba.txt içeriği**\n\nMerhaba dünya\n\n\nKapsam: Proje kökü"
+        },
+        {
+          "type": "done",
+          "message": "",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "name": "sensitive-read-env",
+      "ok": true,
+      "durationMs": 55,
+      "result": "{\"blocked\":true,\"message\":\"Error invoking remote method 'project:read': Error: Kimlik bilgisi veya özel anahtar içerebilecek dosyalar yapay zekâya açılmıyor.\"}",
+      "events": []
+    },
+    {
+      "name": "path-traversal-read",
+      "ok": true,
+      "durationMs": 20,
+      "result": "{\"blocked\":true,\"message\":\"Error invoking remote method 'project:read': Error: Kapsam dışına çıkan dosya yollarına izin verilmiyor.\"}",
+      "events": []
+    },
+    {
+      "name": "normal-read-inside-project",
+      "ok": true,
+      "durationMs": 23,
+      "result": "iç not\n",
+      "events": []
+    },
+    {
+      "name": "project-tree",
+      "ok": true,
+      "durationMs": 17,
+      "result": "[{\"name\":\"kaynak\",\"path\":\"kaynak\",\"kind\":\"directory\",\"children\":[{\"name\":\"not.txt\",\"path\":\"kaynak/not.txt\",\"kind\":\"file\"}]},{\"name\":\".env\",\"path\":\".env\",\"kind\":\"file\"},{\"name\":\"deneme-hizli.txt\",\"path\":\"deneme-hizli.txt\",\"kind\":\"file\"},{\"name\":\"merhaba.txt\",\"path\":\"merhaba.txt\",\"kind\":\"file\"}]",
+      "events": []
+    },
+    {
+      "name": "file-search-name",
+      "ok": true,
+      "durationMs": 55,
+      "result": "{\"scope\":{\"root\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\ultron-audit-2026-10-19\\\\projects\\\\probe\",\"label\":\"Proje\",\"scopeId\":\"project\"},\"query\":{\"raw\":\"adı merhaba geçen txt dosyalarını bul\",\"nameTerms\":[\"adı merhaba   txt  nı\"],\"contentTerms\":[],\"extensions\":[],\"kinds\":[],\"modifiedWithin\":null,\"sizeFilter\":null,\"limit\":200},\"hits\":[],\"summary\":\"Arama ifadesi: adı merhaba geçen txt dosyalarını bul\\nKapsam kökü: C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\ultron-audit-2026-10-19\\\\projects\\\\probe\\nTaranan: 6 dosya / 3 klasör · 5 ms\",\"truncated\":false,\"visitedFiles\":6,\"visitedDirs\":3,\"permissionDenied\":0,\"errors\":0,\"durationMs\":5,\"notices\":[]}",
+      "events": [
+        {
+          "type": "activity",
+          "item": {
+            "id": "76a14a85-1934-4636-9def-1fd77ca23180",
+            "kind": "tool",
+            "title": "Dosya araması yapıldı",
+            "detail": "0 sonuç · Kapsam kökü: C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+            "time": "20:27",
+            "tool": "FileSearchEngine",
+            "operation": "search",
+            "target": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+            "result": "success"
+          }
+        }
+      ]
+    },
+    {
+      "name": "file-index-refresh",
+      "ok": true,
+      "durationMs": 31,
+      "result": "{\"scope\":{\"root\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\ultron-audit-2026-10-19\\\\projects\\\\probe\",\"label\":\"Proje\",\"scopeId\":\"project\"},\"entries\":6,\"delta\":{\"added\":6,\"changed\":0,\"removed\":0},\"builtAt\":\"2026-10-19T17:27:56.566Z\"}",
+      "events": [
+        {
+          "type": "activity",
+          "item": {
+            "id": "689f8a6f-cfc3-489b-ab10-f549a99a709b",
+            "kind": "success",
+            "title": "Dosya dizini güncellendi",
+            "detail": "6 öğe · +6/~0/-0",
+            "time": "20:27",
+            "tool": "FileSearchEngine",
+            "operation": "index-refresh",
+            "target": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+            "result": "success"
+          }
+        }
+      ]
+    },
+    {
+      "name": "file-index-status",
+      "ok": true,
+      "durationMs": 18,
+      "result": "{\"scopes\":[{\"root\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\ultron-audit-2026-10-19\\\\projects\\\\probe\",\"builtAt\":\"2026-10-19T17:27:56.566Z\",\"entries\":6}]}",
+      "events": []
+    },
+    {
+      "name": "file-scopes",
+      "ok": true,
+      "durationMs": 15,
+      "result": "{\"project\":{\"value\":\"\",\"label\":\"Proje: probe\"},\"resources\":[]}",
+      "events": []
+    },
+    {
+      "name": "analyze-web-project",
+      "ok": true,
+      "durationMs": 69,
+      "result": "{\"filesScanned\":3,\"frontend\":[],\"backend\":[],\"databases\":[],\"dataAccess\":[],\"packageManagers\":[],\"tests\":[],\"apiFiles\":[],\"migrationFiles\":[],\"hasAuthSignals\":false,\"hasEnvironmentExample\":false,\"hasDockerConfig\":false,\"packageScripts\":{},\"recommendations\":[\"Projede test komutu algılanmadı; build veya lint betiği test başarısı değildir. Uygun bir test ekle ve sonucu ayrıca raporla.\"]}",
+      "events": [
+        {
+          "type": "activity",
+          "item": {
+            "id": "11cf6436-1b26-4568-be85-e027852736b3",
+            "kind": "tool",
+            "title": "WebProjectAnalyzer tamamlandı",
+            "detail": "3 yapılandırma ve kaynak dosyası · belirgin yığın algılanmadı",
+            "time": "20:27",
+            "tool": "WebProjectAnalyzer",
+            "operation": "project-analysis",
+            "target": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+            "result": "success"
+          }
+        }
+      ]
+    },
+    {
+      "name": "analyze-windows-project",
+      "ok": true,
+      "durationMs": 17,
+      "result": "{\"projectPath\":\".\",\"analysis\":{\"projectName\":\".\",\"filesScanned\":3,\"technologies\":[],\"primaryTechnology\":\"unknown\",\"frameworks\":[],\"projectFiles\":[],\"entryFiles\":[],\"testFiles\":[],\"installerFiles\":[],\"packageManager\":\"npm\",\"packageScripts\":{},\"hasInstallerConfig\":false,\"recommendations\":[\"Desteklenen proje dosyası bulunamadı. Python, .NET, Electron, Tauri veya CMake proje kökünü seçin.\"]}}",
+      "events": []
+    },
+    {
+      "name": "windows-environment",
+      "ok": true,
+      "durationMs": 2704,
+      "result": "{\"os\":\"Windows_NT 10.0.26200\",\"architecture\":\"x64\",\"cpu\":\"13th Gen Intel(R) Core(TM) i7-13620H\",\"cpuCores\":16,\"memoryTotalBytes\":16802754560,\"memoryFreeBytes\":1961488384,\"checks\":[{\"id\":\"python\",\"label\":\"Python\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\python.exe\",\"version\":\"Python 3.11.9\"},{\"id\":\"py-launcher\",\"label\":\"Python Launcher\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Launcher\\\\py.exe\",\"version\":\"Python 3.14.3\"},{\"id\":\"dotnet\",\"label\":\".NET SDK\",\"state\":\"missing\",\"path\":null,\"version\":null,\"detail\":\"Yalnızca .NET/C# projesi açıldığında gerekli .NET SDK’yı önerin.\"},{\"id\":\"csc\",\"label\":\"C# derleyicisi\",\"state\":\"available\",\"path\":\"C:\\\\Program Files (x86)\\\\Microsoft Visual Studio\\\\2022\\\\BuildTools\\\\MSBuild\\\\Current\\\\Bin\\\\Roslyn\\\\csc.exe\",\"version\":\"4.14.0-3.25412.6 (c167adef)\"},{\"id\":\"msbuild\",\"label\":\"MSBuild\",\"state\":\"available\",\"path\":\"C:\\\\Program Files (x86)\\\\Microsoft Visual Studio\\\\2022\\\\BuildTools\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\",\"version\":\"17.14.40.60911\"},{\"id\":\"visual-studio\",\"label\":\"Visual Studio Build Tools\",\"state\":\"available\",\"path\":\"C:\\\\Program Files (x86)\\\\Microsoft Visual Studio\\\\2022\\\\BuildTools\",\"version\":null,\"detail\":\"vswhere ile MSBuild bileşenli Visual Studio kurulumu bulundu.\"},{\"id\":\"node\",\"label\":\"Node.js\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Programs\\\\nodejs-v22.22.1\\\\node.exe\",\"version\":\"v22.22.1\"},{\"id\":\"npm\",\"label\":\"npm\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Programs\\\\nodejs-v22.22.1\\\\npm.cmd\",\"version\":\"10.9.4\"},{\"id\":\"git\",\"label\":\"Git\",\"state\":\"missing\",\"path\":null,\"version\":null,\"detail\":\"Komut PATH içinde bulunamadı.\"},{\"id\":\"powershell\",\"label\":\"PowerShell\",\"state\":\"available\",\"path\":\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\",\"version\":\"5.1.26100.9711\"},{\"id\":\"cmake\",\"label\":\"CMake\",\"state\":\"missing\",\"path\":null,\"version\":null,\"detail\":\"CMake tabanlı C/C++ projesi seçilirse gerekli.\"},{\"id\":\"ninja\",\"label\":\"Ninja\",\"state\":\"missing\",\"path\":null,\"version\":null,\"detail\":\"İsteğe bağlı hızlı CMake derleyicisi bulunamadı.\"},{\"id\":\"pyinstaller\",\"label\":\"PyInstaller\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\python.exe\",\"version\":\"6.22.3\"},{\"id\":\"inno-setup\",\"label\":\"Inno Setup Compiler\",\"state\":\"missing\",\"path\":null,\"version\":null,\"detail\":\"Inno Setup kurulum paketi üretmek gerekirse kurulur.\"},{\"id\":\"rust\",\"label\":\"Rust/Cargo\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\.cargo\\\\bin\\\\cargo.exe\",\"version\":\"cargo 1.94.0 (85eff7c80 2026-01-15)\"},{\"id\":\"tauri-cli\",\"label\":\"Tauri CLI\",\"state\":\"missing\",\"path\":\"C:\\\\Users\\\\user\\\\.cargo\\\\bin\\\\cargo.exe\",\"version\":null,\"detail\":\"Tauri projesi seçildiğinde cargo-tauri CLI gerekebilir.\"}],\"pythonEnvironments\":[],\"visualStudioPath\":\"C:\\\\Program Files (x86)\\\\Microsoft Visual Studio\\\\2022\\\\BuildTools\",\"recommendations\":[]}",
+      "events": [
+        {
+          "type": "workspace",
+          "workspace": {
+            "permissions": {
+              "mode": "controlled",
+              "editMode": "automatic",
+              "commandMode": "confirm",
+              "allowPackageInstalls": false,
+              "allowSystemChanges": false
+            },
+            "permissionGrants": [],
+            "resourceRoots": [],
+            "memory": {
+              "summary": "",
+              "architecture": "",
+              "technologies": [],
+              "commands": [],
+              "preferences": [],
+              "knownIssues": [],
+              "updatedAt": null
+            },
+            "task": null,
+            "messages": [
+              {
+                "role": "assistant",
+                "content": "**deneme-hizli.txt oluşturuldu ve doğrulandı.**\n\nİçerik: Merhaba Ultron\nKapsam: Proje kökü\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)**merhaba.txt içeriği**\n\nMerhaba dünya\n\n\nKapsam: Proje kökü"
+              }
+            ],
+            "lastBuild": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "capability-pdf",
+      "ok": true,
+      "durationMs": 2616,
+      "result": "{\"handled\":true,\"need\":{\"id\":\"pdf\",\"label\":\"PDF üzerinde çalışma\",\"extensions\":[\".pdf\"]},\"builtIn\":\"Ultron: PDF metin katmanı yerel çözümleyici (metin araması için) mevcuttur.\",\"installed\":[],\"missing\":[],\"note\":\"Bu gereksinim için güvenli bir yerel seçenek listelenemiyor; iş istemci üzerinden yapılmalı.\"}",
+      "events": [
+        {
+          "type": "activity",
+          "item": {
+            "id": "3cf23d08-c4ea-4599-ba53-e849d563c4fd",
+            "kind": "success",
+            "title": "Yazılım kataloğu güncellendi",
+            "detail": "194 kayıt",
+            "time": "20:28",
+            "tool": "SoftwareDiscovery",
+            "operation": "refresh",
+            "result": "success"
+          }
+        },
+        {
+          "type": "activity",
+          "item": {
+            "id": "033c3e72-c4f6-4f58-9469-a09c8441d00c",
+            "kind": "tool",
+            "title": "Eksik yetenek analizi",
+            "detail": "PDF üzerinde çalışma",
+            "time": "20:28",
+            "tool": "CapabilityReport",
+            "operation": "check",
+            "result": "success"
+          }
+        }
+      ]
+    },
+    {
+      "name": "capability-video",
+      "ok": true,
+      "durationMs": 29,
+      "result": "{\"handled\":true,\"need\":{\"id\":\"image-edit\",\"label\":\"Görsel düzenleme\",\"extensions\":[\".png\",\".jpg\",\".jpeg\",\".webp\",\".gif\"]},\"builtIn\":null,\"installed\":[],\"missing\":[{\"name\":\"GIMP\",\"downloadUrl\":\"https://www.gimp.org/\",\"role\":\"Açık kaynak görsel düzenleme\"},{\"name\":\"Krita\",\"downloadUrl\":\"https://krita.org/\",\"role\":\"Dijital çizim ve düzenleme\"},{\"name\":\"ImageMagick\",\"downloadUrl\":\"https://imagemagick.org/\",\"role\":\"CLI ile toplu dönüştürme (cli-control yeteneği)\"}],\"note\":\"Öneriler yalnızca bilinen, gerçek araçlardır; kurulum kullanıcı onayı olmadan yapılmaz.\"}",
+      "events": [
+        {
+          "type": "activity",
+          "item": {
+            "id": "8989df9c-d17c-4f3b-a68f-2f1f7f46c810",
+            "kind": "tool",
+            "title": "Eksik yetenek analizi",
+            "detail": "Görsel düzenleme",
+            "time": "20:28",
+            "tool": "CapabilityReport",
+            "operation": "check",
+            "result": "failed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "software-catalog",
+      "ok": true,
+      "durationMs": 76,
+      "result": "{\"builtAt\":\"2026-10-19T17:28:02.026Z\",\"count\":194,\"sample\":[\"Access\",\"Administrative Tools\",\"Adobe Apps\",\"AEGIS Trade OS\",\"Android Studio\",\"App Recovery\",\"Application Verifier (WOW)\",\"Application Verifier (X64)\"]}",
+      "events": []
+    },
+    {
+      "name": "app-adapters",
+      "ok": true,
+      "durationMs": 34,
+      "result": "{\"adapters\":[{\"id\":\"git\",\"name\":\"Git\",\"executable\":\"git\",\"actions\":[{\"id\":\"status\",\"description\":\"git status --short --branch\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"diff\",\"description\":\"Değişiklik farkı (git diff --stat)\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"log\",\"description\":\"Son 20 işlem kısa kaydı (git log --oneline -n 20)\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"branch\",\"description\":\"Dalları listeler (git branch -a)\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"stash_list\",\"description\":\"Stash kayıtlarını listeler\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"add_commit\",\"description\":\"Tüm değişiklikleri ekleyip commit oluşturur (git add -A && git commit -m \\\"<mesaj>\\\"); kullanıcı onayı gerekir.\",\"risk\":\"write\",\"needsProject\":true}]},{\"id\":\"node\",\"name\":\"Node.js\",\"executable\":\"node\",\"actions\":[{\"id\":\"version\",\"description\":\"node --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"run_script\",\"description\":\"node <file> çalıştırır; dosya proje içinde ve kullanıcının onayından geçmelidir.\",\"risk\":\"write\",\"needsProject\":true}]},{\"id\":\"npm\",\"name\":\"npm\",\"executable\":\"npm\",\"actions\":[{\"id\":\"version\",\"description\":\"npm --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"test\",\"description\":\"npm test komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true},{\"id\":\"list\",\"description\":\"Kurulu paketleri listeler (npm ls, derinlik 0)\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"outdated\",\"description\":\"Güncel sürüm kontrolü (npm outdated)\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"install\",\"description\":\"Paket kurulumu (npm install <pkgs>); izin akışına tabidir ve install riski taşır\",\"risk\":\"install\",\"needsProject\":true}]},{\"id\":\"pnpm\",\"name\":\"pnpm\",\"executable\":\"pnpm\",\"actions\":[{\"id\":\"version\",\"description\":\"pnpm --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"install\",\"description\":\"Proje bağımlılıklarını pnpm install ile kurar\",\"risk\":\"install\",\"needsProject\":true},{\"id\":\"test\",\"description\":\"pnpm test komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true},{\"id\":\"build\",\"description\":\"pnpm build komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true},{\"id\":\"list\",\"description\":\"Kurulu paketleri listeler\",\"risk\":\"read-only\",\"needsProject\":true}]},{\"id\":\"yarn\",\"name\":\"Yarn\",\"executable\":\"yarn\",\"actions\":[{\"id\":\"version\",\"description\":\"yarn --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"install\",\"description\":\"Proje bağımlılıklarını yarn install ile kurar\",\"risk\":\"install\",\"needsProject\":true},{\"id\":\"test\",\"description\":\"yarn test komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true},{\"id\":\"build\",\"description\":\"yarn build komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true}]},{\"id\":\"bun\",\"name\":\"Bun\",\"executable\":\"bun\",\"actions\":[{\"id\":\"version\",\"description\":\"bun --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"install\",\"description\":\"Proje bağımlılıklarını bun install ile kurar\",\"risk\":\"install\",\"needsProject\":true},{\"id\":\"test\",\"description\":\"bun test komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true},{\"id\":\"build\",\"description\":\"bun run build komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true}]},{\"id\":\"python\",\"name\":\"Python\",\"executable\":\"python\",\"actions\":[{\"id\":\"version\",\"description\":\"python --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"pytest\",\"description\":\"python -m pytest (test dosyalarını çalıştırır)\",\"risk\":\"write\",\"needsProject\":true},{\"id\":\"run_script\",\"description\":\"python <file> çalıştırır; ayrıca onay gerekir.\",\"risk\":\"write\",\"needsProject\":true}]},{\"id\":\"pip\",\"name\":\"pip\",\"executable\":\"pip\",\"actions\":[{\"id\":\"version\",\"description\":\"pip --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"list\",\"description\":\"Kurulu pip paketlerini listeler\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"install\",\"description\":\"Paket kurulumu (pip install <pkgs>); izin akışına tabidir\",\"risk\":\"install\",\"needsProject\":false}]},{\"id\":\"vscode\",\"name\":\"Visual Studio Code\",\"executable\":\"code\",\"actions\":[{\"id\":\"version\",\"description\":\"code --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"open\",\"description\":\"code <project> (VS Code ile proje klasörünü açar)\",\"risk\":\"write\",\"needsProject\":false},{\"id\":\"list_extensions\",\"description\":\"Kurulu VS Code uzantılarını listeler (code --list-extensions)\",\"risk\":\"read-only\",\"needsProject\":false}]},{\"id\":\"ollama\",\"name\":\"Ollama\",\"executable\":\"ollama\",\"actions\":[{\"id\":\"version\",\"description\":\"ollama --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"list\",\"description\":\"Kurulu yerel modelleri listeler (ollama list)\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"ps\",\"description\":\"Yüklü modelleri gösterir (ollama ps)\",\"risk\":\"read-only\",\"needsProject\":false}]},{\"id\":\"docker\",\"name\":\"Docker\",\"executable\":\"docker\",\"actions\":[{\"id\":\"version\",\"description\":\"docker --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"ps\",\"description\":\"Çalışan konteynerleri listeler (docker ps)\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"images\",\"description\":\"İmajları listeler (docker images)\",\"risk\":\"read-only\",\"needsProject\":false}]},{\"id\":\"dotnet\",\"name\":\".NET SDK\",\"executable\":\"dotnet\",\"actions\":[{\"id\":\"version\",\"description\":\"dotnet --version\",\"risk\":\"read-only\",\"needsProject\":true},{\"id\":\"list_sdks\",\"description\":\"Kurulu .NET SDK sürümlerini listeler\",\"risk\":\"read-only\",\"needsProject\":false}]},{\"id\":\"gradle\",\"name\":\"Gradle\",\"executable\":\"gradle\",\"actions\":[{\"id\":\"version\",\"description\":\"gradle --version\",\"risk\":\"read-only\",\"needsProject\":false}]},{\"id\":\"maven\",\"name\":\"Apache Maven\",\"executable\":\"mvn\",\"actions\":[{\"id\":\"version\",\"description\":\"mvn --version\",\"risk\":\"read-only\",\"needsProject\":false},{\"id\":\"test\",\"description\":\"mvn test komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true},{\"id\":\"package\",\"description\":\"mvn package komutunu çalıştırır\",\"risk\":\"write\",\"needsProject\":true}]},{\"id\":\"cargo\",\"name\":\"Rust Cargo\",\"executable\":\"cargo\",\"actions\":[{\"id\":\"version\",\"description\":\"cargo --version\",\"risk\":\"read-only\"…[7938 chars]",
+      "events": []
+    },
+    {
+      "name": "adapter-test-git",
+      "ok": true,
+      "durationMs": 120,
+      "result": "{\"adapter\":\"git\",\"name\":\"Git\",\"ok\":false,\"output\":\"git PATH içinde bulunamadı.\",\"executable\":null}",
+      "events": []
+    },
+    {
+      "name": "android-environment",
+      "ok": true,
+      "durationMs": 1714,
+      "result": "{\"os\":\"Windows_NT 10.0.26200 x64\",\"sdkPath\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Android\\\\Sdk\",\"sdkAvailable\":true,\"installedPlatforms\":[\"android-33\",\"android-36\"],\"installedBuildTools\":[\"35.0.0\",\"36.0.0\"],\"licensesPresent\":true,\"checks\":[{\"id\":\"java\",\"label\":\"Java JDK\",\"state\":\"available\",\"path\":\"C:\\\\Program Files\\\\Microsoft\\\\jdk-17.0.18.8-hotspot\\\\bin\\\\java.exe\",\"version\":\"17.0.18\\\" 2026-01-20 LTS\",\"required\":true,\"detail\":\"JDK 17 veya projenin AGP sürümüne uygun daha yeni JDK gerekir.\"},{\"id\":\"sdk\",\"label\":\"Android SDK\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Android\\\\Sdk\",\"version\":null,\"required\":true,\"detail\":\"SDK kökü bulundu.\"},{\"id\":\"platforms\",\"label\":\"SDK Platformları\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platforms\",\"version\":\"android-33, android-36\",\"required\":true,\"detail\":\"2 Android platformu kurulu.\"},{\"id\":\"build-tools\",\"label\":\"SDK Build Tools\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\build-tools\",\"version\":\"35.0.0, 36.0.0\",\"required\":true,\"detail\":\"2 Build Tools sürümü kurulu.\"},{\"id\":\"adb\",\"label\":\"ADB Platform Tools\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\",\"version\":\"1.0.41\",\"required\":true},{\"id\":\"gradle\",\"label\":\"Sistem Gradle\",\"state\":\"not-configured\",\"path\":null,\"version\":null,\"required\":false,\"detail\":\"Sistem Gradle gerekli olabilir; projede Wrapper tercih edilir.\"},{\"id\":\"emulator\",\"label\":\"Android Emulator\",\"state\":\"not-configured\",\"path\":null,\"version\":null,\"required\":false,\"detail\":\"İsteğe bağlı araç kurulu değil.\"},{\"id\":\"sdkmanager\",\"label\":\"Android SDK Manager\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\cmdline-tools\\\\latest\\\\bin\\\\sdkmanager.bat\",\"version\":\"20.0\",\"required\":false},{\"id\":\"wrapper\",\"label\":\"Proje Gradle Wrapper\",\"state\":\"not-configured\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\ultron-audit-2026-10-19\\\\projects\\\\probe\\\\gradlew.bat\",\"version\":null,\"required\":false,\"detail\":\"Android proje açıldığında proje içi Wrapper doğrulanır.\"},{\"id\":\"licenses\",\"label\":\"SDK Lisansları\",\"state\":\"available\",\"path\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\licenses\",\"version\":null,\"required\":true,\"detail\":\"Android SDK lisans dosyası bulundu.\"}],\"recommendations\":[]}",
+      "events": []
+    },
+    {
+      "name": "offline-model-task-error",
+      "ok": true,
+      "durationMs": 1523,
+      "result": "{\"rejected\":true,\"message\":\"page.evaluate: Error: Error invoking remote method 'agent:chat': TypeError: fetch failed\",\"lastTask\":{\"id\":\"c155f60c-2a56-4756-a99d-d43080991fbf\",\"projectPath\":\"C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\ultron-audit-2026-10-19\\\\projects\\\\probe\",\"request\":\"Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.\",\"title\":\"Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.\",\"objective\":\"Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.\",\"plan\":[],\"completedSteps\":[],\"acceptanceTests\":[],\"completedStepIds\":[],\"pendingSteps\":[],\"usedTools\":[],\"events\":[{\"at\":\"2026-10-19T17:28:04.149Z\",\"type\":\"result\",\"name\":\"stage-analyzing\"},{\"at\":\"2026-10-19T17:28:04.175Z\",\"type\":\"result\",\"name\":\"task-started\",\"detail\":\"Yeni görev kaydı oluşturuldu.\"},{\"at\":\"2026-10-19T17:28:04.193Z\",\"type\":\"result\",\"name\":\"context-budget\",\"detail\":\"27 araç şeması · 19344 karakter sohbet bütçesi · 16384 token pencere\"},{\"at\":\"2026-10-19T17:28:04.230Z\",\"type\":\"result\",\"name\":\"stage-analyzing\"},{\"at\":\"2026-10-19T17:28:05.499Z\",\"type\":\"error\",\"name\":\"task-failed\",\"detail\":\"Görev başarısız: fetch failed\"}],\"errors\":[\"Görev başarısız: fetch failed\"],\"status\":\"failed\",\"stage\":\"failed\",\"toolCalls\":0,\"correctionAttempts\":0,\"verificationRequired\":false,\"createdAt\":\"2026-10-19T17:28:04.088Z\",\"updatedAt\":\"2026-10-19T17:28:05.500Z\",\"verificationFailures\":[],\"verificationResults\":[],\"errorAnalysis\":{\"category\":\"network\",\"message\":\"fetch failed\",\"stage\":\"evaluating\",\"retryable\":true,\"nextAction\":\"Ağ uç noktasını ve sağlayıcı bağlantısını doğrula; çevrimdışı alternatif varsa kullan.\"}},\"busy\":{\"id\":\"c155f60c-2a56-4756-a99d-d43080991fbf\",\"title\":\"Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.\",\"objective\":\"Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.\",\"status\":\"active\",\"steps\":[],\"tests\":[],\"updatedAt\":\"2026-10-19T17:28:04.117Z\"}}",
+      "events": [
+        {
+          "type": "workspace",
+          "workspace": {
+            "permissions": {
+              "mode": "controlled",
+              "editMode": "automatic",
+              "commandMode": "confirm",
+              "allowPackageInstalls": false,
+              "allowSystemChanges": false
+            },
+            "permissionGrants": [],
+            "resourceRoots": [],
+            "memory": {
+              "summary": "",
+              "architecture": "",
+              "technologies": [],
+              "commands": [],
+              "preferences": [],
+              "knownIssues": [],
+              "updatedAt": null
+            },
+            "task": {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "status": "active",
+              "steps": [],
+              "tests": [],
+              "updatedAt": "2026-10-19T17:28:04.117Z"
+            },
+            "messages": [
+              {
+                "role": "user",
+                "content": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla."
+              }
+            ],
+            "lastBuild": null
+          }
+        },
+        {
+          "type": "task-history",
+          "tasks": [
+            {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "projectPath": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+              "request": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "plan": [],
+              "completedSteps": [],
+              "acceptanceTests": [],
+              "completedStepIds": [],
+              "pendingSteps": [],
+              "usedTools": [],
+              "events": [
+                {
+                  "at": "2026-10-19T17:28:04.149Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                }
+              ],
+              "errors": [],
+              "status": "running",
+              "stage": "analyzing",
+              "toolCalls": 0,
+              "correctionAttempts": 0,
+              "verificationRequired": false,
+              "createdAt": "2026-10-19T17:28:04.088Z",
+              "updatedAt": "2026-10-19T17:28:04.150Z",
+              "verificationFailures": [],
+              "verificationResults": []
+            }
+          ]
+        },
+        {
+          "type": "task-history",
+          "tasks": [
+            {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "projectPath": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+              "request": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "plan": [],
+              "completedSteps": [],
+              "acceptanceTests": [],
+              "completedStepIds": [],
+              "pendingSteps": [],
+              "usedTools": [],
+              "events": [
+                {
+                  "at": "2026-10-19T17:28:04.149Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.175Z",
+                  "type": "result",
+                  "name": "task-started",
+                  "detail": "Yeni görev kaydı oluşturuldu."
+                }
+              ],
+              "errors": [],
+              "status": "running",
+              "stage": "analyzing",
+              "toolCalls": 0,
+              "correctionAttempts": 0,
+              "verificationRequired": false,
+              "createdAt": "2026-10-19T17:28:04.088Z",
+              "updatedAt": "2026-10-19T17:28:04.177Z",
+              "verificationFailures": [],
+              "verificationResults": []
+            }
+          ]
+        },
+        {
+          "type": "task-history",
+          "tasks": [
+            {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "projectPath": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+              "request": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "plan": [],
+              "completedSteps": [],
+              "acceptanceTests": [],
+              "completedStepIds": [],
+              "pendingSteps": [],
+              "usedTools": [],
+              "events": [
+                {
+                  "at": "2026-10-19T17:28:04.149Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.175Z",
+                  "type": "result",
+                  "name": "task-started",
+                  "detail": "Yeni görev kaydı oluşturuldu."
+                },
+                {
+                  "at": "2026-10-19T17:28:04.193Z",
+                  "type": "result",
+                  "name": "context-budget",
+                  "detail": "27 araç şeması · 19344 karakter sohbet bütçesi · 16384 token pencere"
+                }
+              ],
+              "errors": [],
+              "status": "running",
+              "stage": "analyzing",
+              "toolCalls": 0,
+              "correctionAttempts": 0,
+              "verificationRequired": false,
+              "createdAt": "2026-10-19T17:28:04.088Z",
+              "updatedAt": "2026-10-19T17:28:04.194Z",
+              "verificationFailures": [],
+              "verificationResults": []
+            }
+          ]
+        },
+        {
+          "type": "task-history",
+          "tasks": [
+            {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "projectPath": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+              "request": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "plan": [],
+              "completedSteps": [],
+              "acceptanceTests": [],
+              "completedStepIds": [],
+              "pendingSteps": [],
+              "usedTools": [],
+              "events": [
+                {
+                  "at": "2026-10-19T17:28:04.149Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.175Z",
+                  "type": "result",
+                  "name": "task-started",
+                  "detail": "Yeni görev kaydı oluşturuldu."
+                },
+                {
+                  "at": "2026-10-19T17:28:04.193Z",
+                  "type": "result",
+                  "name": "context-budget",
+                  "detail": "27 araç şeması · 19344 karakter sohbet bütçesi · 16384 token pencere"
+                }
+              ],
+              "errors": [],
+              "status": "running",
+              "stage": "analyzing",
+              "toolCalls": 0,
+              "correctionAttempts": 0,
+              "verificationRequired": false,
+              "createdAt": "2026-10-19T17:28:04.088Z",
+              "updatedAt": "2026-10-19T17:28:04.194Z",
+              "verificationFailures": [],
+              "verificationResults": []
+            }
+          ]
+        },
+        {
+          "type": "status",
+          "text": "Projeyi inceliyor…"
+        },
+        {
+          "type": "task-history",
+          "tasks": [
+            {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "projectPath": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+              "request": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "plan": [],
+              "completedSteps": [],
+              "acceptanceTests": [],
+              "completedStepIds": [],
+              "pendingSteps": [],
+              "usedTools": [],
+              "events": [
+                {
+                  "at": "2026-10-19T17:28:04.149Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.175Z",
+                  "type": "result",
+                  "name": "task-started",
+                  "detail": "Yeni görev kaydı oluşturuldu."
+                },
+                {
+                  "at": "2026-10-19T17:28:04.193Z",
+                  "type": "result",
+                  "name": "context-budget",
+                  "detail": "27 araç şeması · 19344 karakter sohbet bütçesi · 16384 token pencere"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.230Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                }
+              ],
+              "errors": [],
+              "status": "running",
+              "stage": "analyzing",
+              "toolCalls": 0,
+              "correctionAttempts": 0,
+              "verificationRequired": false,
+              "createdAt": "2026-10-19T17:28:04.088Z",
+              "updatedAt": "2026-10-19T17:28:04.231Z",
+              "verificationFailures": [],
+              "verificationResults": []
+            }
+          ]
+        },
+        {
+          "type": "task-history",
+          "tasks": [
+            {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "projectPath": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+              "request": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "plan": [],
+              "completedSteps": [],
+              "acceptanceTests": [],
+              "completedStepIds": [],
+              "pendingSteps": [],
+              "usedTools": [],
+              "events": [
+                {
+                  "at": "2026-10-19T17:28:04.149Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.175Z",
+                  "type": "result",
+                  "name": "task-started",
+                  "detail": "Yeni görev kaydı oluşturuldu."
+                },
+                {
+                  "at": "2026-10-19T17:28:04.193Z",
+                  "type": "result",
+                  "name": "context-budget",
+                  "detail": "27 araç şeması · 19344 karakter sohbet bütçesi · 16384 token pencere"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.230Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:05.499Z",
+                  "type": "error",
+                  "name": "task-failed",
+                  "detail": "Görev başarısız: fetch failed"
+                }
+              ],
+              "errors": [
+                "Görev başarısız: fetch failed"
+              ],
+              "status": "failed",
+              "stage": "failed",
+              "toolCalls": 0,
+              "correctionAttempts": 0,
+              "verificationRequired": false,
+              "createdAt": "2026-10-19T17:28:04.088Z",
+              "updatedAt": "2026-10-19T17:28:05.500Z",
+              "verificationFailures": [],
+              "verificationResults": [],
+              "errorAnalysis": {
+                "category": "network",
+                "message": "fetch failed",
+                "stage": "evaluating",
+                "retryable": true,
+                "nextAction": "Ağ uç noktasını ve sağlayıcı bağlantısını doğrula; çevrimdışı alternatif varsa kullan."
+              }
+            }
+          ]
+        },
+        {
+          "type": "error",
+          "message": "Görev başarısız: fetch failed"
+        },
+        {
+          "type": "task-history",
+          "tasks": [
+            {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "projectPath": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+              "request": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "plan": [],
+              "completedSteps": [],
+              "acceptanceTests": [],
+              "completedStepIds": [],
+              "pendingSteps": [],
+              "usedTools": [],
+              "events": [
+                {
+                  "at": "2026-10-19T17:28:04.149Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.175Z",
+                  "type": "result",
+                  "name": "task-started",
+                  "detail": "Yeni görev kaydı oluşturuldu."
+                },
+                {
+                  "at": "2026-10-19T17:28:04.193Z",
+                  "type": "result",
+                  "name": "context-budget",
+                  "detail": "27 araç şeması · 19344 karakter sohbet bütçesi · 16384 token pencere"
+                },
+                {
+                  "at": "2026-10-19T17:28:04.230Z",
+                  "type": "result",
+                  "name": "stage-analyzing"
+                },
+                {
+                  "at": "2026-10-19T17:28:05.499Z",
+                  "type": "error",
+                  "name": "task-failed",
+                  "detail": "Görev başarısız: fetch failed"
+                }
+              ],
+              "errors": [
+                "Görev başarısız: fetch failed"
+              ],
+              "status": "failed",
+              "stage": "failed",
+              "toolCalls": 0,
+              "correctionAttempts": 0,
+              "verificationRequired": false,
+              "createdAt": "2026-10-19T17:28:04.088Z",
+              "updatedAt": "2026-10-19T17:28:05.500Z",
+              "verificationFailures": [],
+              "verificationResults": [],
+              "errorAnalysis": {
+                "category": "network",
+                "message": "fetch failed",
+                "stage": "evaluating",
+                "retryable": true,
+                "nextAction": "Ağ uç noktasını ve sağlayıcı bağlantısını doğrula; çevrimdışı alternatif varsa kullan."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review-mode-create",
+      "ok": true,
+      "durationMs": 91,
+      "result": "{\"reply\":\"**inceleme-deneme.txt oluşturuldu ve doğrulandı.**\\n\\nİçerik: Taslak test\\nKapsam: Proje kökü\\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)\",\"proposal\":null,\"fileBeforeApply\":\"Taslak test\",\"applyResult\":null,\"fileAfterApply\":\"Taslak test\"}",
+      "events": [
+        {
+          "type": "workspace",
+          "workspace": {
+            "permissions": {
+              "mode": "controlled",
+              "editMode": "review",
+              "commandMode": "confirm",
+              "allowPackageInstalls": false,
+              "allowSystemChanges": false
+            },
+            "permissionGrants": [],
+            "resourceRoots": [],
+            "memory": {
+              "summary": "",
+              "architecture": "",
+              "technologies": [],
+              "commands": [],
+              "preferences": [],
+              "knownIssues": [],
+              "updatedAt": null
+            },
+            "task": {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "status": "active",
+              "steps": [],
+              "tests": [],
+              "updatedAt": "2026-10-19T17:28:04.117Z"
+            },
+            "messages": [
+              {
+                "role": "user",
+                "content": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla."
+              }
+            ],
+            "lastBuild": null
+          }
+        },
+        {
+          "type": "files-changed",
+          "paths": [
+            "inceleme-deneme.txt"
+          ]
+        },
+        {
+          "type": "activity",
+          "item": {
+            "id": "53d31a01-bc24-45d5-bcc4-a88a505a30c3",
+            "kind": "success",
+            "title": "Yerel metin dosyası oluşturuldu",
+            "detail": "inceleme-deneme.txt",
+            "time": "20:28",
+            "tool": "LocalTextFile",
+            "operation": "file-create",
+            "target": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\inceleme-deneme.txt",
+            "result": "success"
+          }
+        },
+        {
+          "type": "workspace",
+          "workspace": {
+            "permissions": {
+              "mode": "controlled",
+              "editMode": "review",
+              "commandMode": "confirm",
+              "allowPackageInstalls": false,
+              "allowSystemChanges": false
+            },
+            "permissionGrants": [],
+            "resourceRoots": [],
+            "memory": {
+              "summary": "",
+              "architecture": "",
+              "technologies": [],
+              "commands": [],
+              "preferences": [],
+              "knownIssues": [],
+              "updatedAt": null
+            },
+            "task": {
+              "id": "c155f60c-2a56-4756-a99d-d43080991fbf",
+              "title": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "objective": "Bana bu çalışma alanındaki dosyaların amacını üç cümleyle açıkla.",
+              "status": "active",
+              "steps": [],
+              "tests": [],
+              "updatedAt": "2026-10-19T17:28:04.117Z"
+            },
+            "messages": [
+              {
+                "role": "user",
+                "content": "inceleme-deneme.txt dosyasını oluştur; içeriği: Taslak test"
+              },
+              {
+                "role": "assistant",
+                "content": "**inceleme-deneme.txt oluşturuldu ve doğrulandı.**\n\nİçerik: Taslak test\nKapsam: Proje kökü\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)"
+              }
+            ],
+            "lastBuild": null
+          }
+        },
+        {
+          "type": "delta",
+          "text": "**inceleme-deneme.txt oluşturuldu ve doğrulandı.**\n\nİçerik: Taslak test\nKapsam: Proje kökü\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)"
+        },
+        {
+          "type": "done",
+          "message": "",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "name": "restore-real-provider",
+      "ok": true,
+      "durationMs": 86,
+      "result": "{\"status\":{\"connected\":true,\"provider\":\"ollama\",\"baseUrl\":\"http://127.0.0.1:11434/v1\",\"version\":\"0.40.6\",\"selectedModel\":\"qwen3:8b\",\"models\":[{\"name\":\"qwen3:8b\",\"sizeBytes\":5225388164,\"digest\":\"500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41\",\"modifiedAt\":\"2026-10-16T23:13:34.0524675+03:00\",\"family\":\"qwen3\",\"parameterSize\":\"8.2B\",\"quantization\":\"Q4_K_M\",\"fit\":{\"level\":\"gpu\",\"label\":\"GPU üzerinde çalışır\",\"detail\":\"Yaklaşık 5.6 GB GPU belleği gerekir; 8.0 GB VRAM yeterli.\",\"requiredBytes\":6009196389},\"loaded\":true}],\"loadedModels\":[{\"name\":\"qwen3:8b\",\"sizeBytes\":7837298195,\"sizeVramBytes\":6294171811,\"expiresAt\":\"2026-10-19T20:42:39.9205706+03:00\"}],\"hardware\":{\"os\":\"Windows_NT 10.0.26200\",\"architecture\":\"x64\",\"cpu\":\"13th Gen Intel(R) Core(TM) i7-13620H\",\"cpuCores\":16,\"memoryTotalBytes\":16802754560,\"memoryFreeBytes\":1860030464,\"gpu\":\"NVIDIA GeForce RTX 4060 Laptop GPU\",\"gpuMemoryBytes\":8585740288,\"diskFreeBytes\":627349680128,\"diskTotalBytes\":1022934118400,\"detectedAt\":\"2026-10-19T17:27:55.954Z\"},\"recommendations\":[{\"name\":\"qwen2.5-coder:7b\",\"reason\":\"Kod üretiminde güçlü, 7B sınıfı yerel kodlama modeli.\",\"sizeHint\":\"~4.7 GB indirme\"},{\"name\":\"qwen3:8b\",\"reason\":\"Genel akıl yürütme ve Türkçe görevlerde dengeli 8B model.\",\"sizeHint\":\"~5.2 GB indirme\"},{\"name\":\"qwen2.5-coder:7b-instruct-q4_K_M\",\"reason\":\"4 bit sürüm; 6 GB VRAM ile GPU üzerinde çalışabilir.\",\"sizeHint\":\"~4.4 GB indirme\"},{\"name\":\"llama3.2:3b\",\"reason\":\"Daha az bellekle hızlı yanıt veren küçük genel model.\",\"sizeHint\":\"~2.0 GB indirme\"},{\"name\":\"qwen2.5-coder:3b\",\"reason\":\"Düşük VRAM ve RAM için kod odaklı küçük model.\",\"sizeHint\":\"~1.9 GB indirme\"}],\"stats\":{\"requests\":0,\"failedRequests\":1,\"lastDurationMs\":null,\"lastTokensPerSecond\":null,\"lastEvaluatedTokens\":null,\"lastPromptTokens\":null,\"lastMeasuredAt\":null,\"totalEvaluatedTokens\":0},\"diskUsageBytes\":5225388164},\"settings\":{\"provider\":\"ollama\",\"baseUrl\":\"http://127.0.0.1:11434/v1\",\"model\":\"qwen3:8b\",\"profile\":{\"name\":\"\",\"instructions\":\"\",\"autoLearn\":false},\"apiKeyConfigured\":false}}",
+      "events": []
+    },
+    {
+      "name": "audit-tail",
+      "ok": true,
+      "durationMs": 16,
+      "result": "[{\"title\":\"Yerel metin dosyası oluşturuldu\",\"tool\":\"LocalTextFile\",\"result\":\"success\",\"detail\":\"inceleme-deneme.txt\"},{\"title\":\"Eksik yetenek analizi\",\"tool\":\"CapabilityReport\",\"result\":\"failed\",\"detail\":\"Görsel düzenleme\"},{\"title\":\"Eksik yetenek analizi\",\"tool\":\"CapabilityReport\",\"result\":\"success\",\"detail\":\"PDF üzerinde çalışma\"},{\"title\":\"Yazılım kataloğu güncellendi\",\"tool\":\"SoftwareDiscovery\",\"result\":\"success\",\"detail\":\"194 kayıt\"},{\"title\":\"WebProjectAnalyzer tamamlandı\",\"tool\":\"WebProjectAnalyzer\",\"result\":\"success\",\"detail\":\"3 yapılandırma ve kaynak dosyası · belirgin yığın algılanmadı\"},{\"title\":\"Dosya dizini güncellendi\",\"tool\":\"FileSearchEngine\",\"result\":\"success\",\"detail\":\"6 öğe · +6/~0/-0\"},{\"title\":\"Dosya araması yapıldı\",\"tool\":\"FileSearchEngine\",\"result\":\"success\",\"detail\":\"0 sonuç · Kapsam kökü: C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\opencode\\\\ultron-audit-2026-10-19\\\\projects\\\\probe\"},{\"title\":\"Yerel metin dosyası okundu\",\"tool\":\"LocalTextFile\",\"result\":\"success\",\"detail\":\"merhaba.txt\"},{\"title\":\"Yerel metin dosyası oluşturuldu\",\"tool\":\"LocalTextFile\",\"result\":\"success\",\"detail\":\"deneme-hizli.txt\"}]",
+      "events": []
+    }
+  ],
+  "ok": true
+}

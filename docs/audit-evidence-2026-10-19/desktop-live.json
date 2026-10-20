@@ -1,0 +1,167 @@
+{
+  "startedAt": "2026-10-19T21:29:39.255Z",
+  "checks": {
+    "durumOkundu": true,
+    "ekranGoruntusuAlindi": true,
+    "pencerelerListelendi": true,
+    "fareTasindi": true,
+    "kendiPenceresineMudahaleReddedildi": true,
+    "notDefteriBaslatildi": true,
+    "pencereyeOdaklanildi": true,
+    "metinYazildi": true,
+    "tusKombinasyonuGonderildi": true,
+    "dosyaGezginiAcildi": true,
+    "yanlisPencereyeMudahaleReddedildi": true,
+    "dogruPenceredeYazildi": true,
+    "olmayanKlasorHataVerdi": true
+  },
+  "ok": true,
+  "state": {
+    "screen": {
+      "height": 1080,
+      "width": 1920
+    },
+    "cursor": {
+      "y": 120,
+      "x": 629
+    },
+    "focusedWindow": {
+      "handle": "136090",
+      "rect": {
+        "left": 130,
+        "bottom": 883,
+        "top": 130,
+        "right": 896,
+        "height": 753,
+        "width": 766
+      },
+      "visible": true,
+      "pid": 20564,
+      "focused": true,
+      "title": "*Ultron masaüstü ajanı çalışıyor ĞÜŞ, Not Defteri",
+      "process": "Notepad"
+    },
+    "windowCount": 50
+  },
+  "screenshot": {
+    "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\evidence\\desktop-live-screenshot.png",
+    "bytes": 540318
+  },
+  "windows": [
+    {
+      "title": "*Ultron masaüstü ajanı çalışıyor ĞÜŞ, Not Defteri",
+      "process": "Notepad",
+      "focused": true
+    },
+    {
+      "title": "*Ultron masaüstü ajanı çalışıyor ĞÜŞ, Not Defteri",
+      "process": "Notepad",
+      "focused": false
+    },
+    {
+      "title": "*Ultron masaüstü ajanı çalışıyor ĞÜŞ, Not Defteri",
+      "process": "Notepad",
+      "focused": false
+    },
+    {
+      "title": "*Ultron masaüstü ajanı çalışıyor ĞÜŞ, Not Defteri",
+      "process": "Notepad",
+      "focused": false
+    },
+    {
+      "title": "*Ultron masaüstü ajanı çalışıyor ĞÜŞ, Not Defteri",
+      "process": "Notepad",
+      "focused": false
+    },
+    {
+      "title": "*Ultron aasaüstü aanı ıııışıyorĞĞÜŞİ, Not Defteri",
+      "process": "Notepad",
+      "focused": false
+    },
+    {
+      "title": "*Ultron saüstü aaanı lllışıyorĞĞÜŞİÖ, Not Defteri",
+      "process": "Notepad",
+      "focused": false
+    },
+    {
+      "title": "*Ultron asaüstü jjanı lllışıyorÜÜÜŞİ, Not Defteri",
+      "process": "Notepad",
+      "focused": false
+    }
+  ],
+  "mouseMove": {
+    "target": {
+      "x": 960,
+      "y": 540
+    },
+    "actual": {
+      "y": 540,
+      "x": 960
+    }
+  },
+  "selfProtection": {
+    "skipped": "Bu oturumda Ultron/Electron penceresi yok"
+  },
+  "launch": {
+    "verified": true,
+    "pid": 4860,
+    "window": {
+      "handle": "136150",
+      "rect": {
+        "left": 156,
+        "bottom": 909,
+        "top": 156,
+        "right": 922,
+        "height": 753,
+        "width": 766
+      },
+      "visible": true,
+      "pid": 20564,
+      "focused": true,
+      "title": "Adsız, Not Defteri",
+      "process": "Notepad"
+    },
+    "process": "Notepad"
+  },
+  "focus": {
+    "requested": "Adsız, Not Defteri",
+    "actual": "Adsız, Not Defteri"
+  },
+  "type": {
+    "note": "Metin gönderildi; içerik güvenlik nedeniyle kaydedilmedi.",
+    "error": null,
+    "focused": "*Ultron masaüstü testi, Not Defteri"
+  },
+  "explorer": {
+    "target": "C:\\Users\\user\\AppData\\Local\\Temp\\ultron-explorer-check",
+    "launched": {
+      "path": "C:\\Users\\user\\AppData\\Local\\Temp\\ultron-explorer-check",
+      "pid": 24700,
+      "verified": true,
+      "window": {
+        "handle": "332718",
+        "rect": {
+          "left": 572,
+          "bottom": 840,
+          "top": 59,
+          "right": 1696,
+          "height": 781,
+          "width": 1124
+        },
+        "visible": true,
+        "pid": 24480,
+        "focused": false,
+        "title": "ultron-explorer-check - Dosya Gezgini",
+        "process": "explorer"
+      }
+    },
+    "error": null
+  },
+  "wrongWindowGuard": {
+    "error": "Odak beklenen pencerede değil (beklenen: BuPencerYokVar; odaktaki: *Ultron masaüstü testi, Not Defteri). Önce pencereye odaklan."
+  },
+  "rightWindow": {
+    "error": null,
+    "focused": "*Ultron masaüstü testi, Not Defteri"
+  }
+}

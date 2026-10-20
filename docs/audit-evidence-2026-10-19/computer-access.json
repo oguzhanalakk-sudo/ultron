@@ -1,0 +1,9 @@
+{
+  "checks": {
+    "kullaniciKlasorundeOkuma": true,
+    "kullaniciKlasorundeArama": true,
+    "ekKapsumYetkilendirildi": true
+  },
+  "ok": true,
+  "docCreated": true
+}

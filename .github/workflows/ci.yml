@@ -1,0 +1,36 @@
+# Ultron CI: bağımlılıkları kurar, tip kontrolü ve testleri çalıştırır.
+# Güvenlik: bu iş akışı hiçbir sır (API anahtarı, token) kullanmaz, dosya yüklemez,
+# sürüm yayınlamaz. GitHub Actions genel (public) depolarda ücretsizdir.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Node.js 22 kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Bağımlılıkları kur (kilit dosyasına göre)
+        run: npm ci
+
+      - name: Tip kontrolü
+        run: npm run typecheck
+
+      - name: Test paketi
+        run: npm run test:permissions

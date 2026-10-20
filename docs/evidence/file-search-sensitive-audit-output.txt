@@ -1,0 +1,22 @@
+﻿{
+  "queryText": "i├ğinde FAKE_AUDIT_SECRET ge├ğen dosyalar",
+  "hits": [
+    {
+      "relativePath": ".env",
+      "snippets": [
+        "API_TOKEN=FAKE_AUDIT_SECRET"
+      ]
+    }
+  ]
+}
+{
+  "queryText": "i├ğinde TASK_INTERNAL_SECRET ge├ğen dosyalar",
+  "hits": [
+    {
+      "relativePath": ".codex-local/tasks.json",
+      "snippets": [
+        "{\"note\":\"TASK_INTERNAL_SECRET\"}"
+      ]
+    }
+  ]
+}

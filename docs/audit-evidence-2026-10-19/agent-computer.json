@@ -1,0 +1,9 @@
+{
+  "checks": {
+    "readFileCagrildi": true,
+    "listScopesCagrildi": true,
+    "userKlasoruAdreslendi": false,
+    "yanitDogru": true
+  },
+  "ok": false
+}

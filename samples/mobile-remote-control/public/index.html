@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultron Mobile Remote Control</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">U</span>
+        <span>Ultron <small>MOBILE REMOTE</small></span>
+      </div>
+      <div class="connection" id="connection-state"><span></span> Bağlanıyor...</div>
+    </header>
+
+    <main class="layout">
+      <!-- Sidebar: Device List -->
+      <aside class="sidebar" id="sidebar">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>📱 Android Cihazlar</h2>
+            <button class="btn-icon" id="refresh-devices" title="Yenile">⟳</button>
+          </div>
+          <ul class="device-list" id="device-list">
+            <li class="empty-state">Cihaz aranıyor...</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>🖥️ Uzak Masaüstü</h2>
+            <button class="btn-icon" id="add-remote" title="Yeni Bağlantı">➕</button>
+          </div>
+          <ul class="remote-list" id="remote-list">
+            <li class="empty-state">Henüz bağlantı yok</li>
+          </ul>
+        </section>
+      </aside>
+
+      <!-- Main Content: Device Control / Screen View -->
+      <section class="main-content" id="main-content">
+        <!-- Device Detail View -->
+        <div class="view" id="device-detail-view" hidden>
+          <div class="view-header">
+            <h1 id="device-title">Cihaz Seçin</h1>
+            <div class="view-actions">
+              <button class="btn" id="btn-screen-stream" disabled>📺 Ekran Yayını Başlat</button>
+              <button class="btn" id="btn-stop-stream" disabled hidden>⏹️ Durdur</button>
+            </div>
+          </div>
+
+          <div class="screen-container" id="screen-container">
+            <canvas id="screen-canvas"></canvas>
+            <div class="screen-overlay" id="screen-overlay" hidden>
+              <div class="controls-hint">
+                <kbd>Tıkla</kbd> = Tap &nbsp;|&nbsp; <kbd>Sürükle</kbd> = Swipe &nbsp;|&nbsp; <kbd>Esc</kbd> = Geri
+              </div>
+            </div>
+            <div class="screen-placeholder" id="screen-placeholder">
+              <span class="icon">📱</span>
+              <p>Bir cihaz seçin ve "Ekran Yayını Başlat" butonuna basın</p>
+            </div>
+          </div>
+
+          <div class="device-tabs">
+            <button class="tab-btn active" data-tab="control">Kontrol</button>
+            <button class="tab-btn" data-tab="apps">Uygulamalar</button>
+            <button class="tab-btn" data-tab="files">Dosyalar</button>
+            <button class="tab-btn" data-tab="logs">Logcat</button>
+            <button class="tab-btn" data-tab="shell">Shell</button>
+          </div>
+
+          <div class="tab-content" id="tab-control">
+            <div class="control-grid">
+              <button class="ctrl-btn" data-action="home">🏠 Home</button>
+              <button class="ctrl-btn" data-action="back">◀ Back</button>
+              <button class="ctrl-btn" data-action="recent">□ Recent</button>
+              <button class="ctrl-btn" data-action="power">⏻ Power</button>
+              <button class="ctrl-btn" data-action="volume-up">🔊 Vol+</button>
+              <button class="ctrl-btn" data-action="volume-down">🔉 Vol-</button>
+              <button class="ctrl-btn" data-action="screenshot">📸 Screenshot</button>
+              <button class="ctrl-btn" data-action="record">🎥 Record</button>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-apps" hidden>
+            <div class="toolbar">
+              <input type="text" id="app-search" placeholder="Uygulama ara...">
+              <button class="btn" id="btn-install-apk">📦 APK Yükle</button>
+              <button class="btn" id="btn-refresh-apps">⟳ Yenile</button>
+            </div>
+            <ul class="app-list" id="app-list"></ul>
+          </div>
+
+          <div class="tab-content" id="tab-files" hidden>
+            <div class="toolbar">
+              <input type="text" id="file-path" placeholder="/sdcard/" value="/sdcard/">
+              <button class="btn" id="btn-list-files">📂 Listele</button>
+              <button class="btn" id="btn-pull-file">⬇️ Çek</button>
+              <button class="btn" id="btn-push-file">⬆️ Gönder</button>
+            </div>
+            <ul class="file-list" id="file-list"></ul>
+          </div>
+
+          <div class="tab-content" id="tab-logs" hidden>
+            <div class="toolbar">
+              <input type="text" id="log-filter" placeholder="Filtre (örn: *:E)">
+              <button class="btn" id="btn-refresh-logs">⟳ Yenile</button>
+              <button class="btn" id="btn-clear-logs">🗑️ Temizle</button>
+            </div>
+            <pre class="log-output" id="log-output"></pre>
+          </div>
+
+          <div class="tab-content" id="tab-shell" hidden>
+            <div class="toolbar">
+              <input type="text" id="shell-cmd" placeholder="Komut (örn: pm list packages | grep chrome)">
+              <button class="btn" id="btn-run-shell">▶ Çalıştır</button>
+            </div>
+            <pre class="shell-output" id="shell-output"></pre>
+          </div>
+        </div>
+
+        <!-- Remote Desktop View -->
+        <div class="view" id="remote-desktop-view" hidden>
+          <div class="view-header">
+            <h1 id="remote-title">Uzak Masaüstü</h1>
+            <div class="view-actions">
+              <button class="btn danger" id="btn-disconnect-remote">🔌 Bağlantıyı Kes</button>
+            </div>
+          </div>
+          <div class="screen-container">
+            <canvas id="remote-canvas"></canvas>
+            <div class="screen-placeholder" id="remote-placeholder">
+              <span class="icon">🖥️</span>
+              <p>Uzak masaüstü bağlantısı bekleniyor...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Welcome View -->
+        <div class="view welcome-view" id="welcome-view">
+          <div class="welcome-card">
+            <span class="icon">📱</span>
+            <h1>Mobil / Uzak Kontrol</h1>
+            <p>Sol taraftan bir Android cihazı seçin veya yeni bir uzak masaüstü bağlantısı ekleyin.</p>
+            <div class="features">
+              <div class="feature">
+                <span class="feature-icon">📱</span>
+                <div>
+                  <strong>ADB Cihaz Yönetimi</strong>
+                  <p>Cihaz listesi, ekran yayını, dosya transferi, shell erişimi</p>
+                </div>
+              </div>
+              <div class="feature">
+                <span class="feature-icon">🖥️</span>
+                <div>
+                  <strong>Uzak Masaüstü (VNC/RDP)</strong>
+                  <p>Web tabanlı VNC viewer, tam klavye/fare desteği</p>
+                </div>
+              </div>
+              <div class="feature">
+                <span class="feature-icon">🔒</span>
+                <div>
+                  <strong>Güvenli & Yerel</strong>
+                  <p>Loopback-only, veri cihazdan çıkmıyor</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal" id="modal-apk" hidden>
+      <div class="modal-content">
+        <h3>APK Yükle</h3>
+        <input type="file" id="apk-file-input" accept=".apk">
+        <div class="modal-actions">
+          <button class="btn" id="btn-cancel-apk">İptal</button>
+          <button class="btn primary" id="btn-confirm-apk" disabled>Yükle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-remote" hidden>
+      <div class="modal-content">
+        <h3>Yeni Uzak Bağlantı</h3>
+        <div class="form-group">
+          <label>Tip</label>
+          <select id="remote-type">
+            <option value="vnc">VNC (RFB)</option>
+            <option value="rdp">RDP (Windows)</option>
+            <option value="custom">Özel</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Host</label>
+          <input type="text" id="remote-host" placeholder="192.168.1.100">
+        </div>
+        <div class="form-group">
+          <label>Port</label>
+          <input type="number" id="remote-port" value="5900" min="1" max="65535">
+        </div>
+        <div class="form-group">
+          <label>Şifre (opsiyonel)</label>
+          <input type="password" id="remote-password">
+        </div>
+        <div class="modal-actions">
+          <button class="btn" id="btn-cancel-remote">İptal</button>
+          <button class="btn primary" id="btn-confirm-remote">Bağlan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

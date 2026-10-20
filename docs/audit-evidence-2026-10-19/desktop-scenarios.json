@@ -1,0 +1,50 @@
+{
+  "scenarios": [
+    {
+      "name": "0) Masaüstü kontrolü varsayılan kapalı",
+      "ok": true,
+      "detail": "hata: Masaüstü kontrolü kapalı. Ayarlar > Hafıza ve yetkiler bölümünden \"Masaüstü kontrolünü etkinleştir\" seçeneğini aç."
+    },
+    {
+      "name": "1) Not Defteri açıldı",
+      "ok": true,
+      "detail": "pencere: Adsız, Not Defteri"
+    },
+    {
+      "name": "2) Metin yazıldı",
+      "ok": true,
+      "detail": "pencere başlığı: *Ultron masaüstü ajanı çalışıyor, Not Defteri"
+    },
+    {
+      "name": "3) Kaydet komutu gönderildi",
+      "ok": true,
+      "detail": "odak: *Ultron masaüstü ajanı çalışıyor, Not Defteri"
+    },
+    {
+      "name": "3b) Dosya diske kaydedildi",
+      "ok": true,
+      "detail": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\desktop-scenarios-mvftqmec\\kaydedilenler\\ultron-notu.txt (Ultron masaüstü ajanı çalışıyor)"
+    },
+    {
+      "name": "4) Dosya Gezgini hedef klasörde açıldı",
+      "ok": true,
+      "detail": "pencere: Dosya Gezgini"
+    },
+    {
+      "name": "5) İkinci uygulama başlatıldı ve penceresi doğrulandı",
+      "ok": true,
+      "detail": "pencere: Hesap Makinesi"
+    },
+    {
+      "name": "6) Ekran görüntüsü alındı ve doğru pencereler açık",
+      "ok": true,
+      "detail": "423950 bayt; açık pencereler: ultron-notu.txt, Not Defteri | kaydedilenler - Dosya Gezgini | ultron-notu.txt, Not Defteri | kaydedilenler - Dosya Gezgini | Adsız, Not Defteri | ultron-notu.txt, Not Defteri | kaydedilenler - Dosya Gezgini | Adsız, Not Defteri | kaydedilenler - Dosya Gezgini | ultron-notu.txt, Not Defteri | notlar.txt, Not Defteri | Adsız, Not Defteri | *kaydetme testi, Not Defteri | *kaydetme testi, Not Defteri | *kaydetme testi, Not Defteri | *n masaüstü ajanı çalışıyor ĞÜŞİÖÇ ğ, Not Defteri | *masa, Not Defteri | *Ultron masaüstü ajanı çalışıyor ĞÜŞ, Not Defteri"
+    },
+    {
+      "name": "7) Otomasyon durdurma mekanizması",
+      "ok": true,
+      "detail": "duraklatıldı → \"Masaüstü otomasyonu durduruldu; yeni eylemler çalıştırılmıyor.\"; devam sonrası okuma: true"
+    }
+  ],
+  "ok": true
+}

@@ -1,0 +1,201 @@
+{
+  "startedAt": "2026-10-19T17:29:15.048Z",
+  "project": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe",
+  "probes": [
+    {
+      "name": "search-single-word",
+      "ok": true,
+      "durationMs": 99,
+      "result": {
+        "query": {
+          "raw": "merhaba",
+          "nameTerms": [
+            "merhaba"
+          ],
+          "contentTerms": [],
+          "extensions": [],
+          "kinds": [],
+          "modifiedWithin": null,
+          "sizeFilter": null,
+          "limit": 200
+        },
+        "hitCount": 1,
+        "hits": [
+          {
+            "name": "merhaba.txt",
+            "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\merhaba.txt",
+            "matchType": "name"
+          }
+        ],
+        "summary": "Arama ifadesi: merhaba\nKapsam kökü: C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\nTaranan: 9 dosya / 3 klasör · 13 ms",
+        "notices": []
+      }
+    },
+    {
+      "name": "search-file-name",
+      "ok": true,
+      "durationMs": 41,
+      "result": {
+        "query": {
+          "raw": "merhaba.txt",
+          "nameTerms": [],
+          "contentTerms": [],
+          "extensions": [
+            ".txt"
+          ],
+          "kinds": [],
+          "modifiedWithin": null,
+          "sizeFilter": null,
+          "limit": 200
+        },
+        "hitCount": 5,
+        "hits": [
+          {
+            "name": "deneme-hizli.txt",
+            "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\deneme-hizli.txt",
+            "matchType": "name"
+          },
+          {
+            "name": "inceleme-deneme.txt",
+            "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\inceleme-deneme.txt",
+            "matchType": "name"
+          },
+          {
+            "name": "merhaba.txt",
+            "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\merhaba.txt",
+            "matchType": "name"
+          },
+          {
+            "name": "mevcut.txt",
+            "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\mevcut.txt",
+            "matchType": "name"
+          },
+          {
+            "name": "not.txt",
+            "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\kaynak\\not.txt",
+            "matchType": "name"
+          }
+        ],
+        "summary": "Arama ifadesi: merhaba.txt\nKapsam kökü: C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\nTaranan: 9 dosya / 3 klasör · 3 ms",
+        "notices": []
+      }
+    },
+    {
+      "name": "search-documented-example",
+      "ok": true,
+      "durationMs": 37,
+      "result": {
+        "query": {
+          "raw": "adı merhaba geçen txt dosyalarını bul",
+          "nameTerms": [
+            "adı merhaba   txt  nı"
+          ],
+          "contentTerms": [],
+          "extensions": [],
+          "kinds": [],
+          "modifiedWithin": null,
+          "sizeFilter": null,
+          "limit": 200
+        },
+        "hitCount": 0,
+        "hits": [],
+        "summary": "Arama ifadesi: adı merhaba geçen txt dosyalarını bul\nKapsam kökü: C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\nTaranan: 9 dosya / 3 klasör · 5 ms",
+        "notices": []
+      }
+    },
+    {
+      "name": "search-name-phrase",
+      "ok": true,
+      "durationMs": 29,
+      "result": {
+        "query": {
+          "raw": "adı merhaba olan txt dosyalarını bul",
+          "nameTerms": [
+            "adı merhaba olan txt  nı"
+          ],
+          "contentTerms": [],
+          "extensions": [],
+          "kinds": [],
+          "modifiedWithin": null,
+          "sizeFilter": null,
+          "limit": 200
+        },
+        "hitCount": 0,
+        "hits": [],
+        "summary": "Arama ifadesi: adı merhaba olan txt dosyalarını bul\nKapsam kökü: C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\nTaranan: 9 dosya / 3 klasör · 4 ms",
+        "notices": []
+      }
+    },
+    {
+      "name": "search-content",
+      "ok": true,
+      "durationMs": 19,
+      "result": {
+        "query": {
+          "raw": "içeriğinde Merhaba geçen dosyalar",
+          "nameTerms": [
+            "içeriğinde Merhaba   dosyalar"
+          ],
+          "contentTerms": [],
+          "extensions": [],
+          "kinds": [],
+          "modifiedWithin": null,
+          "sizeFilter": null,
+          "limit": 200
+        },
+        "hitCount": 0,
+        "hits": [],
+        "summary": "Arama ifadesi: içeriğinde Merhaba geçen dosyalar\nKapsam kökü: C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\nTaranan: 9 dosya / 3 klasör · 3 ms",
+        "notices": []
+      }
+    },
+    {
+      "name": "search-recent",
+      "ok": true,
+      "durationMs": 38,
+      "result": {
+        "query": {
+          "raw": "son değiştirdiğim txt dosyalarını bul",
+          "nameTerms": [
+            "son değiştirdiğim txt  nı"
+          ],
+          "contentTerms": [],
+          "extensions": [],
+          "kinds": [],
+          "modifiedWithin": null,
+          "sizeFilter": null,
+          "limit": 200
+        },
+        "hitCount": 0,
+        "hits": [],
+        "summary": "Arama ifadesi: son değiştirdiğim txt dosyalarını bul\nKapsam kökü: C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\nTaranan: 9 dosya / 3 klasör · 20 ms",
+        "notices": []
+      }
+    },
+    {
+      "name": "preview-file",
+      "ok": true,
+      "durationMs": 26,
+      "result": {
+        "path": "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ultron-audit-2026-10-19\\projects\\probe\\merhaba.txt",
+        "name": "merhaba.txt",
+        "sizeBytes": 15,
+        "modifiedAt": "2026-10-19T17:27:52.757Z",
+        "method": "plain",
+        "isBinary": false,
+        "notice": null,
+        "text": "Merhaba dünya\n"
+      }
+    },
+    {
+      "name": "review-mode-overwrite",
+      "ok": true,
+      "durationMs": 89,
+      "result": {
+        "proposalEvent": false,
+        "fileContentAfter": "yeni içerik",
+        "reply": "**mevcut.txt oluşturuldu ve doğrulandı.**\n\nİçerik: yeni içerik\nKapsam: Proje kökü\n(İşlem: yerel metin yönlendiricisi — model çağrısı olmadan doğrudan diskte yazıldı ve geri okunarak doğrulandı.)"
+      }
+    }
+  ]
+}

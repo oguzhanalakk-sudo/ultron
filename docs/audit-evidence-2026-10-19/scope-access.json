@@ -1,0 +1,8 @@
+{
+  "checks": {
+    "klasorYetkilendirildi": true,
+    "yetkiliKlasordeArama": true,
+    "yetkisizKlasorReddedildi": true
+  },
+  "ok": true
+}

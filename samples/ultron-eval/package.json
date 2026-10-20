@@ -1,0 +1,14 @@
+{
+  "name": "ultron-eval",
+  "version": "1.0.0",
+  "description": "Ultron kod yazma yeteneği değerlendirme ve hata yakalama aracı",
+  "type": "module",
+  "scripts": {
+    "start": "python server.py",
+    "test": "python -m pytest tests/ -v",
+    "eval": "python run_evaluation.py",
+    "benchmark": "python benchmark.py"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

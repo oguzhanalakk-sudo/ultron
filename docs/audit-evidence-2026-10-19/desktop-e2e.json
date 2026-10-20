@@ -1,0 +1,32 @@
+{
+  "startedAt": "2026-10-19T20:49:29.544Z",
+  "checks": {
+    "duraklatmaIpcCalisiyor": true,
+    "duraklatilirkenEylemReddedildi": true,
+    "durumOkundu": true,
+    "ekranDurumuErisilebilir": true,
+    "durdurmaDugmesiVar": true,
+    "dugmeDurdurmaDurumuDegistirdi": true,
+    "dugmeDevamEttirdi": true
+  },
+  "ok": true,
+  "pausedFlag": true,
+  "stateWhilePaused": {
+    "ok": false,
+    "error": "Masaüstü otomasyonu durduruldu; yeni eylemler çalıştırılmıyor."
+  },
+  "state": {
+    "ok": true,
+    "screen": {
+      "height": 1080,
+      "width": 1920
+    },
+    "focused": "OpenCode",
+    "windowCount": 28
+  },
+  "toolbarButton": {
+    "title": "Masaüstü otomasyonunu durdur",
+    "found": true
+  },
+  "afterButtonClick": true
+}

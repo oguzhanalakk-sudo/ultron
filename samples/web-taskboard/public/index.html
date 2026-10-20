@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101315">
+    <title>Görev Alanı · Kod Atölyesi</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Görev Alanı ana sayfa">
+          <span class="brand-mark" aria-hidden="true">K</span>
+          <span>Kod Atölyesi <small>GÖREV ALANI</small></span>
+        </a>
+        <div class="connection" id="connection-state"><span></span> Bağlanıyor</div>
+      </header>
+
+      <main class="layout">
+        <section class="welcome">
+          <div>
+            <p class="eyebrow">KİŞİSEL ÇALIŞMA ALANI</p>
+            <h1>İşlerini netleştir.<br><span>Önemli olana odaklan.</span></h1>
+            <p class="lede">Görevlerin bu bilgisayarda SQLite veritabanında saklanır.</p>
+          </div>
+          <div class="today-card"><span class="today-icon" aria-hidden="true">✳</span><span>BUGÜN<br><b id="today-label">—</b></span></div>
+        </section>
+
+        <section class="stats" aria-label="Görev özeti">
+          <article class="stat-card"><span class="stat-icon violet">◫</span><span>TOPLAM GÖREV</span><strong id="total-count">0</strong></article>
+          <article class="stat-card"><span class="stat-icon amber">◷</span><span>DEVAM EDEN</span><strong id="open-count">0</strong></article>
+          <article class="stat-card"><span class="stat-icon green">✓</span><span>TAMAMLANAN</span><strong id="done-count">0</strong></article>
+        </section>
+
+        <section class="board">
+          <div class="board-heading">
+            <div><p class="eyebrow">PLANIN</p><h2>Görevlerin</h2></div>
+            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Görevlerde ara" aria-label="Görevlerde ara"></label>
+          </div>
+          <form id="task-form" class="new-task">
+            <div class="form-copy"><span class="add-mark" aria-hidden="true">+</span><div><b>Yeni bir görev ekle</b><small>Küçük bir adım, büyük bir ilerlemedir.</small></div></div>
+            <div class="form-fields"><label class="sr-only" for="title-input">Görev başlığı</label><input id="title-input" name="title" maxlength="160" required placeholder="Örn. Taslak ekranını gözden geçir"><label class="sr-only" for="description-input">Açıklama</label><input id="description-input" name="description" maxlength="1000" placeholder="Açıklama ekle (isteğe bağlı)"><button type="submit">Görev ekle <span aria-hidden="true">↗</span></button></div>
+            <p id="form-error" class="form-error" role="alert" hidden></p>
+          </form>
+          <div class="list-toolbar"><div class="filters" role="group" aria-label="Görev filtresi"><button class="filter active" data-filter="all" type="button">Tümü <span id="all-filter-count">0</span></button><button class="filter" data-filter="open" type="button">Devam eden</button><button class="filter" data-filter="done" type="button">Tamamlanan</button></div><span id="showing-count" class="showing-count">0 görev</span></div>
+          <div id="task-list" class="task-list" aria-live="polite"></div>
+          <div id="empty-state" class="empty-state" hidden><span aria-hidden="true">✳</span><b>Bu görünümde görev yok</b><small>Yeni bir görev ekleyerek başlayabilirsin.</small></div>
+        </section>
+        <footer><span>Yerel ve özel · Verilerin bu cihazda kalır</span><span id="health-copy">API durumu denetleniyor</span></footer>
+      </main>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

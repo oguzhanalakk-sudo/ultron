@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Android Counter</string>
+    <string name="count_value_zero">0</string>
+    <string name="count_value">%1$d</string>
+    <string name="increment">Artır</string>
+</resources>

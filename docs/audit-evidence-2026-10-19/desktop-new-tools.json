@@ -1,0 +1,12 @@
+{
+  "checks": {
+    "preflightCalisti": true,
+    "preflightNotlariVar": true,
+    "textTaskAdimlariDondu": true,
+    "kaydetildi": true,
+    "metinBirebir": true,
+    "ogeTiklandi": true,
+    "tiklamaHatasiYok": true
+  },
+  "ok": true
+}

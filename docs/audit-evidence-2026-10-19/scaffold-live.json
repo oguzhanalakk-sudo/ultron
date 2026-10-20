@@ -1,0 +1,28 @@
+{
+  "startedAt": "2026-10-19T20:12:11.969Z",
+  "ok": true,
+  "templatesViaBridge": null,
+  "createdFiles": [
+    {
+      "path": ".gitignore",
+      "size": 33,
+      "content": "node_modules\n.env\n*.log\n.DS_Store"
+    },
+    {
+      "path": "README.md",
+      "size": 43,
+      "content": "# canli-iskelet\n\nCanlı doğrulama iskeleti"
+    }
+  ],
+  "emptyFiles": [],
+  "taskStatus": "needs_review",
+  "toolsUsed": [
+    "list_project_templates",
+    "project_scaffold"
+  ],
+  "checks": {
+    "iskeletOlustu": true,
+    "bosDosyaYok": true,
+    "readmeVar": true
+  }
+}

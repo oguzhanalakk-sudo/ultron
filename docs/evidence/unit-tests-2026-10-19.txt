@@ -1,0 +1,1670 @@
+
+> ultron@1.1.0 test:permissions
+> node --experimental-strip-types --test tests/permissions.test.ts tests/permission-manager.test.ts tests/source-security.test.ts tests/sensitive-files.test.ts tests/renderer-security.test.ts tests/network-inventory.test.ts tests/tool-validation.test.ts tests/task-store.test.ts tests/agent-orchestrator.test.ts tests/agent-verification.test.ts tests/project-fingerprint.test.ts tests/agent-intent.test.ts tests/agent-editing.test.ts tests/language-knowledge.test.ts tests/command-environment.test.ts tests/android-build-tool.test.ts tests/web-build-tool.test.ts tests/windows-build-tool.test.ts tests/model-provider.test.ts tests/openai-provider.test.ts tests/provider-secrets.test.ts tests/git-workflow.test.ts tests/local-ai.test.ts tests/offline-inventory.test.ts tests/atomic-json.test.ts tests/memory-store.test.ts tests/conversation.test.ts tests/chat-history.test.ts tests/zip-lite.test.ts tests/json-store.test.ts tests/file-search.test.ts tests/local-file-actions.test.ts tests/solution-memory.test.ts tests/web-research.test.ts tests/software-discovery.test.ts tests/app-adapters.test.ts tests/plugin-manager.test.ts tests/plugin-host.test.ts
+
+TAP version 13
+# Subtest: birebir eşleşme tekil olduğunda yama uygulanır
+ok 1 - birebir eşleşme tekil olduğunda yama uygulanır
+  ---
+  duration_ms: 4.1483
+  type: 'test'
+  ...
+# Subtest: çoklu birebir eşleşme replace_all olmadan reddedilir
+ok 2 - çoklu birebir eşleşme replace_all olmadan reddedilir
+  ---
+  duration_ms: 0.5636
+  type: 'test'
+  ...
+# Subtest: replace_all tüm eşleşmeleri değiştirir
+ok 3 - replace_all tüm eşleşmeleri değiştirir
+  ---
+  duration_ms: 0.2962
+  type: 'test'
+  ...
+# Subtest: CRLF dosyada LF old_text toleransla eşleşir ve yeni metin CRLF olur
+ok 4 - CRLF dosyada LF old_text toleransla eşleşir ve yeni metin CRLF olur
+  ---
+  duration_ms: 0.5394
+  type: 'test'
+  ...
+# Subtest: satır sonu boşluk farkı trimEnd toleransıyla eşleşir
+ok 5 - satır sonu boşluk farkı trimEnd toleransıyla eşleşir
+  ---
+  duration_ms: 0.4807
+  type: 'test'
+  ...
+# Subtest: bulunamayan metin açıklayıcı hata döndürür
+ok 6 - bulunamayan metin açıklayıcı hata döndürür
+  ---
+  duration_ms: 0.256
+  type: 'test'
+  ...
+# Subtest: boş old_text reddedilir
+ok 7 - boş old_text reddedilir
+  ---
+  duration_ms: 0.301
+  type: 'test'
+  ...
+# Subtest: findPatchMatches strateji ve aralıkları raporlar
+ok 8 - findPatchMatches strateji ve aralıkları raporlar
+  ---
+  duration_ms: 0.2561
+  type: 'test'
+  ...
+# Subtest: dominantLineEnding ve alignLineEndings dosya stilini korur
+ok 9 - dominantLineEnding ve alignLineEndings dosya stilini korur
+  ---
+  duration_ms: 0.6018
+  type: 'test'
+  ...
+# Subtest: paginateContent satır aralığı, toplam satır ve devam bilgisini döndürür
+ok 10 - paginateContent satır aralığı, toplam satır ve devam bilgisini döndürür
+  ---
+  duration_ms: 0.938
+  type: 'test'
+  ...
+# Subtest: paginateContent varsayılanları ve sınır kırpmasını uygular
+ok 11 - paginateContent varsayılanları ve sınır kırpmasını uygular
+  ---
+  duration_ms: 0.3373
+  type: 'test'
+  ...
+# Subtest: salt okuma görevlerinde olumsuz eylem sözcükleri düzenleme isteği sayılmaz
+ok 12 - salt okuma görevlerinde olumsuz eylem sözcükleri düzenleme isteği sayılmaz
+  ---
+  duration_ms: 39.2405
+  type: 'test'
+  ...
+# Subtest: olumlu düzenleme isteği, yazma yasağı olsa da değişiklik taslağı gerektirir
+ok 13 - olumlu düzenleme isteği, yazma yasağı olsa da değişiklik taslağı gerektirir
+  ---
+  duration_ms: 0.314
+  type: 'test'
+  ...
+# Subtest: kısa yeni uygulama isteği gerçek dosya işlemi ve başlatıcı niyeti sayılır
+ok 14 - kısa yeni uygulama isteği gerçek dosya işlemi ve başlatıcı niyeti sayılır
+  ---
+  duration_ms: 0.2435
+  type: 'test'
+  ...
+# Subtest: içerik okuma/özetleme isteği read_file kanıtı gerektirir
+ok 15 - içerik okuma/özetleme isteği read_file kanıtı gerektirir
+  ---
+  duration_ms: 1.5938
+  type: 'test'
+  ...
+# Subtest: okuma isteği olmayan görevlerde read_file zorunluluğu oluşmaz
+ok 16 - okuma isteği olmayan görevlerde read_file zorunluluğu oluşmaz
+  ---
+  duration_ms: 0.2742
+  type: 'test'
+  ...
+# Subtest: okuma yasağı istekleri read_file zorunluluğu üretmez
+ok 17 - okuma yasağı istekleri read_file zorunluluğu üretmez
+  ---
+  duration_ms: 0.2269
+  type: 'test'
+  ...
+# Subtest: uygulama yapma istekleri dosya işlemi sayılır
+ok 18 - uygulama yapma istekleri dosya işlemi sayılır
+  ---
+  duration_ms: 0.4445
+  type: 'test'
+  ...
+# Subtest: yapı inceleme ve olumsuz yapma formları düzenleme sayılmaz
+ok 19 - yapı inceleme ve olumsuz yapma formları düzenleme sayılmaz
+  ---
+  duration_ms: 0.2508
+  type: 'test'
+  ...
+# Subtest: üst üste araçsız turlar açık plan varken güvenli durma eşiğine ulaşır
+ok 20 - üst üste araçsız turlar açık plan varken güvenli durma eşiğine ulaşır
+  ---
+  duration_ms: 1.9015
+  type: 'test'
+  ...
+# Subtest: bir yanıttaki çoklu çağrı, görev araç ve parametre bütçelerini atomik denetler
+ok 21 - bir yanıttaki çoklu çağrı, görev araç ve parametre bütçelerini atomik denetler
+  ---
+  duration_ms: 1.6712
+  type: 'test'
+  ...
+# Subtest: süre sınırı aşılırsa yeni araç batchi yürütülmez
+ok 22 - süre sınırı aşılırsa yeni araç batchi yürütülmez
+  ---
+  duration_ms: 0.3027
+  type: 'test'
+  ...
+# Subtest: başarısız çağrılar düzeltme sayacına yazılır ama görevi kesmez
+ok 23 - başarısız çağrılar düzeltme sayacına yazılır ama görevi kesmez
+  ---
+  duration_ms: 0.4532
+  type: 'test'
+  ...
+# Subtest: araç çıktısını tanımlı maksimum boyutta kısaltır
+ok 24 - araç çıktısını tanımlı maksimum boyutta kısaltır
+  ---
+  duration_ms: 0.5697
+  type: 'test'
+  ...
+# Subtest: hata analizörü istenen hata kategorilerini ayırır
+ok 25 - hata analizörü istenen hata kategorilerini ayırır
+  ---
+  duration_ms: 1.9867
+  type: 'test'
+  ...
+# Subtest: bağlam budama araç çağrısı ile sonuç kimlik eşleşmesini korur
+ok 26 - bağlam budama araç çağrısı ile sonuç kimlik eşleşmesini korur
+  ---
+  duration_ms: 1.0128
+  type: 'test'
+  ...
+# Subtest: bağlam bütçesi araç şeması ve çıktı payını gerçek pencereye göre düşürür
+ok 27 - bağlam bütçesi araç şeması ve çıktı payını gerçek pencereye göre düşürür
+  ---
+  duration_ms: 0.2848
+  type: 'test'
+  ...
+# Subtest: bağlam bütçesi üst sınırı aşmaz ve çok küçük pencerede güvenli tabanı korur
+ok 28 - bağlam bütçesi üst sınırı aşmaz ve çok küçük pencerede güvenli tabanı korur
+  ---
+  duration_ms: 1.985
+  type: 'test'
+  ...
+# Subtest: gerçek komut zarfı başarısızlık, iptal, ret ve eksik çıkış kodunu başarı saymaz
+ok 29 - gerçek komut zarfı başarısızlık, iptal, ret ve eksik çıkış kodunu başarı saymaz
+  ---
+  duration_ms: 2.4763
+  type: 'test'
+  ...
+# Subtest: yapılandırılmış Android, Windows ve HTTP sonuçları gerçek başarı alanlarından doğrulanır
+ok 30 - yapılandırılmış Android, Windows ve HTTP sonuçları gerçek başarı alanlarından doğrulanır
+  ---
+  duration_ms: 0.765
+  type: 'test'
+  ...
+# Subtest: dosya ve günlük içerikleri komut sonucuyla karıştırılmaz
+ok 31 - dosya ve günlük içerikleri komut sonucuyla karıştırılmaz
+  ---
+  duration_ms: 0.1936
+  type: 'test'
+  ...
+# Subtest: başarısız test yalnızca aynı kontrol başarıyla yeniden çalıştırıldığında çözülür
+ok 32 - başarısız test yalnızca aynı kontrol başarıyla yeniden çalıştırıldığında çözülür
+  ---
+  duration_ms: 3.1866
+  type: 'test'
+  ...
+# Subtest: çoklu doğrulama hataları ayrı tutulur, argüman sırası ve gerekçe kimliği değiştirmez
+ok 33 - çoklu doğrulama hataları ayrı tutulur, argüman sırası ve gerekçe kimliği değiştirmez
+  ---
+  duration_ms: 0.9266
+  type: 'test'
+  ...
+# Subtest: başarısız test ve düzeltme döngüsü aynı kontrolün sonucu ile kapanır; hata sayacı görevi kesmez
+ok 34 - başarısız test ve düzeltme döngüsü aynı kontrolün sonucu ile kapanır; hata sayacı görevi kesmez
+  ---
+  duration_ms: 1.6807
+  type: 'test'
+  ...
+# Subtest: açık kontrol sınırı eski hataları düşürmez; yeni kontrol durur ama mevcut kontrol düzeltilebilir
+ok 35 - açık kontrol sınırı eski hataları düşürmez; yeni kontrol durur ama mevcut kontrol düzeltilebilir
+  ---
+  duration_ms: 2.1397
+  type: 'test'
+  ...
+# Subtest: platform listeleme/yapılandırma ve eski EXE başlatma kod doğrulaması değildir
+ok 36 - platform listeleme/yapılandırma ve eski EXE başlatma kod doğrulaması değildir
+  ---
+  duration_ms: 3.3068
+  type: 'test'
+  ...
+# Subtest: başarılı kontrol kaynak sürümüne bağlıdır; değişiklikte eskir ve yalnız aynı kontrol yeniden çözebilir
+ok 37 - başarılı kontrol kaynak sürümüne bağlıdır; değişiklikte eskir ve yalnız aynı kontrol yeniden çözebilir
+  ---
+  duration_ms: 1.0788
+  type: 'test'
+  ...
+# Subtest: test sırasında değişen, okunamayan kaynak veya salt analiz başarı kanıtı üretemez
+ok 38 - test sırasında değişen, okunamayan kaynak veya salt analiz başarı kanıtı üretemez
+  ---
+  duration_ms: 0.775
+  type: 'test'
+  ...
+# Subtest: başarı makbuzları devamda parmak iziyle karşılaştırılır; ham komut ve kaynak içerik saklanmaz
+ok 39 - başarı makbuzları devamda parmak iziyle karşılaştırılır; ham komut ve kaynak içerik saklanmaz
+  ---
+  duration_ms: 108.1221
+  type: 'test'
+  ...
+# Subtest: 48 başarılı kontrol de sınırı doldurur; sonuçlar sessizce düşürülmez
+ok 40 - 48 başarılı kontrol de sınırı doldurur; sonuçlar sessizce düşürülmez
+  ---
+  duration_ms: 2.2467
+  type: 'test'
+  ...
+# Subtest: doğrulama hataları kesilme/devam sırasında korunur, gizli argümanlar saklanmaz ve başarı kapısı atlanamaz
+ok 41 - doğrulama hataları kesilme/devam sırasında korunur, gizli argümanlar saklanmaz ve başarı kapısı atlanamaz
+  ---
+  duration_ms: 178.8219
+  type: 'test'
+  ...
+# Subtest: Android Gradle görev allowlisti biçim ve görev adlarını doğrular
+ok 42 - Android Gradle görev allowlisti biçim ve görev adlarını doğrular
+  ---
+  duration_ms: 1.6052
+  type: 'test'
+  ...
+# Subtest: Android proje analizi modül, dil, manifest, wrapper ve testleri bulur
+ok 43 - Android proje analizi modül, dil, manifest, wrapper ve testleri bulur
+  ---
+  duration_ms: 3.8727
+  type: 'test'
+  ...
+# Subtest: Android olmayan veya eksik proje için somut bulgular üretilir
+ok 44 - Android olmayan veya eksik proje için somut bulgular üretilir
+  ---
+  duration_ms: 0.638
+  type: 'test'
+  ...
+# Subtest: ADB cihaz listesi cihaz durumlarını ve emülatörü parse eder
+ok 45 - ADB cihaz listesi cihaz durumlarını ve emülatörü parse eder
+  ---
+  duration_ms: 0.6855
+  type: 'test'
+  ...
+# Subtest: Android derleme hata analizi ağ, imza, iptal ve başarısız testleri ayırır
+ok 46 - Android derleme hata analizi ağ, imza, iptal ve başarısız testleri ayırır
+  ---
+  duration_ms: 4.1928
+  type: 'test'
+  ...
+# Subtest: Android build hata sınıfları eksik JDK/SDK, yapılandırma, kaynak, emulator ve yetki sorunlarını ayırır
+ok 47 - Android build hata sınıfları eksik JDK/SDK, yapılandırma, kaynak, emulator ve yetki sorunlarını ayırır
+  ---
+  duration_ms: 0.8376
+  type: 'test'
+  ...
+# Subtest: APK/AAB ZIP bütünlüğü EOCD ve dizin sınırlarından doğrulanır
+ok 48 - APK/AAB ZIP bütünlüğü EOCD ve dizin sınırlarından doğrulanır
+  ---
+  duration_ms: 0.6406
+  type: 'test'
+  ...
+# Subtest: adaptör kataloğu gerçek araçları listeler
+ok 49 - adaptör kataloğu gerçek araçları listeler
+  ---
+  duration_ms: 1.7878
+  type: 'test'
+  ...
+# Subtest: buildAdapterCommand: read-only git status komutu düzgün üretilir
+ok 50 - buildAdapterCommand: read-only git status komutu düzgün üretilir
+  ---
+  duration_ms: 0.5802
+  type: 'test'
+  ...
+# Subtest: buildAdapterCommand: bilinmeyen adaptör ve eylem net hata döndürür
+ok 51 - buildAdapterCommand: bilinmeyen adaptör ve eylem net hata döndürür
+  ---
+  duration_ms: 0.3371
+  type: 'test'
+  ...
+# Subtest: buildAdapterCommand: proje gerektiren eylem proje yoksa hata verir
+ok 52 - buildAdapterCommand: proje gerektiren eylem proje yoksa hata verir
+  ---
+  duration_ms: 0.229
+  type: 'test'
+  ...
+# Subtest: buildAdapterCommand: git add_commit mesaj tırnaklarını temizler
+ok 53 - buildAdapterCommand: git add_commit mesaj tırnaklarını temizler
+  ---
+  duration_ms: 0.2098
+  type: 'test'
+  ...
+# Subtest: buildAdapterCommand: ffmpeg probe ffprobe yoluna döner ve boş medya dosyasını eler
+ok 54 - buildAdapterCommand: ffmpeg probe ffprobe yoluna döner ve boş medya dosyasını eler
+  ---
+  duration_ms: 0.2465
+  type: 'test'
+  ...
+# Subtest: buildAdapterCommand: pip list proje gerektirmez, vscode open proje yolu çift tırnaklı götürür
+ok 55 - buildAdapterCommand: pip list proje gerektirmez, vscode open proje yolu çift tırnaklı götürür
+  ---
+  duration_ms: 0.2772
+  type: 'test'
+  ...
+# Subtest: findAdapter büyük/küçük harf duyarsızdır
+ok 56 - findAdapter büyük/küçük harf duyarsızdır
+  ---
+  duration_ms: 0.115
+  type: 'test'
+  ...
+# Subtest: kurulum gerektiren eylemler risk etiketi taşır
+ok 57 - kurulum gerektiren eylemler risk etiketi taşır
+  ---
+  duration_ms: 1.6445
+  type: 'test'
+  ...
+# Subtest: yeni geliştirme adaptörleri gerçek komutları üretir
+ok 58 - yeni geliştirme adaptörleri gerçek komutları üretir
+  ---
+  duration_ms: 0.8327
+  type: 'test'
+  ...
+# Subtest: JSON kayıtları hedef dosyayı güvenle değiştirir ve geçici dosya bırakmaz
+ok 59 - JSON kayıtları hedef dosyayı güvenle değiştirir ve geçici dosya bırakmaz
+  ---
+  duration_ms: 23.3547
+  type: 'test'
+  ...
+# Subtest: JSON değişimi başarısız olursa eski hedef korunur ve geçici dosya temizlenir
+ok 60 - JSON değişimi başarısız olursa eski hedef korunur ve geçici dosya temizlenir
+  ---
+  duration_ms: 849.7653
+  type: 'test'
+  ...
+# Subtest: EPERM paylaşım kilidi kalkınca aynı geçici dosya hedef silinmeden yeniden adlandırılır
+ok 61 - EPERM paylaşım kilidi kalkınca aynı geçici dosya hedef silinmeden yeniden adlandırılır
+  ---
+  duration_ms: 14.1628
+  type: 'test'
+  ...
+# Subtest: EACCES paylaşım kilidi kalkınca aynı geçici dosya hedef silinmeden yeniden adlandırılır
+ok 62 - EACCES paylaşım kilidi kalkınca aynı geçici dosya hedef silinmeden yeniden adlandırılır
+  ---
+  duration_ms: 10.0505
+  type: 'test'
+  ...
+# Subtest: EBUSY paylaşım kilidi kalkınca aynı geçici dosya hedef silinmeden yeniden adlandırılır
+ok 63 - EBUSY paylaşım kilidi kalkınca aynı geçici dosya hedef silinmeden yeniden adlandırılır
+  ---
+  duration_ms: 10.6819
+  type: 'test'
+  ...
+# Subtest: kalıcı paylaşım kilidi altı denemede durur; özgün hatayı iletir, eski hedefi korur ve geçici dosyayı temizler
+ok 64 - kalıcı paylaşım kilidi altı denemede durur; özgün hatayı iletir, eski hedefi korur ve geçici dosyayı temizler
+  ---
+  duration_ms: 6.8823
+  type: 'test'
+  ...
+# Subtest: paylaşım kilidi dışındaki rename hataları yeniden denenmez ve hedef korunur
+ok 65 - paylaşım kilidi dışındaki rename hataları yeniden denenmez ve hedef korunur
+  ---
+  duration_ms: 14.5567
+  type: 'test'
+  ...
+# Subtest: sanitizeChatMessages yalnızca geçerli kullanıcı/assistant mesajlarını kabul eder
+ok 66 - sanitizeChatMessages yalnızca geçerli kullanıcı/assistant mesajlarını kabul eder
+  ---
+  duration_ms: 2.4301
+  type: 'test'
+  ...
+# Subtest: sanitizeChatMessages son 200 mesajı ve içerik sınırını uygular
+ok 67 - sanitizeChatMessages son 200 mesajı ve içerik sınırını uygular
+  ---
+  duration_ms: 0.7162
+  type: 'test'
+  ...
+# Subtest: sanitizeChatMessages geçersiz veya eksik girdide boş liste döner
+ok 68 - sanitizeChatMessages geçersiz veya eksik girdide boş liste döner
+  ---
+  duration_ms: 0.229
+  type: 'test'
+  ...
+# Subtest: komut ortamı yaygın anahtar ve token değişkenlerini temizler, Windows geliştirme yollarını korur
+ok 69 - komut ortamı yaygın anahtar ve token değişkenlerini temizler, Windows geliştirme yollarını korur
+  ---
+  duration_ms: 2.5672
+  type: 'test'
+  ...
+# Subtest: URL içinde kullanıcı bilgisi olan ortam değişkenleri aktarılmaz
+ok 70 - URL içinde kullanıcı bilgisi olan ortam değişkenleri aktarılmaz
+  ---
+  duration_ms: 0.6262
+  type: 'test'
+  ...
+# Subtest: classifyConversation karşılama ve hâl hatır mesajlarını sohbet sayar
+ok 71 - classifyConversation karşılama ve hâl hatır mesajlarını sohbet sayar
+  ---
+  duration_ms: 154.3934
+  type: 'test'
+  ...
+# Subtest: classifyConversation işlem isteklerini görev sayar
+ok 72 - classifyConversation işlem isteklerini görev sayar
+  ---
+  duration_ms: 0.3157
+  type: 'test'
+  ...
+# Subtest: classifyConversation açık hafıza isteklerini sohbet olarak yönlendirir
+ok 73 - classifyConversation açık hafıza isteklerini sohbet olarak yönlendirir
+  ---
+  duration_ms: 0.6212
+  type: 'test'
+  ...
+# Subtest: classifyConversation eylemsiz geri bildirimi sohbet, eylemli düzeltmeyi görev sayar
+ok 74 - classifyConversation eylemsiz geri bildirimi sohbet, eylemli düzeltmeyi görev sayar
+  ---
+  duration_ms: 0.2784
+  type: 'test'
+  ...
+# Subtest: detectExplicitMemoryRequest kayıt metnini ve türünü çıkarır
+ok 75 - detectExplicitMemoryRequest kayıt metnini ve türünü çıkarır
+  ---
+  duration_ms: 1.1912
+  type: 'test'
+  ...
+# Subtest: detectForgetRequest "unut" ile "unutma"yı ayırır
+ok 76 - detectForgetRequest "unut" ile "unutma"yı ayırır
+  ---
+  duration_ms: 0.1932
+  type: 'test'
+  ...
+# Subtest: detectFeedbackCorrection düzeltmeleri yakalar, soru kalıbını yakalamaz
+ok 77 - detectFeedbackCorrection düzeltmeleri yakalar, soru kalıbını yakalamaz
+  ---
+  duration_ms: 0.4121
+  type: 'test'
+  ...
+# Subtest: buildChatSystemPrompt profil, hafıza ve gerçek sistem durumunu içerir
+ok 78 - buildChatSystemPrompt profil, hafıza ve gerçek sistem durumunu içerir
+  ---
+  duration_ms: 3.0778
+  type: 'test'
+  ...
+# Subtest: buildChatSystemPrompt hafıza boşken hatırlama iddiasını engeller
+ok 79 - buildChatSystemPrompt hafıza boşken hatırlama iddiasını engeller
+  ---
+  duration_ms: 0.9435
+  type: 'test'
+  ...
+# Subtest: describeRuntimeFacts ölçüm olmadığında uydurmaz
+ok 80 - describeRuntimeFacts ölçüm olmadığında uydurmaz
+  ---
+  duration_ms: 0.671
+  type: 'test'
+  ...
+# Subtest: trimConversationContext mesaj sayısı sınırında son mesajları korur
+ok 81 - trimConversationContext mesaj sayısı sınırında son mesajları korur
+  ---
+  duration_ms: 0.5175
+  type: 'test'
+  ...
+# Subtest: trimConversationContext karakter bütçesini aşan eski mesajları düşürür
+ok 82 - trimConversationContext karakter bütçesini aşan eski mesajları düşürür
+  ---
+  duration_ms: 0.2693
+  type: 'test'
+  ...
+# Subtest: trimConversationContext en az son mesajı her koşulda gönderir ve kullanıcıyla başlatır
+ok 83 - trimConversationContext en az son mesajı her koşulda gönderir ve kullanıcıyla başlatır
+  ---
+  duration_ms: 0.2765
+  type: 'test'
+  ...
+# Subtest: günlük dil kümesi: sohbet cümleleri sohbet sınıfında kalır
+ok 84 - günlük dil kümesi: sohbet cümleleri sohbet sınıfında kalır
+  ---
+  duration_ms: 11.5488
+  type: 'test'
+  ...
+# Subtest: günlük dil kümesi: görev cümleleri görev sınıfında kalır
+ok 85 - günlük dil kümesi: görev cümleleri görev sınıfında kalır
+  ---
+  duration_ms: 0.2748
+  type: 'test'
+  ...
+# Subtest: dosya arama ve yazılım envanteri istekleri görev yoluna düşer
+ok 86 - dosya arama ve yazılım envanteri istekleri görev yoluna düşer
+  ---
+  duration_ms: 0.197
+  type: 'test'
+  ...
+# Subtest: negatif kontrol: günlük sohbet cümleleri sohbet sınıfında kalır
+ok 87 - negatif kontrol: günlük sohbet cümleleri sohbet sınıfında kalır
+  ---
+  duration_ms: 0.1545
+  type: 'test'
+  ...
+# Subtest: parseFileSearchRequest: pdf / excel / word türleri çözülür
+ok 88 - parseFileSearchRequest: pdf / excel / word türleri çözülür
+  ---
+  duration_ms: 44.2722
+  type: 'test'
+  ...
+# Subtest: parseFileSearchRequest: tarih, boyut ve içerik kalıpları
+ok 89 - parseFileSearchRequest: tarih, boyut ve içerik kalıpları
+  ---
+  duration_ms: 0.6705
+  type: 'test'
+  ...
+# Subtest: matchesFileMeta: uzantı, boyut, mtime ve ad terimleri
+ok 90 - matchesFileMeta: uzantı, boyut, mtime ve ad terimleri
+  ---
+  duration_ms: 0.9454
+  type: 'test'
+  ...
+# Subtest: scanDirectoryForQuery: ad araması derin klasörlerde çalışır, hariç klasörler atlanır
+ok 91 - scanDirectoryForQuery: ad araması derin klasörlerde çalışır, hariç klasörler atlanır
+  ---
+  duration_ms: 3.7928
+  type: 'test'
+  ...
+# Subtest: scanDirectoryForQuery: içerik araması snippet döndürür
+ok 92 - scanDirectoryForQuery: içerik araması snippet döndürür
+  ---
+  duration_ms: 2.2534
+  type: 'test'
+  ...
+# Subtest: scanDirectoryForQuery: PDF/DOCX içerik araması metoduna göre çözümlenir
+ok 93 - scanDirectoryForQuery: PDF/DOCX içerik araması metoduna göre çözümlenir
+  ---
+  duration_ms: 3.4716
+  type: 'test'
+  ...
+# Subtest: findDuplicateFiles: aynı içerik gruplanır
+ok 94 - findDuplicateFiles: aynı içerik gruplanır
+  ---
+  duration_ms: 2.1962
+  type: 'test'
+  ...
+# Subtest: buildFileIndex ve diffFileIndex değişiklikleri bildirir
+ok 95 - buildFileIndex ve diffFileIndex değişiklikleri bildirir
+  ---
+  duration_ms: 18.025
+  type: 'test'
+  ...
+# Subtest: searchFileIndex: indeks üzerinden ad+tür filtresi
+ok 96 - searchFileIndex: indeks üzerinden ad+tür filtresi
+  ---
+  duration_ms: 9.4503
+  type: 'test'
+  ...
+# Subtest: searchFileIndex: sıralama, limit kesilmeden önce tüm indeks üzerinde uygulanır
+ok 97 - searchFileIndex: sıralama, limit kesilmeden önce tüm indeks üzerinde uygulanır
+  ---
+  duration_ms: 0.6599
+  type: 'test'
+  ...
+# Subtest: scoreNameMatch: tam ad > önek > içerir
+ok 98 - scoreNameMatch: tam ad > önek > içerir
+  ---
+  duration_ms: 0.2914
+  type: 'test'
+  ...
+# Subtest: güvenli Git dal adları kabul edilir, tehlikeli adlar reddedilir
+ok 99 - güvenli Git dal adları kabul edilir, tehlikeli adlar reddedilir
+  ---
+  duration_ms: 1.781
+  type: 'test'
+  ...
+# Subtest: commit mesajı tek satıra indirgenir ve kontrol karakterleri reddedilir
+ok 100 - commit mesajı tek satıra indirgenir ve kontrol karakterleri reddedilir
+  ---
+  duration_ms: 0.5166
+  type: 'test'
+  ...
+# Subtest: görev kimliğinden güvenli görev dalı adı üretilir
+ok 101 - görev kimliğinden güvenli görev dalı adı üretilir
+  ---
+  duration_ms: 0.482
+  type: 'test'
+  ...
+# Subtest: storeFileName talimattaki tabloları depolara eşler
+ok 102 - storeFileName talimattaki tabloları depolara eşler
+  ---
+  duration_ms: 1.4779
+  type: 'test'
+  ...
+# Subtest: migrateDocument: bozuk/eksik belge varsayılana düşer
+ok 103 - migrateDocument: bozuk/eksik belge varsayılana düşer
+  ---
+  duration_ms: 2.5338
+  type: 'test'
+  ...
+# Subtest: migrateDocument: daha yeni şema hatası dosyayı dokunulmaz yapar
+ok 104 - migrateDocument: daha yeni şema hatası dosyayı dokunulmaz yapar
+  ---
+  duration_ms: 2.3866
+  type: 'test'
+  ...
+# Subtest: migrateDocument: doğrulama geçmezse varsayılana döner
+ok 105 - migrateDocument: doğrulama geçmezse varsayılana döner
+  ---
+  duration_ms: 0.4441
+  type: 'test'
+  ...
+# Subtest: createJsonStore: yaz–ok turuncu değeri, bozuk dosyada yedek bırakır
+ok 106 - createJsonStore: yaz–ok turuncu değeri, bozuk dosyada yedek bırakır
+  ---
+  duration_ms: 61.6502
+  type: 'test'
+  ...
+# Subtest: bilgi bankası araç tanımındaki 18 dili eksiksiz kapsar
+ok 107 - bilgi bankası araç tanımındaki 18 dili eksiksiz kapsar
+  ---
+  duration_ms: 2.5797
+  type: 'test'
+  ...
+# Subtest: dosya uzantısından dil algılama her dil için çalışır
+ok 108 - dosya uzantısından dil algılama her dil için çalışır
+  ---
+  duration_ms: 0.9472
+  type: 'test'
+  ...
+# Subtest: getLanguageInfo, uzantı ve kategori sorguları çalışır
+ok 109 - getLanguageInfo, uzantı ve kategori sorguları çalışır
+  ---
+  duration_ms: 1.6099
+  type: 'test'
+  ...
+# Subtest: Ollama model kataloğu ad, boyut ve nicemleme bilgisini okur
+ok 110 - Ollama model kataloğu ad, boyut ve nicemleme bilgisini okur
+  ---
+  duration_ms: 21.2489
+  type: 'test'
+  ...
+# Subtest: geçersiz Ollama yüklenmiş model yanıtı boş liste döndürür
+ok 111 - geçersiz Ollama yüklenmiş model yanıtı boş liste döndürür
+  ---
+  duration_ms: 0.4374
+  type: 'test'
+  ...
+# Subtest: model bellek uyumu GPU, kısmi GPU, CPU ve yetersiz durumlarını ayırır
+ok 112 - model bellek uyumu GPU, kısmi GPU, CPU ve yetersiz durumlarını ayırır
+  ---
+  duration_ms: 0.5772
+  type: 'test'
+  ...
+# Subtest: donanıma göre önerilen yerel modeller gerçekçi boyutlarda kalır
+ok 113 - donanıma göre önerilen yerel modeller gerçekçi boyutlarda kalır
+  ---
+  duration_ms: 0.5063
+  type: 'test'
+  ...
+# Subtest: model adı doğrulaması kabuk enjeksiyonunu ve yol kaçışını reddeder
+ok 114 - model adı doğrulaması kabuk enjeksiyonunu ve yol kaçışını reddeder
+  ---
+  duration_ms: 0.7563
+  type: 'test'
+  ...
+# Subtest: yerel hesap makinesi işlem önceliğini ve parantezleri doğru uygular
+ok 115 - yerel hesap makinesi işlem önceliğini ve parantezleri doğru uygular
+  ---
+  duration_ms: 1.1894
+  type: 'test'
+  ...
+# Subtest: JSON doğrulama geçerli belgeyi biçimlendirir, geçersizi reddeder
+ok 116 - JSON doğrulama geçerli belgeyi biçimlendirir, geçersizi reddeder
+  ---
+  duration_ms: 0.647
+  type: 'test'
+  ...
+# Subtest: akıllı işlem motoru model çağrısı gerektirmeyen istekleri yanıtlar
+ok 117 - akıllı işlem motoru model çağrısı gerektirmeyen istekleri yanıtlar
+  ---
+  duration_ms: 3.6701
+  type: 'test'
+  ...
+# Subtest: Ollama akış ölçümleri token hızını gerçek alanlardan hesaplar
+ok 118 - Ollama akış ölçümleri token hızını gerçek alanlardan hesaplar
+  ---
+  duration_ms: 0.599
+  type: 'test'
+  ...
+# Subtest: masaüstü açma isteği hızlı yola düşer
+ok 119 - masaüstü açma isteği hızlı yola düşer
+  ---
+  duration_ms: 2.8374
+  type: 'test'
+  ...
+# Subtest: indirilenlerdeki pdf isteği hızlı yola düşer
+ok 120 - indirilenlerdeki pdf isteği hızlı yola düşer
+  ---
+  duration_ms: 0.9188
+  type: 'test'
+  ...
+# Subtest: klasör ve eylem fiili olmadan hızlı yol reddedilir
+ok 121 - klasör ve eylem fiili olmadan hızlı yol reddedilir
+  ---
+  duration_ms: 1.3177
+  type: 'test'
+  ...
+# Subtest: üretici-yıkıcı niyetler hızlı yola girmez
+ok 122 - üretici-yıkıcı niyetler hızlı yola girmez
+  ---
+  duration_ms: 0.5531
+  type: 'test'
+  ...
+# Subtest: açık metin dosyası oluşturma, okuma ve değiştirme yerel yönlendiriciye ayrışır
+ok 123 - açık metin dosyası oluşturma, okuma ve değiştirme yerel yönlendiriciye ayrışır
+  ---
+  duration_ms: 6.9334
+  type: 'test'
+  ...
+# Subtest: uzun ve belirsiz metinler hızlı yola girmez
+ok 124 - uzun ve belirsiz metinler hızlı yola girmez
+  ---
+  duration_ms: 0.2416
+  type: 'test'
+  ...
+# Subtest: uzantı politikası: belgeler açık, çalıştırılabilirler kapalı
+ok 125 - uzantı politikası: belgeler açık, çalıştırılabilirler kapalı
+  ---
+  duration_ms: 6.7128
+  type: 'test'
+  ...
+# Subtest: tek eşleşme açılır, çoklu eşleşme seçenek listesi döner
+ok 126 - tek eşleşme açılır, çoklu eşleşme seçenek listesi döner
+  ---
+  duration_ms: 0.4319
+  type: 'test'
+  ...
+# Subtest: ad terimleri uzantından temizlenir
+ok 127 - ad terimleri uzantından temizlenir
+  ---
+  duration_ms: 2.7958
+  type: 'test'
+  ...
+# Subtest: normalizeMemoryText denetim karakterlerini temizler ve sınırlar
+ok 128 - normalizeMemoryText denetim karakterlerini temizler ve sınırlar
+  ---
+  duration_ms: 2.7594
+  type: 'test'
+  ...
+# Subtest: normalizeMemoryTags tekrarları ve aşırı uzun etiketleri eler
+ok 129 - normalizeMemoryTags tekrarları ve aşırı uzun etiketleri eler
+  ---
+  duration_ms: 0.5903
+  type: 'test'
+  ...
+# Subtest: sanitizeUserMemory geçersiz kayıtları atar ve kimlik tekrarlarını engeller
+ok 130 - sanitizeUserMemory geçersiz kayıtları atar ve kimlik tekrarlarını engeller
+  ---
+  duration_ms: 4.2465
+  type: 'test'
+  ...
+# Subtest: mergeIntoMemory benzer kaydı günceller, yeni bilgiyi ekler
+ok 131 - mergeIntoMemory benzer kaydı günceller, yeni bilgiyi ekler
+  ---
+  duration_ms: 8.5813
+  type: 'test'
+  ...
+# Subtest: mergeIntoMemory çelişen kayıtları karşılıklı işaretler
+ok 132 - mergeIntoMemory çelişen kayıtları karşılıklı işaretler
+  ---
+  duration_ms: 0.4705
+  type: 'test'
+  ...
+# Subtest: findSimilarEntry yalnızca aynı tür ve kapsamdaki güçlü eşleşmeyi bulur
+ok 133 - findSimilarEntry yalnızca aynı tür ve kapsamdaki güçlü eşleşmeyi bulur
+  ---
+  duration_ms: 0.3955
+  type: 'test'
+  ...
+# Subtest: selectRelevantMemory sorguyla örtüşen ve proje kayıtlarını öne alır
+ok 134 - selectRelevantMemory sorguyla örtüşen ve proje kayıtlarını öne alır
+  ---
+  duration_ms: 0.8194
+  type: 'test'
+  ...
+# Subtest: updateMemoryEntry metni günceller, geçersiz metni reddeder
+ok 135 - updateMemoryEntry metni günceller, geçersiz metni reddeder
+  ---
+  duration_ms: 0.3416
+  type: 'test'
+  ...
+# Subtest: forgetMatchingEntries eşleşen kayıtları siler, removeMemoryEntry olmayanı bildirir
+ok 136 - forgetMatchingEntries eşleşen kayıtları siler, removeMemoryEntry olmayanı bildirir
+  ---
+  duration_ms: 0.77
+  type: 'test'
+  ...
+# Subtest: trimMemoryEntries sınır aşıldığında önce konuşma kayıtlarını eler
+ok 137 - trimMemoryEntries sınır aşıldığında önce konuşma kayıtlarını eler
+  ---
+  duration_ms: 4.7686
+  type: 'test'
+  ...
+# Subtest: yerel Ollama yalnızca loopback adresinde çalışır ve sondaki slash temizlenir
+ok 138 - yerel Ollama yalnızca loopback adresinde çalışır ve sondaki slash temizlenir
+  ---
+  duration_ms: 2.497
+  type: 'test'
+  ...
+# Subtest: Ollama sağlayıcısı bulut ve uzak adresleri reddeder
+ok 139 - Ollama sağlayıcısı bulut ve uzak adresleri reddeder
+  ---
+  duration_ms: 0.3664
+  type: 'test'
+  ...
+# Subtest: OpenAI uyumlu sağlayıcı HTTPS adresini ve loopback HTTP adresini kabul eder
+ok 140 - OpenAI uyumlu sağlayıcı HTTPS adresini ve loopback HTTP adresini kabul eder
+  ---
+  duration_ms: 0.4028
+  type: 'test'
+  ...
+# Subtest: OpenAI uyumlu sağlayıcı tam sohbet uç noktasını taban adrese indirger
+ok 141 - OpenAI uyumlu sağlayıcı tam sohbet uç noktasını taban adrese indirger
+  ---
+  duration_ms: 0.2421
+  type: 'test'
+  ...
+# Subtest: API anahtarı şifresiz ağ üzerinden gönderilmez; uzak HTTP reddedilir
+ok 142 - API anahtarı şifresiz ağ üzerinden gönderilmez; uzak HTTP reddedilir
+  ---
+  duration_ms: 0.3751
+  type: 'test'
+  ...
+# Subtest: sağlayıcı URLsi kullanıcı bilgisi, sorgu, fragment ve dosya protokolünü reddeder
+ok 143 - sağlayıcı URLsi kullanıcı bilgisi, sorgu, fragment ve dosya protokolünü reddeder
+  ---
+  duration_ms: 0.4767
+  type: 'test'
+  ...
+# Subtest: sağlayıcı kimliği yalnızca desteklenen iki değeri kabul eder
+ok 144 - sağlayıcı kimliği yalnızca desteklenen iki değeri kabul eder
+  ---
+  duration_ms: 0.2551
+  type: 'test'
+  ...
+# Subtest: ağ kapsamı özel IPv4 ve en fazla 16 adresle sınırlıdır
+ok 145 - ağ kapsamı özel IPv4 ve en fazla 16 adresle sınırlıdır
+  ---
+  duration_ms: 3.4438
+  type: 'test'
+  ...
+# Subtest: port listesi doğrulanır ve TCP envanteri yalnızca açık port bilgisini raporlar
+ok 146 - port listesi doğrulanır ve TCP envanteri yalnızca açık port bilgisini raporlar
+  ---
+  duration_ms: 35.9123
+  type: 'test'
+  ...
+# Subtest: uygulama kaynağında harici yapay zekâ uç noktası veya SDK bağımlılığı yoktur
+ok 147 - uygulama kaynağında harici yapay zekâ uç noktası veya SDK bağımlılığı yoktur
+  ---
+  duration_ms: 45.8388
+  type: 'test'
+  ...
+# Subtest: ana süreçteki tüm HTTP istekleri yapılandırılmış modele yönelir; sabit dış URL yoktur
+ok 148 - ana süreçteki tüm HTTP istekleri yapılandırılmış modele yönelir; sabit dış URL yoktur
+  ---
+  duration_ms: 11.1183
+  type: 'test'
+  ...
+# Subtest: ayarlar sağlayıcı seçimini taşır ama API anahtarı taşımaz; anahtar ayrı ve maskeli saklanır
+ok 149 - ayarlar sağlayıcı seçimini taşır ama API anahtarı taşımaz; anahtar ayrı ve maskeli saklanır
+  ---
+  duration_ms: 8.3455
+  type: 'test'
+  ...
+# Subtest: araç mesajları OpenAI biçimine tool_call_id ve adla çevrilir
+ok 150 - araç mesajları OpenAI biçimine tool_call_id ve adla çevrilir
+  ---
+  duration_ms: 2.6175
+  type: 'test'
+  ...
+# Subtest: SSE ayrıştırıcısı parçalı veriyi olaylara böler ve artığı saklar
+ok 151 - SSE ayrıştırıcısı parçalı veriyi olaylara böler ve artığı saklar
+  ---
+  duration_ms: 0.3683
+  type: 'test'
+  ...
+# Subtest: OpenAI uyumlu akış içerik parçalarını birleştirir
+ok 152 - OpenAI uyumlu akış içerik parçalarını birleştirir
+  ---
+  duration_ms: 57.658
+  type: 'test'
+  ...
+# Subtest: OpenAI uyumlu akış parçalı araç çağrısını birleştirir
+ok 153 - OpenAI uyumlu akış parçalı araç çağrısını birleştirir
+  ---
+  duration_ms: 14.0476
+  type: 'test'
+  ...
+# Subtest: kimlik doğrulama hatası API anahtarını sızdırmaz
+ok 154 - kimlik doğrulama hatası API anahtarını sızdırmaz
+  ---
+  duration_ms: 10.6149
+  type: 'test'
+  ...
+# Subtest: boş akış boş veya geçersiz yanıt hatası verir
+ok 155 - boş akış boş veya geçersiz yanıt hatası verir
+  ---
+  duration_ms: 8.763
+  type: 'test'
+  ...
+# Subtest: akışı yok sayan sunucunun tek JSON yanıtı da işlenir
+ok 156 - akışı yok sayan sunucunun tek JSON yanıtı da işlenir
+  ---
+  duration_ms: 9.0746
+  type: 'test'
+  ...
+# Subtest: model listesi /models yanıtından sıralı ve tekrarsız okunur
+ok 157 - model listesi /models yanıtından sıralı ve tekrarsız okunur
+  ---
+  duration_ms: 24.4218
+  type: 'test'
+  ...
+# Subtest: onay kararları boolean ve kapsam/kaydetme alanları arasında tutarlı olmalı
+ok 158 - onay kararları boolean ve kapsam/kaydetme alanları arasında tutarlı olmalı
+  ---
+  duration_ms: 1.5268
+  type: 'test'
+  ...
+# Subtest: gelişmiş profil yalnızca güvenli geliştirme komutlarını varsayılan olarak otomatik çalıştırır
+ok 159 - gelişmiş profil yalnızca güvenli geliştirme komutlarını varsayılan olarak otomatik çalıştırır
+  ---
+  duration_ms: 0.3777
+  type: 'test'
+  ...
+# Subtest: görev izni aynı görevde ve aynı işlem kategorisinde geçerlidir
+ok 160 - görev izni aynı görevde ve aynı işlem kategorisinde geçerlidir
+  ---
+  duration_ms: 2.5652
+  type: 'test'
+  ...
+# Subtest: proje izni proje içindeki uygun kategorileri kapsar fakat yıkıcı komutu otomatikleştirmez
+ok 161 - proje izni proje içindeki uygun kategorileri kapsar fakat yıkıcı komutu otomatikleştirmez
+  ---
+  duration_ms: 0.5415
+  type: 'test'
+  ...
+# Subtest: kalıcı kategori izni tüm projelerde aynı kategoriye uygulanır
+ok 162 - kalıcı kategori izni tüm projelerde aynı kategoriye uygulanır
+  ---
+  duration_ms: 0.338
+  type: 'test'
+  ...
+# Subtest: kayıt yükleyici başka proje, bozuk ve yıkıcı kalıcı izin kayıtlarını atlar
+ok 163 - kayıt yükleyici başka proje, bozuk ve yıkıcı kalıcı izin kayıtlarını atlar
+  ---
+  duration_ms: 1.9315
+  type: 'test'
+  ...
+# Subtest: ek kaynak kapsamı sadece seçilen ağaç derinliğine izin verir ve proje kapsamı önceliklidir
+ok 164 - ek kaynak kapsamı sadece seçilen ağaç derinliğine izin verir ve proje kapsamı önceliklidir
+  ---
+  duration_ms: 1.0416
+  type: 'test'
+  ...
+# Subtest: komut satırı tırnak içindeki boşlukları argüman olarak korur
+ok 165 - komut satırı tırnak içindeki boşlukları argüman olarak korur
+  ---
+  duration_ms: 3.1326
+  type: 'test'
+  ...
+# Subtest: kabuk ayraçlarını, kapatılmamış tırnağı ve boş komutu reddeder
+ok 166 - kabuk ayraçlarını, kapatılmamış tırnağı ve boş komutu reddeder
+  ---
+  duration_ms: 1.6826
+  type: 'test'
+  ...
+# Subtest: komutları geliştirme, paket, sistem ve yıkıcı risklerine ayırır
+ok 167 - komutları geliştirme, paket, sistem ve yıkıcı risklerine ayırır
+  ---
+  duration_ms: 2.7759
+  type: 'test'
+  ...
+# Subtest: otomatik izin paket/sistem sınıflarını ayırır; kişisel profil bütün sınıfları otomatik çalıştırır
+ok 168 - otomatik izin paket/sistem sınıflarını ayırır; kişisel profil bütün sınıfları otomatik çalıştırır
+  ---
+  duration_ms: 0.2889
+  type: 'test'
+  ...
+# Subtest: PowerShell otomatik çalışması yalnızca dar salt okunur sorgu listesiyle sınırlıdır
+ok 169 - PowerShell otomatik çalışması yalnızca dar salt okunur sorgu listesiyle sınırlıdır
+  ---
+  duration_ms: 1.0266
+  type: 'test'
+  ...
+# Subtest: plugin-host: eklenti yüklenir, ready ve çağrı döner
+ok 170 - plugin-host: eklenti yüklenir, ready ve çağrı döner
+  ---
+  duration_ms: 114.8619
+  type: 'test'
+  ...
+# Subtest: plugin-host: entry dışına çıkan manifest reddedilir
+ok 171 - plugin-host: entry dışına çıkan manifest reddedilir
+  ---
+  duration_ms: 89.284
+  type: 'test'
+  ...
+# Subtest: validateManifest: geçerli manifest onaylanır
+ok 172 - validateManifest: geçerli manifest onaylanır
+  ---
+  duration_ms: 3.4203
+  type: 'test'
+  ...
+# Subtest: validateManifest: id, version, entry ve tool ad kuralları katıdır
+ok 173 - validateManifest: id, version, entry ve tool ad kuralları katıdır
+  ---
+  duration_ms: 0.4146
+  type: 'test'
+  ...
+# Subtest: validateManifest: araç parametre şemaları doğrulanır, tekrarlı ad reddedilir
+ok 174 - validateManifest: araç parametre şemaları doğrulanır, tekrarlı ad reddedilir
+  ---
+  duration_ms: 0.2388
+  type: 'test'
+  ...
+# Subtest: validateManifest: izinler kataloğun dışına çıkamaz
+ok 175 - validateManifest: izinler kataloğun dışına çıkamaz
+  ---
+  duration_ms: 0.3797
+  type: 'test'
+  ...
+# Subtest: validateManifest: bağımlılık aralıkları denetlenir
+ok 176 - validateManifest: bağımlılık aralıkları denetlenir
+  ---
+  duration_ms: 0.4178
+  type: 'test'
+  ...
+# Subtest: compareVersions düzgün sıralar
+ok 177 - compareVersions düzgün sıralar
+  ---
+  duration_ms: 0.221
+  type: 'test'
+  ...
+# Subtest: satisfiesRange: tam, büyük-major ve >= aralıkları
+ok 178 - satisfiesRange: tam, büyük-major ve >= aralıkları
+  ---
+  duration_ms: 0.2857
+  type: 'test'
+  ...
+# Subtest: checkDependencies eksik/uyumsuz bağımlılıkları raporlar
+ok 179 - checkDependencies eksik/uyumsuz bağımlılıkları raporlar
+  ---
+  duration_ms: 0.2921
+  type: 'test'
+  ...
+# Subtest: checkToolConflicts aynı araç adını yakalar
+ok 180 - checkToolConflicts aynı araç adını yakalar
+  ---
+  duration_ms: 0.5307
+  type: 'test'
+  ...
+# Subtest: pluginAgentToolName biçimi ve ayrıştırma uyumlu
+ok 181 - pluginAgentToolName biçimi ve ayrıştırma uyumlu
+  ---
+  duration_ms: 0.594
+  type: 'test'
+  ...
+# Subtest: pluginDataPath yalnızca eklenti klasörü içinde kalır
+ok 182 - pluginDataPath yalnızca eklenti klasörü içinde kalır
+  ---
+  duration_ms: 0.4025
+  type: 'test'
+  ...
+# Subtest: computePackageChecksum içerik sırasına göre kararlıdır
+ok 183 - computePackageChecksum içerik sırasına göre kararlıdır
+  ---
+  duration_ms: 18.5318
+  type: 'test'
+  ...
+# Subtest: parmak izi içerik, ekleme, silme, dosya adı, klasör yolu ve .env değişikliğini algılar
+ok 184 - parmak izi içerik, ekleme, silme, dosya adı, klasör yolu ve .env değişikliğini algılar
+  ---
+  duration_ms: 84.0014
+  type: 'test'
+  ...
+# Subtest: CLI bin klasörü gerçek kaynak sayılır; aynı boyutta değişiklik gizlenmez
+ok 185 - CLI bin klasörü gerçek kaynak sayılır; aynı boyutta değişiklik gizlenmez
+  ---
+  duration_ms: 14.3586
+  type: 'test'
+  ...
+# Subtest: üretilen çıktılar ve bağımlılık klasörleri kökte ve kaynak altında digest değiştirmez
+ok 186 - üretilen çıktılar ve bağımlılık klasörleri kökte ve kaynak altında digest değiştirmez
+  ---
+  duration_ms: 120.214
+  type: 'test'
+  ...
+# Subtest: birden fazla yetkili kök ve ikili kaynak içeriği parmak izine katılır
+ok 187 - birden fazla yetkili kök ve ikili kaynak içeriği parmak izine katılır
+  ---
+  duration_ms: 16.5132
+  type: 'test'
+  ...
+# Subtest: kapsam içindeki linked-source sembolik bağlantısı veya junction takip edilmez
+ok 188 - kapsam içindeki linked-source sembolik bağlantısı veya junction takip edilmez
+  ---
+  duration_ms: 10.0782
+  type: 'test'
+  ...
+# Subtest: kapsam içindeki .codex-local sembolik bağlantısı veya junction takip edilmez
+ok 189 - kapsam içindeki .codex-local sembolik bağlantısı veya junction takip edilmez
+  ---
+  duration_ms: 10.692
+  type: 'test'
+  ...
+# Subtest: açıkça seçilen kök bağlantısı gerçek klasör kimliğine bağlanır
+ok 190 - açıkça seçilen kök bağlantısı gerçek klasör kimliğine bağlanır
+  ---
+  duration_ms: 12.8656
+  type: 'test'
+  ...
+# Subtest: özyinelemesiz ek kaynak yalnız doğrudan altındaki dosyaları kapsar
+ok 191 - özyinelemesiz ek kaynak yalnız doğrudan altındaki dosyaları kapsar
+  ---
+  duration_ms: 21.2468
+  type: 'test'
+  ...
+# Subtest: erişilemeyen kaynak kökü sessizce boş proje kabul edilmez
+ok 192 - erişilemeyen kaynak kökü sessizce boş proje kabul edilmez
+  ---
+  duration_ms: 2.409
+  type: 'test'
+  ...
+# Subtest: 20.000.000 bayt kaynak dosyası kabul edilir, tek bayt fazlası doğrulamayı kapatır
+ok 193 - 20.000.000 bayt kaynak dosyası kabul edilir, tek bayt fazlası doğrulamayı kapatır
+  ---
+  duration_ms: 55.8779
+  type: 'test'
+  ...
+# Subtest: API yalnız digest döndürür; ham içerik, dosya listesi veya günlük dosyası yazmaz
+ok 194 - API yalnız digest döndürür; ham içerik, dosya listesi veya günlük dosyası yazmaz
+  ---
+  duration_ms: 8.919
+  type: 'test'
+  ...
+# Subtest: API anahtarı doğrulaması kısa, kontrol karakterli ve aşırı uzun değerleri reddeder
+ok 195 - API anahtarı doğrulaması kısa, kontrol karakterli ve aşırı uzun değerleri reddeder
+  ---
+  duration_ms: 1.7124
+  type: 'test'
+  ...
+# Subtest: bozuk veya eski biçimli sır dosyası güvenli biçimde normalize edilir
+ok 196 - bozuk veya eski biçimli sır dosyası güvenli biçimde normalize edilir
+  ---
+  duration_ms: 1.3893
+  type: 'test'
+  ...
+# Subtest: anahtar dosyası atomik yazılır, okunur ve silinir
+ok 197 - anahtar dosyası atomik yazılır, okunur ve silinir
+  ---
+  duration_ms: 34.458
+  type: 'test'
+  ...
+# Subtest: ortam değişkeni dosyadaki anahtardan önce gelir ve anahtar loglanmaz
+ok 198 - ortam değişkeni dosyadaki anahtardan önce gelir ve anahtar loglanmaz
+  ---
+  duration_ms: 7.396
+  type: 'test'
+  ...
+# Subtest: hata ve gövde metinlerindeki anahtarlar maskelenir
+ok 199 - hata ve gövde metinlerindeki anahtarlar maskelenir
+  ---
+  duration_ms: 1.5058
+  type: 'test'
+  ...
+# Subtest: dev renderer yalnızca aynı yerel origin içinde kalır
+ok 200 - dev renderer yalnızca aynı yerel origin içinde kalır
+  ---
+  duration_ms: 1.7946
+  type: 'test'
+  ...
+# Subtest: paketlenmiş renderer yalnızca beklenen index dosyasıysa güvenilir
+ok 201 - paketlenmiş renderer yalnızca beklenen index dosyasıysa güvenilir
+  ---
+  duration_ms: 0.7704
+  type: 'test'
+  ...
+# Subtest: yeni pencereler yalnızca web ve mail bağlantılarını dışarı açabilir
+ok 202 - yeni pencereler yalnızca web ve mail bağlantılarını dışarı açabilir
+  ---
+  duration_ms: 0.5057
+  type: 'test'
+  ...
+# Subtest: renderer geliştirme URLsi paketli uygulamada ve loopback dışındaki hedeflerde kapalıdır
+ok 203 - renderer geliştirme URLsi paketli uygulamada ve loopback dışındaki hedeflerde kapalıdır
+  ---
+  duration_ms: 0.3628
+  type: 'test'
+  ...
+# Subtest: credential files and private-key locations are not readable by the agent
+ok 204 - credential files and private-key locations are not readable by the agent
+  ---
+  duration_ms: 2.0447
+  type: 'test'
+  ...
+# Subtest: safe environment examples and ordinary source files remain accessible
+ok 205 - safe environment examples and ordinary source files remain accessible
+  ---
+  duration_ms: 0.3149
+  type: 'test'
+  ...
+# Subtest: agent file listing removes sensitive files without removing their ordinary parent directories
+ok 206 - agent file listing removes sensitive files without removing their ordinary parent directories
+  ---
+  duration_ms: 1.2365
+  type: 'test'
+  ...
+# Subtest: parseRegQueryEntries: DisplayName/Version/Publisher/InstallLocation blokları okunur
+ok 207 - parseRegQueryEntries: DisplayName/Version/Publisher/InstallLocation blokları okunur
+  ---
+  duration_ms: 1.7802
+  type: 'test'
+  ...
+# Subtest: parseRegQueryEntries: bozuk çıktıda hata vermeden bos döner
+ok 208 - parseRegQueryEntries: bozuk çıktıda hata vermeden bos döner
+  ---
+  duration_ms: 1.0698
+  type: 'test'
+  ...
+# Subtest: buildSoftwareCatalog: girdileri birleştirir, SystemComponent hariç tutulur
+ok 209 - buildSoftwareCatalog: girdileri birleştirir, SystemComponent hariç tutulur
+  ---
+  duration_ms: 17.3271
+  type: 'test'
+  ...
+# Subtest: buildSoftwareCatalog: PATH ekleri yürütülebilir yolun korur ve kategoriler birleştirilir
+ok 210 - buildSoftwareCatalog: PATH ekleri yürütülebilir yolun korur ve kategoriler birleştirilir
+  ---
+  duration_ms: 1.9118
+  type: 'test'
+  ...
+# Subtest: parseWhereOutput: ilk exe/cmd satırını seçer
+ok 211 - parseWhereOutput: ilk exe/cmd satırını seçer
+  ---
+  duration_ms: 0.577
+  type: 'test'
+  ...
+# Subtest: buildShortcutEntries ve dedupeCatalog kaynak önceliği çalışır
+ok 212 - buildShortcutEntries ve dedupeCatalog kaynak önceliği çalışır
+  ---
+  duration_ms: 3.0044
+  type: 'test'
+  ...
+# Subtest: reportCapabilityNeed: yerleşik çözüm ve gerçek öneriler
+ok 213 - reportCapabilityNeed: yerleşik çözüm ve gerçek öneriler
+  ---
+  duration_ms: 2.6713
+  type: 'test'
+  ...
+# Subtest: geçersiz alanlar sterilize edilir ve kaynak URL filtresi uygulanır
+ok 214 - geçersiz alanlar sterilize edilir ve kaynak URL filtresi uygulanır
+  ---
+  duration_ms: 3.0299
+  type: 'test'
+  ...
+# Subtest: problem alanı boşsa kayıt oluşturulmaz
+ok 215 - problem alanı boşsa kayıt oluşturulmaz
+  ---
+  duration_ms: 1.5524
+  type: 'test'
+  ...
+# Subtest: kayıt listesi üst sınıra kırpılır (en yeniler kalır)
+ok 216 - kayıt listesi üst sınıra kırpılır (en yeniler kalır)
+  ---
+  duration_ms: 0.6854
+  type: 'test'
+  ...
+# Subtest: arama gerçek ortak simge kümesine göre puanlar ve sıralar
+ok 217 - arama gerçek ortak simge kümesine göre puanlar ve sıralar
+  ---
+  duration_ms: 3.5605
+  type: 'test'
+  ...
+# Subtest: solved kayıtlar failed kayıtlardan öne geçer
+ok 218 - solved kayıtlar failed kayıtlardan öne geçer
+  ---
+  duration_ms: 0.3478
+  type: 'test'
+  ...
+# Subtest: boş liste için model çıktısı null döner; dolu listede uyarı satırı görünür
+ok 219 - boş liste için model çıktısı null döner; dolu listede uyarı satırı görünür
+  ---
+  duration_ms: 0.5374
+  type: 'test'
+  ...
+# Subtest: otomatik kayıt yükü (autorecord) güvenli alanlarla üretilir
+ok 220 - otomatik kayıt yükü (autorecord) güvenli alanlarla üretilir
+  ---
+  duration_ms: 0.4978
+  type: 'test'
+  ...
+# Subtest: kaynak güvenlik analizi önemli bulguları konum ve öneriyle raporlar, gizli değeri kopyalamaz
+ok 221 - kaynak güvenlik analizi önemli bulguları konum ve öneriyle raporlar, gizli değeri kopyalamaz
+  ---
+  duration_ms: 3.3914
+  type: 'test'
+  ...
+# Subtest: güvenilmeyen serileştirme ve shell komutu oluşturma uyarı verir
+ok 222 - güvenilmeyen serileştirme ve shell komutu oluşturma uyarı verir
+  ---
+  duration_ms: 0.3979
+  type: 'test'
+  ...
+# Subtest: görev, plan, araçlar, onaylar ve sonuçlar diske yazılır ve uygulama yeniden açıldığında okunur
+ok 223 - görev, plan, araçlar, onaylar ve sonuçlar diske yazılır ve uygulama yeniden açıldığında okunur
+  ---
+  duration_ms: 90.8779
+  type: 'test'
+  ...
+# Subtest: yeniden başlatmada yalnızca yarım kalan görevler sürdürülür ve proje kapsamı korunur
+ok 224 - yeniden başlatmada yalnızca yarım kalan görevler sürdürülür ve proje kapsamı korunur
+  ---
+  duration_ms: 71.125
+  type: 'test'
+  ...
+# Subtest: uygulama kapanışında çalışır veya onay bekleyen görev yarım kaldı olarak kaydedilir
+ok 225 - uygulama kapanışında çalışır veya onay bekleyen görev yarım kaldı olarak kaydedilir
+  ---
+  duration_ms: 67.5787
+  type: 'test'
+  ...
+# Subtest: duraklatılan ve doğrulama bekleyen görevler kalıcıdır ve sürdürülebilir
+ok 226 - duraklatılan ve doğrulama bekleyen görevler kalıcıdır ve sürdürülebilir
+  ---
+  duration_ms: 129.6711
+  type: 'test'
+  ...
+# Subtest: görev günlükleri hassas anahtar örüntülerini maskeler
+ok 227 - görev günlükleri hassas anahtar örüntülerini maskeler
+  ---
+  duration_ms: 46.1855
+  type: 'test'
+  ...
+# Subtest: kabul kontrolleri ve tamamlanan adım kimlikleri başka görevden sonra yeniden açma ve devamda korunur
+ok 228 - kabul kontrolleri ve tamamlanan adım kimlikleri başka görevden sonra yeniden açma ve devamda korunur
+  ---
+  duration_ms: 117.6911
+  type: 'test'
+  ...
+# Subtest: yeniden planlama aynı başlıklı eski tamamlanmaları ve eski kabul kontrollerini taşımaz
+ok 229 - yeniden planlama aynı başlıklı eski tamamlanmaları ve eski kabul kontrollerini taşımaz
+  ---
+  duration_ms: 67.513
+  type: 'test'
+  ...
+# Subtest: eski görev kayıtları eksik kabul kontrolü ve adım kimliği alanlarıyla okunabilir ve sürdürülebilir
+ok 230 - eski görev kayıtları eksik kabul kontrolü ve adım kimliği alanlarıyla okunabilir ve sürdürülebilir
+  ---
+  duration_ms: 41.3384
+  type: 'test'
+  ...
+# Subtest: kabul kontrolü ve adım kimliği alanları boyut sınırına ve gizlilik filtresine uyar
+ok 231 - kabul kontrolü ve adım kimliği alanları boyut sınırına ve gizlilik filtresine uyar
+  ---
+  duration_ms: 71.7861
+  type: 'test'
+  ...
+# Subtest: merkezi tamamlanma kapısı her kabul komutu için kendi başarılı run_tests kaydını gerektirir
+ok 232 - merkezi tamamlanma kapısı her kabul komutu için kendi başarılı run_tests kaydını gerektirir
+  ---
+  duration_ms: 122.6133
+  type: 'test'
+  ...
+# Subtest: eski doğrulama inceleme bekler, gerçek başarısızlık ve açık yürütme hatası tamamlanmayı engeller
+ok 233 - eski doğrulama inceleme bekler, gerçek başarısızlık ve açık yürütme hatası tamamlanmayı engeller
+  ---
+  duration_ms: 111.2566
+  type: 'test'
+  ...
+# Subtest: doğrulama kayıtları geçerli hash ve tarihlerle sınırlıdır; ham argümanlar kalıcılaştırılmaz
+ok 234 - doğrulama kayıtları geçerli hash ve tarihlerle sınırlıdır; ham argümanlar kalıcılaştırılmaz
+  ---
+  duration_ms: 54.9081
+  type: 'test'
+  ...
+# Subtest: gerçek değişiklik sonrası test gereksinimi yeniden planlamada korunur ve genel komutla karşılanamaz
+ok 235 - gerçek değişiklik sonrası test gereksinimi yeniden planlamada korunur ve genel komutla karşılanamaz
+  ---
+  duration_ms: 408.0814
+  type: 'test'
+  ...
+# Subtest: bilinmeyen doğrulama türü atılır ve eski Windows makbuzu test veya build kanıtına yükseltilmez
+ok 236 - bilinmeyen doğrulama türü atılır ve eski Windows makbuzu test veya build kanıtına yükseltilmez
+  ---
+  duration_ms: 48.963
+  type: 'test'
+  ...
+# Subtest: geçerli araç çağrısı doğrulanmış nesne olarak döner
+ok 237 - geçerli araç çağrısı doğrulanmış nesne olarak döner
+  ---
+  duration_ms: 2.6134
+  type: 'test'
+  ...
+# Subtest: bozuk JSON, nesne olmayan argüman, eksik alan ve bilinmeyen alan reddedilir
+ok 238 - bozuk JSON, nesne olmayan argüman, eksik alan ve bilinmeyen alan reddedilir
+  ---
+  duration_ms: 0.8411
+  type: 'test'
+  ...
+# Subtest: enum, iç içe tür ve aralık sınırları gerçek yürütmeden önce doğrulanır
+ok 239 - enum, iç içe tür ve aralık sınırları gerçek yürütmeden önce doğrulanır
+  ---
+  duration_ms: 0.5693
+  type: 'test'
+  ...
+# Subtest: web project analyzer detects frontend, backend, database, ORM, migrations and checks
+ok 240 - web project analyzer detects frontend, backend, database, ORM, migrations and checks
+  ---
+  duration_ms: 6.0424
+  type: 'test'
+  ...
+# Subtest: malformed package manifest does not prevent project analysis
+ok 241 - malformed package manifest does not prevent project analysis
+  ---
+  duration_ms: 1.3094
+  type: 'test'
+  ...
+# Subtest: package manager and database dependencies are detected without lockfiles
+ok 242 - package manager and database dependencies are detected without lockfiles
+  ---
+  duration_ms: 0.8501
+  type: 'test'
+  ...
+# Subtest: web health URL accepts loopback only and rejects credentials and public hosts
+ok 243 - web health URL accepts loopback only and rejects credentials and public hosts
+  ---
+  duration_ms: 1.9213
+  type: 'test'
+  ...
+# Subtest: HTTP verifier reads a local response and refuses to follow redirects
+ok 244 - HTTP verifier reads a local response and refuses to follow redirects
+  ---
+  duration_ms: 53.7818
+  type: 'test'
+  ...
+# Subtest: HTTP verifier reports a stalled local service as a timeout
+ok 245 - HTTP verifier reports a stalled local service as a timeout
+  ---
+  duration_ms: 162.5254
+  type: 'test'
+  ...
+# Subtest: SQLite query validator allows read-only SELECT and blocks mutation or stacked SQL
+ok 246 - SQLite query validator allows read-only SELECT and blocks mutation or stacked SQL
+  ---
+  duration_ms: 1.2629
+  type: 'test'
+  ...
+# Subtest: SQLite worker migrates transactionally, inspects schema, hides row values, and snapshots existing data
+ok 247 - SQLite worker migrates transactionally, inspects schema, hides row values, and snapshots existing data
+  ---
+  duration_ms: 857.2255
+  type: 'test'
+  ...
+# Subtest: DuckDuckGo HTML ayrıştırıcı gerçek hedef URL ve sıralar döndürür
+ok 248 - DuckDuckGo HTML ayrıştırıcı gerçek hedef URL ve sıralar döndürür
+  ---
+  duration_ms: 4.5215
+  type: 'test'
+  ...
+# Subtest: sorgu URL kodlaması Türkçe karakterleri güvenli hale getirir
+ok 249 - sorgu URL kodlaması Türkçe karakterleri güvenli hale getirir
+  ---
+  duration_ms: 0.4086
+  type: 'test'
+  ...
+# Subtest: HTML metin dönüşümü script ve stil içeriklerini atar
+ok 250 - HTML metin dönüşümü script ve stil içeriklerini atar
+  ---
+  duration_ms: 1.1479
+  type: 'test'
+  ...
+# Subtest: URL güvenlik filtresi özel ağ ve yerel adresleri reddeder
+ok 251 - URL güvenlik filtresi özel ağ ve yerel adresleri reddeder
+  ---
+  duration_ms: 1.6297
+  type: 'test'
+  ...
+# Subtest: web içerik enjeksiyonu işaretlenir, yürütme talimatına dönüştürülmez
+ok 252 - web içerik enjeksiyonu işaretlenir, yürütme talimatına dönüştürülmez
+  ---
+  duration_ms: 3.5425
+  type: 'test'
+  ...
+# Subtest: sayfa alıntısı odak terimin çevresinde dilimlenir
+ok 253 - sayfa alıntısı odak terimin çevresinde dilimlenir
+  ---
+  duration_ms: 0.5188
+  type: 'test'
+  ...
+# Subtest: hata mesajından temiz arama sorgusu üretilir
+ok 254 - hata mesajından temiz arama sorgusu üretilir
+  ---
+  duration_ms: 0.7897
+  type: 'test'
+  ...
+# Subtest: yapılandırılabilir sağlayıcı JSON sonucu ayrıştırılır
+ok 255 - yapılandırılabilir sağlayıcı JSON sonucu ayrıştırılır
+  ---
+  duration_ms: 0.721
+  type: 'test'
+  ...
+# Subtest: çözüm hafızası kayıt sterilize edilir ve aramayla bulunur
+ok 256 - çözüm hafızası kayıt sterilize edilir ve aramayla bulunur
+  ---
+  duration_ms: 6.892
+  type: 'test'
+  ...
+# Subtest: Windows project analyzer finds Python GUI, entry point, test files and project name
+ok 257 - Windows project analyzer finds Python GUI, entry point, test files and project name
+  ---
+  duration_ms: 6.5017
+  type: 'test'
+  ...
+# Subtest: Windows project analyzer detects WinForms, WPF, WinUI, Electron, Tauri and CMake
+ok 258 - Windows project analyzer detects WinForms, WPF, WinUI, Electron, Tauri and CMake
+  ---
+  duration_ms: 2.4656
+  type: 'test'
+  ...
+# Subtest: Python package plan uses unique project-local paths and accepts only detected entry files
+ok 259 - Python package plan uses unique project-local paths and accepts only detected entry files
+  ---
+  duration_ms: 2.7962
+  type: 'test'
+  ...
+# Subtest: .NET plan records framework-dependent and self-contained publish choices
+ok 260 - .NET plan records framework-dependent and self-contained publish choices
+  ---
+  duration_ms: 0.688
+  type: 'test'
+  ...
+# Subtest: Electron packaging requires an existing package script and never invents an install command
+ok 261 - Electron packaging requires an existing package script and never invents an install command
+  ---
+  duration_ms: 0.7307
+  type: 'test'
+  ...
+# Subtest: Tauri package plan calls the CLI from the selected project root without unsupported manifest flags
+ok 262 - Tauri package plan calls the CLI from the selected project root without unsupported manifest flags
+  ---
+  duration_ms: 0.4914
+  type: 'test'
+  ...
+# Subtest: CMake build plans configure before building and CTest is not assumed without tests
+ok 263 - CMake build plans configure before building and CTest is not assumed without tests
+  ---
+  duration_ms: 0.3912
+  type: 'test'
+  ...
+# Subtest: Inno Setup only runs an existing in-scope installer script
+ok 264 - Inno Setup only runs an existing in-scope installer script
+  ---
+  duration_ms: 0.317
+  type: 'test'
+  ...
+# Subtest: Windows build errors distinguish missing packager, SDK, compile failure, denied and timeout
+ok 265 - Windows build errors distinguish missing packager, SDK, compile failure, denied and timeout
+  ---
+  duration_ms: 1.8176
+  type: 'test'
+  ...
+# Subtest: EXE validation requires MZ plus a bounded PE header signature
+ok 266 - EXE validation requires MZ plus a bounded PE header signature
+  ---
+  duration_ms: 0.4824
+  type: 'test'
+  ...
+# Subtest: zip-lite: store ve deflate girdilerini okur
+ok 267 - zip-lite: store ve deflate girdilerini okur
+  ---
+  duration_ms: 3.6947
+  type: 'test'
+  ...
+# Subtest: zip-lite: zip-slip yolları geçersiz sayılır, boş arşiv hata verir
+ok 268 - zip-lite: zip-slip yolları geçersiz sayılır, boş arşiv hata verir
+  ---
+  duration_ms: 0.7279
+  type: 'test'
+  ...
+# Subtest: zip-lite: şifreli girdi açıkça reddedilir
+ok 269 - zip-lite: şifreli girdi açıkça reddedilir
+  ---
+  duration_ms: 0.3505
+  type: 'test'
+  ...
+# Subtest: text-extract: metin klasörü tanınıyor, ikili dışlanıyor
+ok 270 - text-extract: metin klasörü tanınıyor, ikili dışlanıyor
+  ---
+  duration_ms: 0.9106
+  type: 'test'
+  ...
+# Subtest: text-extract: PDF metin operatörlerini çözümler
+ok 271 - text-extract: PDF metin operatörlerini çözümler
+  ---
+  duration_ms: 1.0926
+  type: 'test'
+  ...
+# Subtest: text-extract: DOCX paragraflarını çıkarır
+ok 272 - text-extract: DOCX paragraflarını çıkarır
+  ---
+  duration_ms: 1.6946
+  type: 'test'
+  ...
+# Subtest: text-extract: XLSX paylaşılan dizge ve hücre kodu
+ok 273 - text-extract: XLSX paylaşılan dizge ve hücre kodu
+  ---
+  duration_ms: 1.8134
+  type: 'test'
+  ...
+# Subtest: text-extract: eski ofis biçimleri desteklenmeme bildirimi verir
+ok 274 - text-extract: eski ofis biçimleri desteklenmeme bildirimi verir
+  ---
+  duration_ms: 0.3463
+  type: 'test'
+  ...
+# Subtest: buildTextSnippets eşleşme çevresini döndürür
+ok 275 - buildTextSnippets eşleşme çevresini döndürür
+  ---
+  duration_ms: 0.5797
+  type: 'test'
+  ...
+# Subtest: classifyExtension türü doğru seçer
+ok 276 - classifyExtension türü doğru seçer
+  ---
+  duration_ms: 0.4278
+  type: 'test'
+  ...
+1..276
+# tests 276
+# suites 0
+# pass 276
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5896.3203
