@@ -86,7 +86,7 @@ function cleanReceipts(value: unknown): VerificationReceipt[] {
     && (item.commandKey === undefined || isHash(item.commandKey)))
     .slice(-48).map((item) => ({ key: item.key, tool: clean(item.tool, 100), checkedAt: new Date(item.checkedAt).toISOString(), fingerprint: item.fingerprint,
       ...(item.commandKey === undefined ? {} : { commandKey: item.commandKey }),
-      ...(['test', 'build', 'runtime', 'command', 'configuration'].includes(item.kind) ? { kind: item.kind } : {}),
+      ...(['test', 'build', 'runtime', 'command'].includes(item.kind) ? { kind: item.kind } : {}),
     }))
 }
 
@@ -158,8 +158,8 @@ export class TaskStore {
     return this.serialize(async () => {
       const task = (await this.list()).find((entry) => entry.id === id)
       if (!task) throw new Error('Sürdürülecek görev bulunamadı veya başka bir projeye ait.')
-      const hasPendingWork = task.status === 'completed' && task.pendingSteps.length > 0
-      if (!['interrupted', 'paused', 'blocked', 'needs_review', 'failed', 'cancelled'].includes(task.status) && !hasPendingWork) throw new Error('Yalnızca yarım kalmış, doğrulama bekleyen, blokeli veya başarısız görevler sürdürülür.')
+      const hasPendingWork = task.pendingSteps.length > 0 || (task.plan.length > 0 && task.status !== 'completed')
+      if (!['interrupted', 'paused', 'blocked', 'needs_review', 'failed', 'cancelled'].includes(task.status) && !hasPendingWork) throw new Error('Yalnızca yarım kalmış veya plan adımı bulunan görevler sürdürülebilir; doğrulama bekleyen, blokeli ya da başarısız görevler de sürdürülebilir.')
       return this.updateUnsafe(id, { status: 'running', stage: 'analyzing', currentTool: '', errors: [], events: [...task.events, { at: new Date().toISOString(), type: 'result', name: 'task-resumed', detail: 'Görev sürdürüldü.' }] })
     })
   }
