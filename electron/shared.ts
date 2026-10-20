@@ -34,6 +34,8 @@ export type PermissionProfile = {
   allowSystemChanges: boolean
   /** Masaüstü kontrolü (fare/klavye/ekran) varsayılan olarak kapalıdır; kullanıcı açıkça açar. */
   allowDesktopControl: boolean
+  /** Sınırsız erişim açıkça seçilmedikçe güvenlik kapsamı dışına çıkılmaz. */
+  allowUnrestrictedAccess: boolean
 }
 export type PermissionCategory = 'development' | 'package' | 'system' | 'system-script' | 'network-scan' | 'destructive' | 'security-audit' | 'file-rename' | 'file-delete' | 'screen-capture' | 'input-control' | 'app-launch' | 'file-read' | 'file-create' | 'file-edit'
 export type ApprovalGrantScope = 'operation' | 'task' | 'project' | 'category'
@@ -147,6 +149,7 @@ export const defaultPermissions: PermissionProfile = {
   allowPackageInstalls: false,
   allowSystemChanges: false,
   allowDesktopControl: false,
+  allowUnrestrictedAccess: false,
 }
 export const emptyMemory: ProjectMemory = {
   summary: '', architecture: '', technologies: [], commands: [], preferences: [], knownIssues: [], updatedAt: null,
