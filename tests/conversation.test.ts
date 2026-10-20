@@ -24,6 +24,12 @@ test('classifyConversation işlem isteklerini görev sayar', () => {
   assert.equal(classifyConversation(''), 'task')
 })
 
+test('kısa internet ve site istekleri araştırma görevine yönlenir', () => {
+  assert.equal(classifyConversation("Google'da React 19 SSR hatasını ara"), 'task')
+  assert.equal(classifyConversation('Bu siteye gir ve başlıkları oku'), 'task')
+  assert.equal(classifyConversation('https://example.com adresini incele'), 'task')
+})
+
 test('güvenli Windows uygulaması açma istekleri sohbet moduna düşmez', () => {
   assert.deepEqual(parseDesktopLaunchRequest("Ultron, Hesap Makinesi'ni aç."), { target: 'hesap makinesi' })
   assert.deepEqual(parseDesktopLaunchRequest('Not Defteri uygulamasını başlat'), { target: 'not defteri' })

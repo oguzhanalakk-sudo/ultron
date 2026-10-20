@@ -70,6 +70,11 @@ const capabilitySubject = /eklenti|plugin|kod edit[öo]r|hangi edit[öo]r|edit[�
 // Göreve devam/deneme ifadeleri sohbet sayılmaz.
 const taskControl = /(?<![\p{L}\p{N}])(devam|sürdür|resume|continue|yeniden|tekrar|başla|bitir)(?![\p{L}\p{N}])/iu
 
+// Kısa web araştırma istekleri teknik konu içermese bile görev yoluna girmelidir.
+// Aksi hâlde "Google'da ara" veya "bu siteye gir" sohbet olarak sınıflanır ve
+// web araçları modele sunulmadan yalnızca metin yanıtı üretilebilir.
+const researchAction = /(?:google(?:'da|’da|da)?|internette|internetten|web(?:'de|’de|de)?|siteye|web sitesine|url(?:'yi|’yi|yi)?|sayfayı|sayfaya)\s*(?:ara|araştır|bul|gir|aç|incele|oku|kontrol et|bak)/iu
+
 // Doğal karşılama, hâl hatır ve kimlik ifadeleri.
 const conversational = /merhaba|selamlar|(?<![\p{L}\p{N}])selam(?![\p{L}\p{N}])|(?<![\p{L}\p{N}])hey(?![\p{L}\p{N}])|günaydın|iyi akşamlar|iyi geceler|nasılsın|nasılsınız|naber|ne haber|nasıl gidiyor|teşekkür|sağ ?ol|eyvallah|hoşça kal|görüşürüz|rica ederim|kimsin|adın ne|ismin ne|sen kimsin|kendini tanıt|neler yapabilirsin|ne yapabilirsin|yeteneklerin|neler yapabiliyorsun|sohbet edelim|biraz sohbet|bunu beğendim|çok iyi|harika|mükemmel|süper|aferin|üzgünüm|yoruldum|sıkıldım|moralim|nasıl hissediyorsun|duyguların|ne düşünüyorsun|neden yavaş|niye yavaş|yavaş çalışıyorsun|hızın nasıl|ne durumdasın|durumun nasıl|iyi misin/iu
 
@@ -84,6 +89,7 @@ export function classifyConversation(request: string): ConversationKind {
   if (parseDesktopLaunchRequest(text) || isApplicationLaunchRequest(text)) return 'task'
   if (detectExplicitMemoryRequest(text) || detectForgetRequest(text)) return 'chat'
   if (taskControl.test(text)) return 'task'
+  if (researchAction.test(text) || /https?:\/\/\S+/iu.test(text)) return 'task'
   if (actionIntent.test(text)) return 'task'
   if (technicalSubject.test(text)) return 'task'
   if (capabilitySubject.test(text)) return 'task'
