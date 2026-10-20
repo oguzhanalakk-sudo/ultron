@@ -31,3 +31,18 @@
 - Küçük ve açıklayıcı commit’ler kullan.
 - Güvenlik, izin ve araç yürütme değişikliklerini ayrı ve incelenebilir tut.
 - Pull request açıklamasında riskleri, doğrulama adımlarını ve geriye dönük etkileri yaz.
+
+## Tam depo inceleme ve geliştirme görevi
+
+Copilot’tan genel bir öneri istendiğinde yalnızca açık olan dosyaya bakma. Aşağıdaki sırayı izle:
+
+1. `README.md`, `package.json`, `electron/`, `src/`, `tests/`, `docs/`, `samples/` ve `.github/` klasörlerini incele.
+2. Araç şemalarını gerçek yürütücülerle, IPC kanallarını preload API’leriyle ve renderer çağrılarını ana süreç işleyicileriyle karşılaştır.
+3. Çalışmayan, erişilemeyen, yalnızca tanımlanmış veya test edilmemiş özellikleri kanıtlarıyla listele.
+4. Güvenlik, veri kaybı, yanlış başarı bildirimi, zaman aşımı ve performans sorunlarını önem sırasına koy.
+5. Her düzeltmeyi mevcut mimariye uygun, küçük ve geri alınabilir bir değişiklik olarak uygula; gereksiz yeniden yazımdan kaçın.
+6. Her değişiklik için ilgili birim veya entegrasyon testini ekle ya da güncelle.
+7. En az `npm run typecheck` ve değişen alanın testlerini çalıştır. Uygun olduğunda tam test paketini de çalıştır.
+8. Sonuçta değişen dosyaları, tespit edilen sorunları, test komutlarını ve kalan eksikleri açıkça raporla.
+
+Bir dosyanın amacını veya bir özelliğin çalışma durumunu varsayma; kaynak kodu ve test çıktısıyla doğrula. Kullanıcı “tamamını geliştir” dediğinde bu inceleme ve doğrulama döngüsünü depo genelinde uygula.
